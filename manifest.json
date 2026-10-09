@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
-	"minAppVersion": "1.0.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+  "id": "canvas-plus",
+  "name": "Canvas Plus",
+  "version": "1.0.0",
+  "minAppVersion": "1.13.1",
+  "description": "Canvas tools in one bar, free text, ink and a layers panel. With Note Types: note cards, relations on edges and key images.",
+  "author": "John Morabito",
+  "authorUrl": "https://github.com/jsmorabito",
+  "isDesktopOnly": false
 }

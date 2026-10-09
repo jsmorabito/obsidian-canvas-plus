@@ -1,92 +1,70 @@
-# Obsidian Sample Plugin
+# Canvas Plus — Obsidian Plugin
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Drawing and layout tools for Obsidian's canvas. Paired with the [Note Types](https://github.com/jsmorabito/obsidian-note-types) plugin, typed notes become cards and edges between them become relations.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+---
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
+## Features
 
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and outputs a Notice on click.
-- Registers a global interval which logs 'setInterval' to the console.
+**Tools in one bar**  
+Open a canvas and Obsidian's bottom menu becomes one bar: Select, then its own draggable Card, Note and Media buttons and a draggable **Add note** (`N`) button, then Text (`T`), Group (`G`), Marker (`M`), Highlighter (`⇧M`) and Eraser (`E`). `Esc` cancels. Click Text or Group, then click or drag on the canvas to place one. Free text has no card chrome and removes itself if left empty. The tools also work in a canvas popped out into its own window.
 
-## First time developing plugins?
+**Ink**  
+Marker and highlighter strokes, with a pen color row (none plus the six canvas presets). The eraser removes whole strokes.
 
-Quick starting guide for new plugin devs:
+**Layers panel**  
+A panel on the left lists groups and what they contain, with a search box and a filter by kind of layer or note type.
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `src/main.ts` to `main.js`.
-- Make changes to `src/main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+**With Note Types**  
+These need the Note Types plugin enabled. Without it, the rest of Canvas Plus works as usual.
 
-## Releasing new releases
+- **Note cards.** Typed notes appear as cards showing an optional key image, the title and any properties you list under **Canvas card fields** for that note type (in Note Types' settings). A button in the selection toolbar, or the **Cycle selected canvas note cards between card, embed and styled link** command, switches a card to a full embed or to a styled link, the same pill the editor shows.
+- **Add note (`N`).** Add a typed note to the canvas, or create a new note of a type and its card in one step.
+- **Relations on edges.** Connect two cards to choose a relation, which is written to both notes' frontmatter. Select a card to see its relations in a side panel.
+- **Key images.** Drop an image on a card to set its key image.
+- **Undo covers the notes too.** Undo and redo cover the note changes that relations and key images make, not only the canvas.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+Canvas files stay standard JSON Canvas, with extra fields kept alongside, so stock Obsidian still opens them.
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+This relies on Obsidian's undocumented canvas internals, collected in `src/canvas/adapter.ts` and last checked against Obsidian 1.14.4, and may need a patch after an Obsidian update.
 
-## Adding your plugin to the community plugin list
+---
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+## Installation
 
-## How to use
+1. Copy `main.js`, `manifest.json`, and `styles.css` into `<Vault>/.obsidian/plugins/canvas-plus/`.
+2. Reload Obsidian.
+3. Enable **Canvas Plus** under **Settings → Community plugins**. Enable **Note Types** too for note cards and relations.
 
-- Clone this repo.
-- Make sure your NodeJS is at least v18 (`node --version`).
-- `npm i` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+---
 
-## Manually installing the plugin
+## Network use
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+The plugin has no telemetry, collects no data, and makes no requests of its own.
 
-## Improve code quality with eslint
+If a note's key image is a web address, Obsidian loads it from that address whenever a note card shows it. That is a request from your device to the image's host, the same as for any image embedded from the web. Dropping an image link onto a note card only writes the link into the note, and downloads nothing. Dropping an image file saves a copy in your vault's attachment folder, as Obsidian does for any attachment.
 
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code.
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
+---
 
-## Funding URL
+## For developers: the Note Types API
 
-You can include funding URLs where people who use your plugin can financially support it.
+Canvas Plus talks to Note Types only through the API Note Types publishes on its plugin instance (`app.plugins.getPlugin('filtered-file-commands').api`, defined in Note Types' `src/api.ts`). The bridge is `src/note-types.ts`: it looks the API up on every use, checks its `version`, and falls back to a stand-in where no note has a type.
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+---
 
-```json
-{
-	"fundingUrl": "https://buymeacoffee.com"
-}
+## Development
+
+```bash
+npm install
+npm run dev      # watch mode
+npm run build    # type-check + production bundle
+npm run lint     # ESLint
 ```
 
-If you have multiple URLs, you can also do:
+Output artifacts (`main.js`) are written to the plugin root. See [AGENTS.md](AGENTS.md) for conventions.
 
-```json
-{
-	"fundingUrl": {
-		"Buy Me a Coffee": "https://buymeacoffee.com",
-		"GitHub Sponsor": "https://github.com/sponsors",
-		"Patreon": "https://www.patreon.com/"
-	}
-}
-```
+---
 
-## API Documentation
+## License
 
-See https://docs.obsidian.md
+MIT
