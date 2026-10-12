@@ -15,10 +15,10 @@ export interface CardMenuHooks {
 
 /**
  * Select on its own at the left, then Obsidian's own draggable Card, Note and Media buttons with ours, then
- * the rest of the tools you pick (text, group, and the drawing tools) together at the right.
+ * the rest of the tools you pick (text, group, anchor, and the drawing tools) together at the right.
  */
 const LEADING: ToolId[][] = [['select']];
-const TRAILING: ToolId[] = ['text', 'group', 'marker', 'highlighter', 'eraser'];
+const TRAILING: ToolId[] = ['text', 'group', 'anchor', 'marker', 'highlighter', 'eraser'];
 
 const ITEM_CLASS = 'ffc-card-menu-item';
 /** The button an earlier version added to this menu on its own. */

@@ -2,9 +2,10 @@ import type { CanvasPlusPlugin } from '../main.ts';
 import { Box, CanvasLike, CanvasNodeLike, nodeBox } from './adapter.ts';
 import { FIELD_KIND, KIND_TEXT } from './constants.ts';
 import { readInk } from './ink-nodes.ts';
+import { anchorLabel, isAnchor } from './anchor.ts';
 import { noteRefFor } from './relation-logic.ts';
 
-export type LayerKind = 'group' | 'note' | 'text' | 'card' | 'image' | 'file' | 'link' | 'ink';
+export type LayerKind = 'group' | 'anchor' | 'note' | 'text' | 'card' | 'image' | 'file' | 'link' | 'ink';
 
 export interface Layer {
   node: CanvasNodeLike;
@@ -50,6 +51,7 @@ function describe(plugin: CanvasPlusPlugin, node: CanvasNodeLike): Pick<Layer, '
     case 'link':
       return { kind: 'link', label: typeof data.url === 'string' && data.url ? data.url : 'Link' };
     default: {
+      if (isAnchor(node)) return { kind: 'anchor', label: anchorLabel(node) || 'Untitled anchor' };
       const free = data[FIELD_KIND] === KIND_TEXT;
       const text = typeof data.text === 'string' ? data.text : '';
       const image = /^!\[([^\]]*)\]\(/.exec(text.trim());
@@ -109,6 +111,7 @@ export interface FilterOption {
 
 const KIND_ORDER: Array<{ kind: LayerKind; label: string }> = [
   { kind: 'group', label: 'Groups' },
+  { kind: 'anchor', label: 'Anchors' },
   { kind: 'note', label: 'Notes' },
   { kind: 'text', label: 'Text' },
   { kind: 'card', label: 'Cards' },

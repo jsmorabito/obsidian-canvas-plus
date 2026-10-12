@@ -5,6 +5,21 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Anchor tool (`A`), next to Group in the bottom bar. Click the canvas to drop
+  an anchor icon, named in a label above it that keeps its size at any zoom.
+  Double-click to rename. Anchors are listed in the layers panel; select one
+  to jump to it.
+
+### Changed
+
+- Free text and drawings are stored under `ffcKind` and `ffcInk` (were
+  `athensKind` and `athensInk`). Canvases saved by 1.0.x lose free text and
+  ink styling.
+
 ## [1.0.2]
 
 ### Added

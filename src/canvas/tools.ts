@@ -1,6 +1,8 @@
 import { NOTE_TYPES_ICON } from './icons.ts';
 
-export type ToolId = 'select' | 'text' | 'card' | 'group' | 'marker' | 'highlighter' | 'eraser';
+export type ToolId = 'select' | 'text' | 'card' | 'group' | 'anchor' | 'marker' | 'highlighter' | 'eraser';
+
+export type PlaceTool = 'text' | 'card' | 'group' | 'anchor';
 
 export interface ToolDef {
   id: ToolId;
@@ -18,6 +20,7 @@ export const TOOLS: readonly ToolDef[] = [
   { id: 'text',        label: 'Text',        icon: 'type',            key: 't' },
   { id: 'card',        label: 'Card',        icon: 'sticky-note',     key: 'c' },
   { id: 'group',       label: 'Group',       icon: 'frame',           key: 'g' },
+  { id: 'anchor',      label: 'Anchor',      icon: 'anchor',          key: 'a' },
   { id: 'marker',      label: 'Marker',      icon: 'pencil',          key: 'm' },
   { id: 'highlighter', label: 'Highlighter', icon: 'highlighter',     key: 'm', shift: true },
   { id: 'eraser',      label: 'Eraser',      icon: 'eraser',          key: 'e' },
@@ -28,8 +31,8 @@ export function toolForKey(key: string, shift: boolean): ToolDef | undefined {
 }
 
 /** Tools that place a node by clicking or dragging on the canvas. */
-export function isPlacementTool(tool: ToolId): tool is 'text' | 'card' | 'group' {
-  return tool === 'text' || tool === 'card' || tool === 'group';
+export function isPlacementTool(tool: ToolId): tool is PlaceTool {
+  return tool === 'text' || tool === 'card' || tool === 'group' || tool === 'anchor';
 }
 
 /** Freehand tools, which capture drags on the canvas and stay active until another tool is picked. */

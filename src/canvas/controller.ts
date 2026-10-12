@@ -13,10 +13,12 @@ import { imageFromDrop, injectKeyImageButton, setKeyImage } from './key-image.ts
 import { InkTools } from './ink-tools.ts';
 import { inkSvg, colorToHex } from './ink-render.ts';
 import { readInk } from './ink-nodes.ts';
-import { placeNode, placementRect } from './placement.ts';
+import { PlacedRect, placeNode, placementRect } from './placement.ts';
+import { clearAnchor, isAnchor, keepMenuClearOfLabels, syncAnchor } from './anchor.ts';
 import { CardMenu } from './card-menu.ts';
 import { trackPointer } from './pointer-session.ts';
-import { ActionId, isInkTool, isPlacementTool, ToolId } from './tools.ts';
+import { eachFrameUntil } from '../utils/helpers.ts';
+import { ActionId, isInkTool, isPlacementTool, PlaceTool, ToolId } from './tools.ts';
 
 /** Obsidian's own controls and menus live inside the canvas wrapper; a tool must never treat clicks on them as drawing. */
 const NATIVE_CANVAS_UI = '.canvas-controls, .canvas-card-menu, .canvas-menu-container';
@@ -57,6 +59,7 @@ export class CanvasController {
     this.layers = new LayersPanel(plugin, view);
     this.ink = new InkTools(view);
     this.cleanups.push(attachUndoJournal(view.canvas!, plugin.app));
+    this.cleanups.push(keepMenuClearOfLabels(view.canvas!));
     this.cleanups.push(watchSelection(view.canvas!, () => {
       this.panel.update();
       this.layers.update();
@@ -172,6 +175,8 @@ export class CanvasController {
       if (typeof kind === 'string') el.setAttribute('data-ffc-kind', kind);
       else el.removeAttribute('data-ffc-kind');
       if (ink) this.syncInk(node, ink);
+      if (isAnchor(node)) syncAnchor(canvas, node);
+      else clearAnchor(node);
     }
   }
 
@@ -186,6 +191,7 @@ export class CanvasController {
     this.view.contentEl.removeClass('ffc-tool-placing');
     for (const node of this.view.canvas?.nodes?.values() ?? []) {
       node.nodeEl?.removeAttribute('data-ffc-kind');
+      clearAnchor(node);
       if (Object.prototype.hasOwnProperty.call(node, 'startEditing')) Reflect.deleteProperty(node, 'startEditing');
     }
     if (this.view.canvas) {
@@ -248,18 +254,15 @@ export class CanvasController {
     const canvas = this.view.canvas;
     if (!canvas) return;
     const before = new Set(canvas.nodes?.keys() ?? []);
-    const check = (tries: number): void => {
+    const check = (): boolean => {
       const added = [...(canvas.nodes?.values() ?? [])].filter((n) => n.id && !before.has(n.id));
-      if (added.length === 0) {
-        if (tries > 0) window.requestAnimationFrame(() => check(tries - 1));
-        return;
-      }
       for (const node of added) {
         const file = noteOfNode(node);
         if (file && this.plugin.types.getNoteTypeForFile(file)) fitNodeToCard(this.plugin, canvas, node);
       }
+      return added.length > 0;
     };
-    window.requestAnimationFrame(() => check(30));
+    window.requestAnimationFrame(() => eachFrameUntil(check, 29));
   }
 
   private onPointer(type: 'pointerdown' | 'mousedown' | 'dblclick', e: PointerEvent): void {
@@ -282,10 +285,37 @@ export class CanvasController {
     e.preventDefault();
     e.stopPropagation();
     if (type !== 'pointerdown' || e.button !== 0) return;
-    this.beginDraw(tool, e);
+    if (tool === 'anchor') this.beginClick(tool, e);
+    else this.beginDraw(tool, e);
   }
 
-  private beginDraw(tool: 'text' | 'card' | 'group', down: PointerEvent): void {
+  /** Create the node, go back to Select, and style it now and once it has mounted. */
+  private place(tool: PlaceTool, rect: PlacedRect): void {
+    placeNode(this.view.canvas!, tool, rect);
+    this.setTool('select');
+    this.sweep();
+    window.requestAnimationFrame(() => this.sweep());
+  }
+
+  /** An anchor has no box to draw: it goes where the press started, once the button is released. */
+  private beginClick(tool: 'anchor', down: PointerEvent): void {
+    const start = toCanvasPoint(this.view.canvas!, down);
+    if (!start) return;
+    const stopTracking = trackPointer(this.doc, down.pointerId, {
+      up: () => {
+        finish();
+        this.place(tool, placementRect(tool, start, null));
+      },
+      cancel: () => this.setTool('select'),
+    });
+    const finish = (): void => {
+      stopTracking();
+      this.cancelDraw = null;
+    };
+    this.cancelDraw = finish;
+  }
+
+  private beginDraw(tool: Exclude<PlaceTool, 'anchor'>, down: PointerEvent): void {
     const canvas = this.view.canvas!;
     const start = toCanvasPoint(canvas, down);
     if (!start) return;
@@ -312,10 +342,7 @@ export class CanvasController {
       up: (e) => {
         finish();
         const end = dragged ? toCanvasPoint(canvas, e) : null;
-        placeNode(canvas, tool, placementRect(tool, start, end));
-        this.setTool('select');
-        this.sweep();
-        window.requestAnimationFrame(() => this.sweep());
+        this.place(tool, placementRect(tool, start, end));
       },
       // A cancelled pointer (touch gesture taking over, pen out of range) abandons the draw.
       cancel: () => this.setTool('select'),

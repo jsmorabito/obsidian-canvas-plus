@@ -1,11 +1,14 @@
 /** Extra field on a `text` node marking free text, which has no card chrome. Stored in canvas files, so the name must not change. */
-export const FIELD_KIND = 'athensKind';
+export const FIELD_KIND = 'ffcKind';
 export const KIND_TEXT = 'text';
+/** A labelled anchor: a text node holding just its label, listed in the layers panel to jump to. */
+export const KIND_ANCHOR = 'anchor';
 
 /** Default node sizes, in canvas units. */
 export const SIZE_CARD  = { width: 260, height: 120 };
 export const SIZE_TEXT  = { width: 240, height: 40 };
 export const SIZE_GROUP = { width: 480, height: 320 };
+export const SIZE_ANCHOR = { width: 40, height: 40 };
 
 /** Minimums when drag-creating a node. */
 export const MIN_DRAW_WIDTH       = 80;
@@ -22,7 +25,7 @@ export const SIZE_NOTE_CARD = { width: 260, height: 100 };
 export const PLACE_GAP = 24;
 
 /** Extra field on a `text` node holding one freehand stroke. Stored in canvas files, so the name must not change. */
-export const FIELD_INK = 'athensInk';
+export const FIELD_INK = 'ffcInk';
 
 /** Canvas preset colours as hex, for SVG that has to carry its own colour (matches Obsidian's palette). */
 export const PRESET_HEX: Record<string, string> = {

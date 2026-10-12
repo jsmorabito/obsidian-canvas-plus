@@ -7,13 +7,13 @@ Drawing and layout tools for Obsidian's canvas. Paired with the [Note Types](htt
 ## Features
 
 **Tools in one bar**  
-Open a canvas and Obsidian's bottom menu becomes one bar: Select, then its own draggable Card, Note and Media buttons and a draggable **Add note** (`N`) button, then Text (`T`), Group (`G`), Marker (`M`), Highlighter (`⇧M`) and Eraser (`E`). `Esc` cancels. Click Text or Group, then click or drag on the canvas to place one. Free text has no card chrome and removes itself if left empty. The tools also work in a canvas popped out into its own window.
+Open a canvas and Obsidian's bottom menu becomes one bar: Select, then its own draggable Card, Note and Media buttons and a draggable **Add note** (`N`) button, then Text (`T`), Group (`G`), Anchor (`A`), Marker (`M`), Highlighter (`⇧M`) and Eraser (`E`). `Esc` cancels. Click Text or Group, then click or drag on the canvas to place one. Free text has no card chrome and removes itself if left empty. Click Anchor, then click on the canvas to drop an anchor icon. Its name sits above it like a group's label and stays readable at any zoom; double-click to rename it. The tools also work in a canvas popped out into its own window.
 
 **Ink**  
 Marker and highlighter strokes, with a pen color row (none plus the six canvas presets). The eraser removes whole strokes.
 
 **Layers panel**  
-A panel on the left lists groups and what they contain, with a search box and a filter by kind of layer or note type.
+A panel on the left lists groups, anchors and what they contain; select an anchor to jump to it. It has a search box and a filter by kind of layer or note type.
 
 **With Note Types**  
 These need the Note Types plugin enabled. Without it, the rest of Canvas Plus works as usual.

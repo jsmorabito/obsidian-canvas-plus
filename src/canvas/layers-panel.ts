@@ -12,13 +12,13 @@ const HOVER_CLASS = 'ffc-layer-hover';
 let nextLabelId = 0;
 
 const ICONS: Record<LayerKind, string> = {
-  group: 'frame', note: 'file-text', text: 'type', card: 'sticky-note', image: 'image', file: 'file', link: 'link', ink: 'pencil',
+  group: 'frame', anchor: 'anchor', note: 'file-text', text: 'type', card: 'sticky-note', image: 'image', file: 'file', link: 'link', ink: 'pencil',
 };
 
 /**
  * Floating panel on the left listing groups and what they
  * contain. Click to select and zoom to an item, Shift-click to add it to
- * the selection, as on the canvas itself, hover to outline it on the canvas, double-click a group to
+ * the selection, as on the canvas itself, hover to outline it on the canvas, double-click a group or anchor to
  * rename it, select its triangle to collapse it. A search box and a filter narrow the list, and show
  * every result even inside a collapsed group. Whether it's open is a per-viewer preference.
  */
@@ -209,9 +209,10 @@ export class LayersPanel {
         else focusNode(canvas, layer.node, this.insetPx);
       });
       row.addEventListener('dblclick', () => {
-        if (layer.kind !== 'group') return;
+        if (layer.kind !== 'group' && layer.kind !== 'anchor') return;
         focusNode(canvas, layer.node, this.insetPx);
-        beginLabelEdit(layer.node);
+        if (layer.kind === 'group') beginLabelEdit(layer.node);
+        else layer.node.startEditing?.();
       });
       row.addEventListener('mouseenter', () => layer.node.nodeEl?.addClass(HOVER_CLASS));
       row.addEventListener('mouseleave', () => layer.node.nodeEl?.removeClass(HOVER_CLASS));

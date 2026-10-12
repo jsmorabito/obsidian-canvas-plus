@@ -99,7 +99,7 @@ export interface CanvasLike {
   dragTempNode?: (e: PointerEvent, size: { width: number; height: number }, onDrop: (pos: { x: number; y: number }) => void) => void;
   importData?: (data: { nodes: unknown[]; edges: unknown[] }, replace?: boolean) => unknown;
   /** The selection pop-up menu. Obsidian empties and rebuilds `menuEl` on every selection change. */
-  menu?: { menuEl?: HTMLElement };
+  menu?: { menuEl?: HTMLElement; containerEl?: HTMLElement; render?: (rebuild?: boolean) => void };
 }
 
 export interface CanvasViewLike extends ItemView {
@@ -277,6 +277,28 @@ export function watchSelection(canvas: CanvasLike, cb: () => void): () => void {
   const observer = new MutationObserver(cb);
   observer.observe(menuEl, { childList: true });
   return () => observer.disconnect();
+}
+
+/**
+ * Call `after` each time Obsidian positions the selection pop-up menu: on every selection change (`rebuilt`
+ * true, as core rebuilds the buttons then), and as the canvas pans and zooms. Returns a function that puts
+ * the original back.
+ */
+export function afterMenuRender(canvas: CanvasLike, after: (containerEl: HTMLElement, rebuilt: boolean) => void): () => void {
+  const menu = canvas.menu;
+  const original = menu?.render;
+  if (!menu || !original) return () => { /* nothing to restore */ };
+  let active = true;
+  const patched = function (this: unknown, rebuild?: boolean): void {
+    original.call(this, rebuild);
+    if (active && menu.containerEl?.isConnected) after(menu.containerEl, !!rebuild);
+  };
+  menu.render = patched;
+  return () => {
+    // Another plugin may have wrapped render since: then ours stays in its chain, but does nothing more.
+    active = false;
+    if (menu.render === patched) menu.render = original;
+  };
 }
 
 /**

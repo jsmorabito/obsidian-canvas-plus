@@ -2,27 +2,27 @@ import {
   CanvasLike, CanvasNodeLike, batch, createGroupNode, createTextNode, removeNode, setExtra,
 } from './adapter.ts';
 import {
-  FIELD_KIND, KIND_TEXT, MIN_DRAW_HEIGHT, MIN_DRAW_HEIGHT_TEXT, MIN_DRAW_WIDTH,
-  SIZE_CARD, SIZE_GROUP, SIZE_TEXT,
+  FIELD_KIND, KIND_ANCHOR, KIND_TEXT, MIN_DRAW_HEIGHT, MIN_DRAW_HEIGHT_TEXT, MIN_DRAW_WIDTH,
+  SIZE_ANCHOR, SIZE_CARD, SIZE_GROUP, SIZE_TEXT,
 } from './constants.ts';
-
-type PlaceTool = 'text' | 'card' | 'group';
+import type { PlaceTool } from './tools.ts';
+import { DEFAULT_ANCHOR_LABEL, editAnchorLabel } from './anchor.ts';
+import { eachFrameUntil } from '../utils/helpers.ts';
 type Point = { x: number; y: number };
 export interface PlacedRect { pos: Point; size: { width: number; height: number } }
 
 const DEFAULT_SIZE: Record<PlaceTool, { width: number; height: number }> = {
-  text: SIZE_TEXT, card: SIZE_CARD, group: SIZE_GROUP,
+  text: SIZE_TEXT, card: SIZE_CARD, group: SIZE_GROUP, anchor: SIZE_ANCHOR,
 };
 
 /**
  * Where a node lands. A click (`end` null) puts text at the click point and
- * centres cards and groups on it; a drag sets the box, with minimum sizes.
+ * centres anchors, cards and groups on it; a drag sets the box, with minimum sizes.
  */
 export function placementRect(tool: PlaceTool, start: Point, end: Point | null): PlacedRect {
   if (!end) {
     const size = DEFAULT_SIZE[tool];
-    const pos = tool === 'text'
-      ? start
+    const pos = tool === 'text' ? start
       : { x: start.x - size.width / 2, y: start.y - size.height / 2 };
     return { pos: { x: Math.round(pos.x), y: Math.round(pos.y) }, size };
   }
@@ -44,6 +44,19 @@ export function placeNode(canvas: CanvasLike, tool: PlaceTool, rect: PlacedRect)
       if (group) beginLabelEdit(group);
       return group;
     }
+    if (tool === 'anchor') {
+      // Not focused: core would focus the node a moment later, taking focus from the label being renamed.
+      const anchor = createTextNode(canvas, { ...rect, text: DEFAULT_ANCHOR_LABEL, focus: false });
+      if (anchor) {
+        setExtra(anchor, FIELD_KIND, KIND_ANCHOR);
+        eachFrameUntil(() => {
+          if (!anchor.nodeEl) return false;
+          editAnchorLabel(canvas, anchor);
+          return true;
+        });
+      }
+      return anchor;
+    }
     const node = createTextNode(canvas, { ...rect, focus: true });
     if (node && tool === 'text') {
       setExtra(node, FIELD_KIND, KIND_TEXT);
@@ -60,12 +73,9 @@ export function placeNode(canvas: CanvasLike, tool: PlaceTool, rect: PlacedRect)
  * delete a box the user is about to type in.
  */
 function removeWhenLeftEmpty(canvas: CanvasLike, node: CanvasNodeLike): void {
-  const attach = (tries: number): void => {
+  eachFrameUntil(() => {
     const el = node.nodeEl;
-    if (!el) {
-      if (tries > 0) window.requestAnimationFrame(() => attach(tries - 1));
-      return;
-    }
+    if (!el) return false;
     let armed = el.contains(el.doc.activeElement);
     el.addEventListener('focusin', () => { armed = true; });
     el.addEventListener('focusout', () => {
@@ -75,21 +85,18 @@ function removeWhenLeftEmpty(canvas: CanvasLike, node: CanvasNodeLike): void {
         if ((node.text ?? '').trim() === '') batch(canvas, () => removeNode(canvas, node));
       }, 80);
     });
-  };
-  attach(10);
+    return true;
+  });
 }
 
 /** A fresh group starts in label edit. Group nodes have no consistent startEditing, so focus the label. */
 export function beginLabelEdit(group: CanvasNodeLike): void {
-  const tryFocus = (tries: number): void => {
+  eachFrameUntil(() => {
     try { group.startEditing?.(); } catch { /* group may not expose startEditing */ }
     const label = group.nodeEl?.querySelector<HTMLElement>('.canvas-node-label');
-    if (label) {
-      label.focus();
-      label.win.getSelection()?.selectAllChildren(label);
-    } else if (tries > 0) {
-      window.requestAnimationFrame(() => tryFocus(tries - 1));
-    }
-  };
-  tryFocus(10);
+    if (!label) return false;
+    label.focus();
+    label.win.getSelection()?.selectAllChildren(label);
+    return true;
+  });
 }

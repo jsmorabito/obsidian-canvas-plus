@@ -104,7 +104,58 @@
   color: var(--canvas-color);
 }
 
+/* ── Anchor: a chrome-less text node showing an anchor icon, with its name in core's node label above ── */
 
+.canvas-node[data-ffc-kind="anchor"] .canvas-node-container {
+  position: relative;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.canvas-node[data-ffc-kind="anchor"]:hover .canvas-node-container,
+.canvas-node[data-ffc-kind="anchor"].is-selected .canvas-node-container,
+.canvas-node[data-ffc-kind="anchor"].is-focused .canvas-node-container {
+  border-color: var(--background-modifier-border);
+}
+
+.canvas-node[data-ffc-kind="anchor"].is-themed .canvas-node-container {
+  background: transparent;
+}
+
+/* The text is the label, shown above; the node itself only shows the icon. */
+.canvas-node[data-ffc-kind="anchor"] .canvas-node-content {
+  visibility: hidden;
+}
+
+/* Lucide's anchor icon, as a mask so it takes the accent colour (or the node's colour). It fills the node, so resizing scales it. */
+.canvas-node[data-ffc-kind="anchor"] .canvas-node-container::before {
+  content: '';
+  position: absolute;
+  inset: 15%;
+  background-color: var(--text-accent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22V8'/%3E%3Cpath d='M5 12H2a10 10 0 0 0 20 0h-3'/%3E%3Ccircle cx='12' cy='5' r='3'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22V8'/%3E%3Cpath d='M5 12H2a10 10 0 0 0 20 0h-3'/%3E%3Ccircle cx='12' cy='5' r='3'/%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+
+.canvas-node[data-ffc-kind="anchor"].is-themed .canvas-node-container::before {
+  background-color: var(--canvas-color);
+}
+
+/* Core's label is capped at the node's width; an anchor is just an icon wide, so let its name run on. */
+.canvas-node[data-ffc-kind="anchor"] .ffc-anchor-label {
+  max-width: none;
+}
+
+.canvas-node[data-ffc-kind="anchor"] .ffc-anchor-label.is-editing {
+  cursor: text;
+  text-overflow: initial;
+  outline: none;
+  border-radius: var(--radius-s);
+  background-color: var(--background-primary);
+  box-shadow: 0 0 0 2px var(--interactive-accent);
+}
 
 /* ── Ink: a stroke is a chrome-less text node holding an inline SVG ──────── */
 

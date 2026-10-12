@@ -24,3 +24,11 @@ export function resolveLinktext(app: App, raw: unknown, fromPath: string): TFile
   if (!path) return null;
   return app.metadataCache.getFirstLinkpathDest(path, fromPath);
 }
+
+/**
+ * Call `fn` now and then once per animation frame until it returns true, at most `tries` more times.
+ * For canvas elements that mount a frame or so after the node is created.
+ */
+export function eachFrameUntil(fn: () => boolean, tries = 10): void {
+  if (!fn() && tries > 0) window.requestAnimationFrame(() => eachFrameUntil(fn, tries - 1));
+}
