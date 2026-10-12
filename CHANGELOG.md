@@ -5,6 +5,28 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Links and groups can be renamed from the layers panel: hover the row and
+  select the pencil. A link gets a readable name in place of its URL; leave
+  it empty to show the URL again. Search still finds a renamed link by its
+  URL.
+
+### Changed
+
+- The layers panel uses Obsidian's own tree styles, as in the file explorer
+  and outline: hover, selection, indentation guides and the collapse triangle
+  now follow your theme.
+- Escape in a field you're typing in, such as the layers search box, now goes
+  to that field instead of switching a canvas tool back to Select.
+
+### Fixed
+
+- The arrow keys move the cursor while renaming an anchor, instead of
+  nudging the selected nodes on the canvas.
+
 ## [1.2.0]
 
 ### Added

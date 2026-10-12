@@ -674,11 +674,6 @@ svg.ffc-ink path.ffc-ink-auto {
   width: 100%;
 }
 
-/* A group shown only because something inside it matches. */
-.ffc-layer-row.is-dimmed {
-  color: var(--text-faint);
-}
-
 .ffc-layers-body {
   flex: 1;
   min-height: 0;
@@ -692,72 +687,14 @@ svg.ffc-ink path.ffc-ink-auto {
   color: var(--text-faint);
 }
 
-.ffc-layer-row {
-  display: flex;
-  align-items: center;
-  gap: var(--size-4-1);
-  padding: var(--size-2-2) var(--size-4-2);
-  padding-left: calc(var(--size-2-2) + var(--ffc-depth, 0) * var(--size-4-4));
-  border-radius: var(--radius-s);
-  font-size: var(--font-ui-small);
-  cursor: var(--cursor);
-}
-
-.ffc-layer-row:hover {
-  background: var(--background-modifier-hover);
-}
-
-.ffc-layer-row.is-selected {
-  background: var(--background-modifier-active-hover);
-}
-
-.ffc-layer-row.is-group {
-  font-weight: var(--font-semibold);
-}
-
 /*
- * Every row has the slot, so icons line up whether or not the row is a group that can collapse.
- * Colours and the turn come from core's collapse-icon variables, so themes style it like the file explorer.
- * The padding widens the hit area without moving the row's contents.
+ * Rows are core's tree items (tree-item-self, tree-item-inner, tree-item-flair-outer, tree-item-children,
+ * collapse-icon), so hover, selection, indentation guides, the collapse triangle and in-place rename all
+ * come from core and follow the theme. Only what core has no class for is set here.
  */
-.ffc-layer-toggle {
-  --icon-size: var(--icon-xs);
-  --ffc-toggle-pad: var(--size-2-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  box-sizing: content-box;
-  width: var(--icon-xs);
-  height: var(--icon-xs);
-  padding: var(--ffc-toggle-pad);
-  margin: calc(-1 * var(--ffc-toggle-pad));
-  border-radius: var(--radius-s);
-  color: var(--collapse-icon-color);
-}
-
-.is-mobile .ffc-layer-toggle {
-  --ffc-toggle-pad: var(--size-4-2);
-}
-
-.ffc-layer-toggle.collapse-icon:hover {
-  color: var(--icon-color-hover);
-}
-
-.ffc-layer-toggle:focus-visible {
-  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
-}
-
-.ffc-layer-toggle svg.svg-icon {
-  transition: transform 100ms ease-in-out;
-}
-
-.ffc-layer-row.is-collapsed .ffc-layer-toggle {
-  color: var(--collapse-icon-color-collapsed);
-}
-
-.ffc-layer-row.is-collapsed .ffc-layer-toggle svg.svg-icon {
-  transform: rotate(calc(var(--direction) * -1 * 90deg));
+/* A group shown only because something inside it matches. */
+.ffc-layer-row.is-dimmed {
+  color: var(--text-faint);
 }
 
 /* A collapsed group with the selection inside it. */
@@ -765,19 +702,61 @@ svg.ffc-ink path.ffc-ink-auto {
   color: var(--text-accent);
 }
 
+/* The kind of layer, beside its name. Core's left padding holds the collapse triangle. */
 .ffc-layer-icon {
   --icon-size: var(--icon-xs);
   display: flex;
   flex: none;
-  color: var(--text-muted);
+  align-self: center;
+  margin-inline-end: var(--size-4-1);
+  color: var(--icon-color);
+  opacity: var(--icon-opacity);
 }
 
-.ffc-layer-label {
+/* One line with an ellipsis, as core does for file names. */
+.tree-item-inner.ffc-layer-label {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* While renamed, the whole name scrolls with the caret instead of being cut off. Core draws the focus ring. */
+.ffc-layer-row.is-being-renamed .ffc-layer-label {
+  text-overflow: clip;
+  outline: none;
+}
+
+/* Core lines a row's items up on the text baseline; the type chip and pencil sit in the middle instead. */
+.ffc-layer-row .tree-item-flair-outer {
+  align-self: center;
+}
+
+/*
+ * Pencil on a group or link row: no width until the row is hovered or it has keyboard focus, so the name gets the
+ * full row. Not display: none, which would take it out of the tab order. The negative margin keeps the
+ * button's padding from making the row taller.
+ */
+.ffc-layer-rename {
+  --icon-size: var(--icon-xs);
+  width: 0;
+  padding: var(--size-2-1) 0;
+  margin: calc(-1 * var(--size-2-1)) 0;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.ffc-layer-row:hover .ffc-layer-rename,
+.ffc-layer-rename:focus-visible,
+.is-mobile .ffc-layer-rename {
+  width: auto;
+  padding-inline: var(--size-2-1);
+  opacity: 1;
+}
+
+.ffc-layer-row.is-being-renamed .ffc-layer-rename {
+  display: none;
 }
 
 .canvas-node.ffc-layer-hover .canvas-node-container {

@@ -13,7 +13,7 @@ Open a canvas and Obsidian's bottom menu becomes one bar: Select, then its own d
 Marker and highlighter strokes, with a pen color row (none plus the six canvas presets). The eraser removes whole strokes.
 
 **Layers panel**  
-A panel on the left lists groups, anchors and what they contain; select an anchor to jump to it. It has a search box and a filter by kind of layer or note type.
+A panel on the left lists groups, anchors and what they contain; select an anchor to jump to it. Hover a group or web link and select the pencil to rename it; a link's name shows in place of its URL. It has a search box and a filter by kind of layer or note type.
 
 **Minimap**  
 An overview of the whole canvas in the lower left, with a box for the part in view. Select or drag on it to move the view. Hide it with the button in its corner; it starts hidden on phones.

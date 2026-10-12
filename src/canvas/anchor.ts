@@ -1,4 +1,4 @@
-import { CanvasLike, CanvasNodeLike, afterMenuRender, batch, getExtra, patchData, selectedNodes } from './adapter.ts';
+import { CanvasLike, CanvasNodeLike, afterMenuRender, batch, editPlainText, getExtra, patchData, selectedNodes } from './adapter.ts';
 import { FIELD_KIND, KIND_ANCHOR } from './constants.ts';
 
 /** The label a new anchor starts with, selected so typing replaces it. */
@@ -71,8 +71,7 @@ export function editAnchorLabel(canvas: CanvasLike, node: CanvasNodeLike): void 
   if (label.isContentEditable) return;
   const before = anchorLabel(node);
   label.textContent = before;
-  // Plain text only: a paste brings no formatting, and pasted lines stay apart (they're joined with spaces below).
-  label.contentEditable = 'plaintext-only';
+  const stopEditing = editPlainText(label);
   label.addClass('is-editing');
   label.focus();
   label.win.getSelection()?.selectAllChildren(label);
@@ -83,7 +82,7 @@ export function editAnchorLabel(canvas: CanvasLike, node: CanvasNodeLike): void 
     done = true;
     label.removeEventListener('keydown', onKey);
     label.removeEventListener('blur', onBlur);
-    label.contentEditable = 'false';
+    stopEditing();
     label.removeClass('is-editing');
     label.win.getSelection()?.removeAllRanges();
     const after = (label.textContent ?? '').replace(/\s+/g, ' ').trim();

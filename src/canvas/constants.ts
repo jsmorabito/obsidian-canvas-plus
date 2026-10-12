@@ -40,3 +40,6 @@ export const ERASER_RADIUS_PX = 8;
 
 /** Extension field on a file node in the styled link view: the size to go back to when it leaves that view. */
 export const FIELD_CARD_SIZE = 'ffcCardSize';
+
+/** Extension field on a `link` node: a readable name shown in the layers panel instead of the URL. */
+export const FIELD_LINK_NAME = 'ffcLinkName';

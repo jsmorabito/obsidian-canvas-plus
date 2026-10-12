@@ -44,7 +44,8 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
       if (!active || e.defaultPrevented || e.isComposing) return;
       if (plugin.app.workspace.getActiveViewOfType(ItemView) !== active.view) return;
       if (e.key === 'Escape') {
-        if (active.escape()) e.stopPropagation();
+        // A field being typed in, like a search box or a name being edited, gets Escape for itself.
+        if (!isTypingTarget(e.target) && active.escape()) e.stopPropagation();
         return;
       }
       if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target)) return;

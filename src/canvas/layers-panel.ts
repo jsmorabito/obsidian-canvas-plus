@@ -1,6 +1,7 @@
 import { DropdownComponent, SearchComponent, prepareSimpleSearch, setIcon } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
-import { CanvasLike, CanvasViewLike, focusNode, shieldFromCanvas } from './adapter.ts';
+import { CanvasLike, CanvasNodeLike, CanvasViewLike, batch, editPlainText, focusNode, getExtra, patchData, shieldFromCanvas } from './adapter.ts';
+import { FIELD_LINK_NAME } from './constants.ts';
 import { createShowButton, loadOpen, saveOpen } from './floating-panel.ts';
 import {
   ALL_LAYERS, FilterOption, Layer, LayerKind, buildLayers, filterLayers, filterOptions, firstMatch, matchesFilter, searchText, someLayer, walk,
@@ -16,11 +17,41 @@ const ICONS: Record<LayerKind, string> = {
   group: 'frame', anchor: 'anchor', note: 'file-text', text: 'type', card: 'sticky-note', image: 'image', file: 'file', link: 'link', ink: 'pencil',
 };
 
+/** How a kind of layer is renamed from the list: the text to start editing from, and the data to save. */
+interface Rename {
+  tooltip: string;
+  read(node: CanvasNodeLike): string;
+  patch(node: CanvasNodeLike, text: string): Record<string, unknown>;
+}
+
+const RENAMES: Partial<Record<LayerKind, Rename>> = {
+  // Empty leaves the group without a label, as clearing it on the canvas does.
+  group: {
+    tooltip: 'Rename group',
+    read: (node) => { const label = node.getData?.()?.label; return typeof label === 'string' ? label.trim() : ''; },
+    patch: (_node, text) => ({ label: text || undefined }),
+  },
+  // A link starts from its name, or its URL if it has none. Empty, or the URL itself, shows the URL again.
+  link: {
+    tooltip: 'Rename link',
+    read: (node) => {
+      const name = getExtra(node, FIELD_LINK_NAME);
+      return typeof name === 'string' && name.trim() ? name.trim() : linkUrl(node);
+    },
+    patch: (node, text) => ({ [FIELD_LINK_NAME]: text && text !== linkUrl(node) ? text : undefined }),
+  },
+};
+
+function linkUrl(node: CanvasNodeLike): string {
+  const url = node.getData?.()?.url;
+  return typeof url === 'string' ? url : '';
+}
+
 /**
  * Floating panel on the left listing groups and what they
  * contain. Click to select and zoom to an item, Shift-click to add it to
  * the selection, as on the canvas itself, hover to outline it on the canvas, double-click a group or anchor to
- * rename it, select its triangle to collapse it. A search box and a filter narrow the list, and show
+ * rename it, select the pencil on a group or link to rename it in the list, select its triangle to collapse it. A search box and a filter narrow the list, and show
  * every result even inside a collapsed group. Whether it's open is a per-viewer preference.
  */
 export class LayersPanel {
@@ -42,6 +73,8 @@ export class LayersPanel {
   private collapsed = new Set<string>();
   /** Whether the canvas had no layers at the last update, for the empty message. */
   private emptyCanvas = false;
+  /** Whether a link's name is being edited in the list, so a redraw doesn't throw the input away. */
+  private renaming = false;
 
   constructor(private plugin: CanvasPlusPlugin, private view: CanvasViewLike) {
     this.open = loadOpen(plugin.app, OPEN_KEY);
@@ -156,7 +189,7 @@ export class LayersPanel {
     const visible = this.visible;
     const selection = canvas.selection ?? new Set<object>();
     const signature = JSON.stringify([this.query, this.filter, [...this.collapsed], this.flatten(visible, selection)]);
-    if (signature === this.shown) return;
+    if (signature === this.shown || this.renaming) return;
     this.shown = signature;
     this.clearHover();
     this.bodyEl.empty();
@@ -164,7 +197,7 @@ export class LayersPanel {
       this.bodyEl.createDiv({ cls: 'ffc-layers-empty', text: this.emptyCanvas ? 'Nothing on the canvas yet.' : 'No matching layers.' });
       return;
     }
-    this.renderList(canvas, visible, 0, selection);
+    this.renderList(canvas, this.bodyEl, visible, selection);
   }
 
   private flatten(layers: Layer[], selection: Set<object>): unknown[] {
@@ -179,26 +212,33 @@ export class LayersPanel {
     for (const id of this.collapsed) if (!ids.has(id)) this.collapsed.delete(id);
   }
 
-  private renderList(canvas: CanvasLike, layers: Layer[], depth: number, selection: Set<object>): void {
+  /** Core's tree markup and classes, as in the file explorer and outline, so themes style the list like those. */
+  private renderList(canvas: CanvasLike, parent: HTMLElement, layers: Layer[], selection: Set<object>): void {
     for (const layer of layers) {
-      const row = this.bodyEl.createDiv({ cls: 'ffc-layer-row' });
-      row.setCssProps({ '--ffc-depth': String(depth) });
+      const item = parent.createDiv({ cls: 'tree-item' });
+      const row = item.createDiv({ cls: 'tree-item-self is-clickable ffc-layer-row' });
       row.toggleClass('is-selected', selection.has(layer.node));
-      row.toggleClass('is-group', layer.kind === 'group');
       row.toggleClass('is-dimmed', !!layer.dimmed);
       // Search and filter always show every result, so groups only collapse when neither is active.
       const id = layer.kind === 'group' && layer.children.length > 0 && !this.filtering ? layer.node.id : undefined;
       const collapsed = !!id && this.collapsed.has(id);
+      row.toggleClass('mod-collapsible', !!id);
       row.toggleClass('is-collapsed', collapsed);
       // A collapsed group hides its contents, so it says when the selection is inside.
       row.toggleClass('has-selection', collapsed && someLayer(layer.children, (l) => selection.has(l.node)));
-      const toggle = row.createDiv({ cls: 'ffc-layer-toggle' });
+      const toggle = id ? row.createDiv({ cls: 'tree-item-icon collapse-icon' }) : null;
       setIcon(row.createSpan({ cls: 'ffc-layer-icon' }), ICONS[layer.kind]);
-      const label = row.createSpan({ cls: 'ffc-layer-label', text: layer.label });
-      if (layer.type) row.createSpan({ cls: 'ffc-note-chip', text: layer.type });
-      if (id) this.makeToggle(toggle, label, id, collapsed);
+      const label = row.createDiv({ cls: 'tree-item-inner ffc-layer-label', text: layer.label });
+      const rename = RENAMES[layer.kind];
+      if (layer.type || rename) {
+        const flair = row.createDiv({ cls: 'tree-item-flair-outer' });
+        if (layer.type) flair.createSpan({ cls: 'ffc-note-chip', text: layer.type });
+        if (rename) this.makeRename(canvas, flair, row, label, layer.node, rename);
+      }
+      if (toggle && id) this.makeToggle(toggle, label, id, collapsed);
 
       row.addEventListener('click', (e) => {
+        if (row.hasClass('is-being-renamed')) return;
         if (e.shiftKey) canvas.toggleSelect?.(layer.node);
         else focusNode(canvas, layer.node);
       });
@@ -210,7 +250,9 @@ export class LayersPanel {
       });
       row.addEventListener('mouseenter', () => layer.node.nodeEl?.addClass(HOVER_CLASS));
       row.addEventListener('mouseleave', () => layer.node.nodeEl?.removeClass(HOVER_CLASS));
-      if (!collapsed) this.renderList(canvas, layer.children, depth + 1, selection);
+      if (!collapsed && layer.children.length > 0) {
+        this.renderList(canvas, item.createDiv({ cls: 'tree-item-children' }), layer.children, selection);
+      }
     }
   }
 
@@ -219,8 +261,8 @@ export class LayersPanel {
    * group's label rather than an aria-label, so hovering it doesn't pop a tooltip.
    */
   private makeToggle(toggle: HTMLElement, label: HTMLElement, id: string, collapsed: boolean): void {
-    toggle.addClass('collapse-icon');
     setIcon(toggle, 'right-triangle');
+    toggle.toggleClass('is-collapsed', collapsed);
     label.id = `ffc-layer-label-${nextLabelId++}`;
     toggle.setAttrs({ role: 'button', tabindex: '0', 'aria-expanded': String(!collapsed), 'aria-labelledby': label.id });
     toggle.addEventListener('click', (e) => {
@@ -237,6 +279,58 @@ export class LayersPanel {
       this.bodyEl.querySelector<HTMLElement>(`[data-group-id="${CSS.escape(id)}"]`)?.focus();
     });
     toggle.dataset.groupId = id;
+  }
+
+  /** A pencil, shown on hover, that turns a layer's label into a field to name it. */
+  private makeRename(canvas: CanvasLike, flair: HTMLElement, row: HTMLElement, label: HTMLElement, node: CanvasNodeLike, rename: Rename): void {
+    const btn = flair.createEl('button', {
+      cls: 'clickable-icon ffc-layer-rename',
+      attr: { 'aria-label': rename.tooltip, 'data-tooltip-position': 'right' },
+    });
+    setIcon(btn, 'pencil');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.beginRename(canvas, row, label, node, rename);
+    });
+    btn.addEventListener('dblclick', (e) => e.stopPropagation());
+  }
+
+  /**
+   * Rename in place, as core's file explorer does: the label itself becomes editable, so the row keeps its
+   * size. Enter or leaving it saves, Escape cancels.
+   */
+  private beginRename(canvas: CanvasLike, row: HTMLElement, label: HTMLElement, node: CanvasNodeLike, rename: Rename): void {
+    if (this.renaming) return;
+    this.renaming = true;
+    const before = rename.read(node);
+    label.textContent = before;
+    // The list is redrawn when the rename ends, which throws the editable label away.
+    editPlainText(label);
+    row.addClass('is-being-renamed');
+    label.focus();
+    label.win.getSelection()?.selectAllChildren(label);
+
+    let done = false;
+    const finish = (save: boolean): void => {
+      if (done) return;
+      done = true;
+      this.renaming = false;
+      label.win.getSelection()?.removeAllRanges();
+      const after = (label.textContent ?? '').replace(/\s+/g, ' ').trim();
+      if (save && after !== before) batch(canvas, () => patchData(node, rename.patch(node, after)));
+      // Force a redraw even if nothing changed, to put the label back.
+      this.shown = '';
+      this.update();
+    };
+    label.addEventListener('keydown', (e) => {
+      // Keep keys away from the canvas (Delete would remove the selection) and the tool shortcuts.
+      e.stopPropagation();
+      if (e.isComposing) return;
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    });
+    // Switching to another window blurs the label too; focus comes back to it on return, so keep editing.
+    label.addEventListener('blur', () => { if (label.doc.hasFocus()) finish(true); });
   }
 
   private toggleCollapsed(id: string): void {

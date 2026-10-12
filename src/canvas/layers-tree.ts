@@ -1,6 +1,6 @@
 import type { CanvasPlusPlugin } from '../main.ts';
-import { Box, CanvasLike, CanvasNodeLike, nodeBox } from './adapter.ts';
-import { FIELD_KIND, KIND_TEXT } from './constants.ts';
+import { Box, CanvasLike, CanvasNodeLike, getExtra, nodeBox } from './adapter.ts';
+import { FIELD_KIND, FIELD_LINK_NAME, KIND_TEXT } from './constants.ts';
 import { readInk } from './ink-nodes.ts';
 import { anchorLabel, isAnchor } from './anchor.ts';
 import { noteRefFor } from './relation-logic.ts';
@@ -13,6 +13,8 @@ export interface Layer {
   label: string;
   /** Note type name, for note cards. */
   type?: string;
+  /** The URL, for web links. */
+  url?: string;
   box: Box;
   children: Layer[];
   /** Set by filtering: this group doesn't match, and is only shown because something inside it does. */
@@ -33,7 +35,7 @@ export function firstLine(text: string): string {
     .trim();
 }
 
-function describe(plugin: CanvasPlusPlugin, node: CanvasNodeLike): Pick<Layer, 'kind' | 'label' | 'type'> {
+function describe(plugin: CanvasPlusPlugin, node: CanvasNodeLike): Pick<Layer, 'kind' | 'label' | 'type' | 'url'> {
   const ink = readInk(node);
   if (ink) return { kind: 'ink', label: ink.tool === 'highlighter' ? 'Highlight' : 'Drawing' };
   const data = node.getData?.() ?? {};
@@ -48,8 +50,11 @@ function describe(plugin: CanvasPlusPlugin, node: CanvasNodeLike): Pick<Layer, '
       const ext = name.split('.').pop()?.toLowerCase() ?? '';
       return { kind: IMAGE_EXT.has(ext) ? 'image' : 'file', label: name || 'File' };
     }
-    case 'link':
-      return { kind: 'link', label: typeof data.url === 'string' && data.url ? data.url : 'Link' };
+    case 'link': {
+      const url = typeof data.url === 'string' ? data.url : '';
+      const name = getExtra(node, FIELD_LINK_NAME, data);
+      return { kind: 'link', label: typeof name === 'string' && name.trim() ? name.trim() : url || 'Link', url };
+    }
     default: {
       if (isAnchor(node)) return { kind: 'anchor', label: anchorLabel(node) || 'Untitled anchor' };
       const free = data[FIELD_KIND] === KIND_TEXT;
@@ -160,9 +165,9 @@ export function matchesFilter(layer: Layer, filter: string): boolean {
   return true;
 }
 
-/** The text a search looks at: the layer's name and, for a note, its type. */
+/** The text a search looks at: the layer's name and, for a note, its type, or for a link, its URL. */
 export function searchText(layer: Layer): string {
-  return layer.type ? `${layer.label} ${layer.type}` : layer.label;
+  return [layer.label, layer.type, layer.url !== layer.label ? layer.url : undefined].filter(Boolean).join(' ');
 }
 
 /**

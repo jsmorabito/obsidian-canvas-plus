@@ -411,3 +411,26 @@ export function isNode(target: EventTarget | null | undefined): target is Node {
 export function shieldFromCanvas(el: HTMLElement): void {
   for (const type of ['pointerdown', 'wheel'] as const) el.addEventListener(type, (e) => e.stopPropagation());
 }
+
+/**
+ * Make `el` editable as one line of plain text, and return a function that ends it. Core only treats
+ * `contentEditable === 'true'` as typing (not `plaintext-only`), so anything else lets the canvas take the
+ * arrow keys to nudge the selection. With `true`, a paste would bring formatting, so it is pasted as text.
+ */
+export function editPlainText(el: HTMLElement): () => void {
+  const onPaste = (e: ClipboardEvent): void => {
+    e.preventDefault();
+    const text = (e.clipboardData?.getData('text/plain') ?? '').replace(/\s+/g, ' ');
+    const range = el.win.getSelection()?.getRangeAt(0);
+    if (!range) return;
+    range.deleteContents();
+    range.insertNode(el.doc.createTextNode(text));
+    range.collapse(false);
+  };
+  el.contentEditable = 'true';
+  el.addEventListener('paste', onPaste);
+  return () => {
+    el.removeEventListener('paste', onPaste);
+    el.contentEditable = 'false';
+  };
+}
