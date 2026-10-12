@@ -75,6 +75,12 @@ export interface CanvasLike {
   selectOnly?: (node: CanvasNodeLike) => void;
   toggleSelect?: (node: CanvasNodeLike) => void;
   zoomToBbox?: (bbox: { minX: number; minY: number; maxX: number; maxY: number }) => void;
+  /** Centre the view on a canvas point, at once, keeping the zoom. */
+  panTo?: (x: number, y: number) => void;
+  /** Core asks for its next frame through this whenever the view pans or zooms, or a node moves or changes. */
+  requestFrame?: (...args: unknown[]) => void;
+  /** The animation frame core has asked for and not yet run, or 0. */
+  frame?: number;
   getViewportBBox?: () => { minX: number; minY: number; maxX: number; maxY: number };
   /** `false` saves without recording an undo step. */
   requestSave?: (pushHistory?: boolean) => void;
@@ -121,8 +127,9 @@ export function toCanvasPoint(
   return canvas.posFromEvt ? canvas.posFromEvt(evt) : null;
 }
 
-export function getExtra(node: CanvasNodeLike, key: string): unknown {
-  return node.getData?.()[key] ?? node.unknownData?.[key];
+/** `data` is the node's `getData()`, when the caller has already read it. */
+export function getExtra(node: CanvasNodeLike, key: string, data = node.getData?.()): unknown {
+  return data?.[key] ?? node.unknownData?.[key];
 }
 
 /** Merge fields into a node's data. Fields Obsidian doesn't know about are kept in `unknownData` by `setData`. */
@@ -190,23 +197,40 @@ export function nodeBox(node: CanvasNodeLike): Box | null {
     : { x, y, width, height };
 }
 
+/** Screen pixels of the canvas's left and bottom edges that floating panels cover. */
+export interface Insets { left: number; bottom: number }
+
+const insetSources = new WeakMap<CanvasLike, () => Insets>();
+
+/** Say what the floating panels on a canvas cover, for `focusNode`; null when they're gone. */
+export function setInsets(canvas: CanvasLike, source: (() => Insets) | null): void {
+  if (source) insetSources.set(canvas, source);
+  else insetSources.delete(canvas);
+}
+
 /**
- * Select `node` and zoom the view onto it. `insetLeftPx` keeps the node clear
- * of a floating panel on the left: the box is padded on that side, by an
- * amount worked out from the zoom Obsidian will pick (it fits a box with 10% margin, max zoom 1).
+ * Select `node` and zoom the view onto it, clear of the floating panels set with `setInsets`: the box is
+ * padded on the left and bottom, by amounts worked out from the zoom Obsidian will pick (it fits a box
+ * with 10% margin, max zoom 1).
  */
-export function focusNode(canvas: CanvasLike, node: CanvasNodeLike, insetLeftPx = 0): void {
+export function focusNode(canvas: CanvasLike, node: CanvasNodeLike): void {
   const box = nodeBox(node);
   canvas.deselectAll?.();
   canvas.selectOnly?.(node);
   if (!box) return;
+  const insets = insetSources.get(canvas)?.() ?? { left: 0, bottom: 0 };
   const rect = canvas.wrapperEl.getBoundingClientRect();
-  const fitZoom = (w: number): number => Math.min(1, rect.width / (1.1 * w), rect.height / (1.1 * box.height));
-  let pad = 0;
-  if (insetLeftPx > 0 && rect.width > 0 && rect.height > 0) {
-    for (let i = 0; i < 3; i++) pad = insetLeftPx / fitZoom(box.width + pad);
+  const fitZoom = (w: number, h: number): number => Math.min(1, rect.width / (1.1 * w), rect.height / (1.1 * h));
+  let padX = 0;
+  let padY = 0;
+  if ((insets.left > 0 || insets.bottom > 0) && rect.width > 0 && rect.height > 0) {
+    for (let i = 0; i < 3; i++) {
+      const zoom = fitZoom(box.width + padX, box.height + padY);
+      padX = insets.left / zoom;
+      padY = insets.bottom / zoom;
+    }
   }
-  canvas.zoomToBbox?.({ minX: box.x - pad, minY: box.y, maxX: box.x + box.width, maxY: box.y + box.height });
+  canvas.zoomToBbox?.({ minX: box.x - padX, minY: box.y, maxX: box.x + box.width, maxY: box.y + box.height + padY });
 }
 
 /** Centre of what the user is looking at, in canvas coordinates. */
@@ -298,6 +322,40 @@ export function afterMenuRender(canvas: CanvasLike, after: (containerEl: HTMLEle
     // Another plugin may have wrapped render since: then ours stays in its chain, but does nothing more.
     active = false;
     if (menu.render === patched) menu.render = original;
+  };
+}
+
+/**
+ * Call `after` once core has drawn a frame: when the view pans or zooms, or anything on the canvas moves or
+ * changes. Each frame core asks for gets one of ours, asked for just after it in the same window, so `after`
+ * runs once that frame is drawn. A request made while core's frame is already pending shares it. Returns a
+ * function that puts the original back.
+ */
+export function afterCanvasFrame(canvas: CanvasLike, after: () => void): () => void {
+  const original = canvas.requestFrame;
+  if (!original) return () => { /* nothing to restore */ };
+  const own = Object.prototype.hasOwnProperty.call(canvas, 'requestFrame');
+  let active = true;
+  /** The core frame ours follows. Core asks for its next frame from inside the current one, while ours for the current one is still pending. */
+  let paired: number | null = null;
+  const patched = function (this: unknown, ...args: unknown[]): void {
+    original.apply(this, args);
+    // Without core's frame handle, one of ours per request still catches every change.
+    const frame = canvas.frame ?? NaN;
+    if (!active || frame === 0 || frame === paired) return;
+    paired = frame;
+    canvas.wrapperEl.win.requestAnimationFrame(() => {
+      if (paired === frame) paired = null;
+      if (active) after();
+    });
+  };
+  canvas.requestFrame = patched;
+  return () => {
+    // As with afterMenuRender: if another plugin has wrapped it since, ours stays in the chain but does nothing.
+    active = false;
+    if (canvas.requestFrame !== patched) return;
+    if (own) canvas.requestFrame = original;
+    else Reflect.deleteProperty(canvas, 'requestFrame');
   };
 }
 

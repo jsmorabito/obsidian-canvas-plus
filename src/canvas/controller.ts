@@ -1,9 +1,12 @@
 import type { CanvasPlusPlugin } from '../main.ts';
 import { Component, Notice } from 'obsidian';
-import { CanvasLike, CanvasNodeLike, CanvasViewLike, getExtra, isElement, isNode, patchData, selectedNodes, toCanvasPoint, watchSelection } from './adapter.ts';
+import {
+  CanvasLike, CanvasNodeLike, CanvasViewLike, getExtra, isElement, isNode, patchData, selectedNodes, setInsets, toCanvasPoint, watchSelection,
+} from './adapter.ts';
 import { ContextPanel } from './context-panel.ts';
 import { attachUndoJournal } from './undo-journal.ts';
 import { LayersPanel } from './layers-panel.ts';
+import { Minimap } from './minimap.ts';
 import { CLICK_SLOP_PX, FIELD_KIND, INK_FALLBACK_HEX, SIZE_NOTE_CARD } from './constants.ts';
 import { clearNoteCards, decorateNoteCards, fitNodeToCard, noteOfNode, setCardOwner, toggleViews } from './note-card.ts';
 import { injectViewToggleButton } from './view-toggle.ts';
@@ -45,6 +48,7 @@ export class CanvasController {
   private relations: RelationFlow;
   private panel: ContextPanel;
   private layers: LayersPanel;
+  private minimap: Minimap;
   private ink: InkTools;
   /** Owns the markdown renderers behind styled link nodes. */
   private component = new Component();
@@ -57,6 +61,13 @@ export class CanvasController {
     this.relations = new RelationFlow(plugin, view);
     this.panel = new ContextPanel(plugin, view);
     this.layers = new LayersPanel(plugin, view);
+    this.minimap = new Minimap(plugin, view);
+    // The layers panel covers the left edge. The minimap covers the lower-left corner, which matters only where it reaches past the panel.
+    setInsets(view.canvas!, () => {
+      const left = this.layers.insetPx;
+      const corner = this.minimap.cornerPx;
+      return { left, bottom: corner.width > left ? corner.height : 0 };
+    });
     this.ink = new InkTools(view);
     this.cleanups.push(attachUndoJournal(view.canvas!, plugin.app));
     this.cleanups.push(keepMenuClearOfLabels(view.canvas!));
@@ -185,6 +196,7 @@ export class CanvasController {
     this.relations.destroy();
     this.panel.destroy();
     this.layers.destroy();
+    this.minimap.destroy();
     for (const fn of this.cleanups) fn();
     this.cleanups = [];
     this.toolbar?.destroy();
@@ -195,6 +207,7 @@ export class CanvasController {
       if (Object.prototype.hasOwnProperty.call(node, 'startEditing')) Reflect.deleteProperty(node, 'startEditing');
     }
     if (this.view.canvas) {
+      setInsets(this.view.canvas, null);
       clearNoteCards(this.view.canvas);
       setCardOwner(this.view.canvas, null);
     }

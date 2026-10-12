@@ -1,6 +1,7 @@
 import { DropdownComponent, SearchComponent, prepareSimpleSearch, setIcon } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasViewLike, focusNode, shieldFromCanvas } from './adapter.ts';
+import { createShowButton, loadOpen, saveOpen } from './floating-panel.ts';
 import {
   ALL_LAYERS, FilterOption, Layer, LayerKind, buildLayers, filterLayers, filterOptions, firstMatch, matchesFilter, searchText, someLayer, walk,
 } from './layers-tree.ts';
@@ -43,21 +44,14 @@ export class LayersPanel {
   private emptyCanvas = false;
 
   constructor(private plugin: CanvasPlusPlugin, private view: CanvasViewLike) {
-    this.open = plugin.app.loadLocalStorage(OPEN_KEY) !== 'closed';
+    this.open = loadOpen(plugin.app, OPEN_KEY);
     this.el = view.contentEl.createDiv({ cls: 'ffc-layers-panel' });
     const header = this.el.createDiv({ cls: 'ffc-layers-header' });
     header.createSpan({ text: 'Layers', cls: 'ffc-layers-title' });
     const hide = header.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': 'Hide layers' } });
     setIcon(hide, 'chevrons-left');
     hide.addEventListener('click', () => this.setOpen(false));
-    this.showBtn = view.contentEl.createDiv({ cls: 'canvas-control-group ffc-layers-show' });
-    const item = this.showBtn.createDiv({
-      cls: 'canvas-control-item',
-      attr: { 'aria-label': 'Show layers', 'data-tooltip-position': 'right' },
-    });
-    setIcon(item, 'layers');
-    item.addEventListener('click', () => this.setOpen(true));
-    shieldFromCanvas(this.showBtn);
+    this.showBtn = createShowButton(view.contentEl, 'ffc-layers-show', 'layers', 'Show layers', () => this.setOpen(true));
 
     // Obsidian's own search box and dropdown, so they look and behave like the rest of the app.
     const tools = this.el.createDiv({ cls: 'ffc-layers-filters' });
@@ -89,7 +83,7 @@ export class LayersPanel {
 
   private setOpen(open: boolean): void {
     this.open = open;
-    this.plugin.app.saveLocalStorage(OPEN_KEY, open ? 'open' : 'closed');
+    saveOpen(this.plugin.app, OPEN_KEY, open);
     this.applyOpen();
   }
 
@@ -130,7 +124,7 @@ export class LayersPanel {
       const canvas = this.canvas;
       if (first && canvas) {
         e.preventDefault();
-        focusNode(canvas, first.node, this.insetPx);
+        focusNode(canvas, first.node);
       }
     } else if (e.key === 'Escape') {
       if (this.query !== '') {
@@ -206,11 +200,11 @@ export class LayersPanel {
 
       row.addEventListener('click', (e) => {
         if (e.shiftKey) canvas.toggleSelect?.(layer.node);
-        else focusNode(canvas, layer.node, this.insetPx);
+        else focusNode(canvas, layer.node);
       });
       row.addEventListener('dblclick', () => {
         if (layer.kind !== 'group' && layer.kind !== 'anchor') return;
-        focusNode(canvas, layer.node, this.insetPx);
+        focusNode(canvas, layer.node);
         if (layer.kind === 'group') beginLabelEdit(layer.node);
         else layer.node.startEditing?.();
       });

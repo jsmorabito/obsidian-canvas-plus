@@ -13,7 +13,9 @@ const MENU_EDGE_PX = 10;
 /** The `startEditing` overrides `syncAnchor` installed, so `clearAnchor` only removes its own. */
 const renames = new WeakSet<() => void>();
 
-export const isAnchor = (node: CanvasNodeLike): boolean => getExtra(node, FIELD_KIND) === KIND_ANCHOR;
+/** `data` is the node's `getData()`, when the caller has already read it. */
+export const isAnchor = (node: CanvasNodeLike, data?: Record<string, unknown>): boolean =>
+  getExtra(node, FIELD_KIND, data) === KIND_ANCHOR;
 
 /** The anchor's name: its text, on one line. */
 export function anchorLabel(node: CanvasNodeLike): string {
@@ -114,7 +116,7 @@ export function keepMenuClearOfLabels(canvas: CanvasLike): () => void {
     const size = canvas.selection?.size ?? 0;
     if (size === 0) return;
     if (rebuilt || size !== anchorsFor) {
-      anchors = selectedNodes(canvas).filter(isAnchor);
+      anchors = selectedNodes(canvas).filter((n) => isAnchor(n));
       anchorsFor = size;
     }
     if (anchors.length === 0) return;

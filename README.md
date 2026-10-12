@@ -15,6 +15,9 @@ Marker and highlighter strokes, with a pen color row (none plus the six canvas p
 **Layers panel**  
 A panel on the left lists groups, anchors and what they contain; select an anchor to jump to it. It has a search box and a filter by kind of layer or note type.
 
+**Minimap**  
+An overview of the whole canvas in the lower left, with a box for the part in view. Select or drag on it to move the view. Hide it with the button in its corner; it starts hidden on phones.
+
 **With Note Types**  
 These need the Note Types plugin enabled. Without it, the rest of Canvas Plus works as usual.
 

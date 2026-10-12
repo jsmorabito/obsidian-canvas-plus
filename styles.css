@@ -628,7 +628,14 @@ svg.ffc-ink path.ffc-ink-auto {
   display: flex;
   flex-direction: column;
   width: 14em;
-  max-height: calc(100% - var(--size-4-4));
+  /*
+   * Stops above the minimap, or above its button while it's closed. On a pane too short for both, it keeps
+   * a usable height and overlaps the corner instead of shrinking away.
+   */
+  max-height: max(
+    min(12em, 100% - var(--size-4-4)),
+    100% - var(--size-4-4) - var(--ffc-minimap-reserve) - var(--size-4-2)
+  );
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
@@ -776,3 +783,77 @@ svg.ffc-ink path.ffc-ink-auto {
 .canvas-node.ffc-layer-hover .canvas-node-container {
   outline: 2px solid var(--interactive-accent);
 }
+
+/* ── Minimap ─────────────────────────────────────────────────────────────── */
+
+.workspace-leaf-content[data-type="canvas"] {
+  --ffc-minimap-width: 200px;
+  --ffc-minimap-height: 140px;
+  /* The show button while the minimap is closed: core's control item (an icon, its padding and border) in its group's border. */
+  --ffc-minimap-reserve: calc(var(--icon-s) + 2 * var(--size-4-2) + 3px);
+}
+
+.is-phone .workspace-leaf-content[data-type="canvas"] {
+  --ffc-minimap-width: 140px;
+  --ffc-minimap-height: 100px;
+}
+
+.ffc-minimap {
+  position: absolute;
+  bottom: var(--size-4-2);
+  left: var(--size-4-2);
+  z-index: var(--layer-cover);
+  width: var(--ffc-minimap-width);
+  height: var(--ffc-minimap-height);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+  overflow: hidden;
+}
+
+.ffc-minimap-map {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.ffc-minimap-map.is-dragging {
+  cursor: grabbing;
+}
+
+/* Only there to resolve theme colours for drawing. */
+.ffc-minimap-probe {
+  display: none;
+}
+
+/* Out of the way until the minimap is hovered; always there on touch, where nothing hovers. */
+.ffc-minimap-hide {
+  --icon-size: var(--icon-xs);
+  position: absolute;
+  top: var(--size-2-1);
+  right: var(--size-2-1);
+  background: var(--background-primary);
+  opacity: 0;
+}
+
+.ffc-minimap:hover .ffc-minimap-hide,
+.ffc-minimap-hide:focus-visible,
+.is-mobile .ffc-minimap-hide {
+  opacity: 1;
+}
+
+/* The collapsed state is core's own control group, like the layers button above it. */
+.ffc-minimap-show {
+  position: absolute;
+  bottom: var(--size-4-2);
+  left: var(--size-4-2);
+  z-index: var(--layer-cover);
+}
+
+.ffc-minimap-open {
+  --ffc-minimap-reserve: var(--ffc-minimap-height);
+}
+

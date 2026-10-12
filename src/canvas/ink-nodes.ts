@@ -21,10 +21,11 @@ function validate(v: Partial<InkData>): InkData | null {
 /**
  * The stroke a node holds, or null for any other node. A malformed
  * stroke field (hand-edited, or from another exporter) counts as not ink, so
- * it can't throw in the sweep, the eraser or the layers panel.
+ * it can't throw in the sweep, the eraser or the layers panel. `data` is the node's `getData()`, when the
+ * caller has already read it.
  */
-export function readInk(node: CanvasNodeLike): InkData | null {
-  const v = getExtra(node, FIELD_INK);
+export function readInk(node: CanvasNodeLike, data?: Record<string, unknown>): InkData | null {
+  const v = getExtra(node, FIELD_INK, data);
   if (!v || typeof v !== 'object') return null;
   if (!verdicts.has(v)) verdicts.set(v, validate(v));
   return verdicts.get(v) ?? null;
