@@ -118,11 +118,16 @@ const KIND_ORDER: Array<{ kind: LayerKind; label: string }> = [
   { kind: 'ink', label: 'Drawings' },
 ];
 
-function walk(layers: Layer[], visit: (layer: Layer) => void): void {
+export function walk(layers: Layer[], visit: (layer: Layer) => void): void {
   for (const layer of layers) {
     visit(layer);
     walk(layer.children, visit);
   }
+}
+
+/** Whether any layer in `layers`, at any depth, passes `test`. */
+export function someLayer(layers: Layer[], test: (layer: Layer) => boolean): boolean {
+  return layers.some((l) => test(l) || someLayer(l.children, test));
 }
 
 /** The filters worth offering: only the kinds of layer and the note types that are actually on the canvas. */

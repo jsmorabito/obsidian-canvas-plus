@@ -639,7 +639,7 @@ svg.ffc-ink path.ffc-ink-auto {
   align-items: center;
   gap: var(--size-4-1);
   padding: var(--size-2-2) var(--size-4-2);
-  padding-left: calc(var(--size-4-2) + var(--ffc-depth, 0) * var(--size-4-4));
+  padding-left: calc(var(--size-2-2) + var(--ffc-depth, 0) * var(--size-4-4));
   border-radius: var(--radius-s);
   font-size: var(--font-ui-small);
   cursor: var(--cursor);
@@ -655,6 +655,56 @@ svg.ffc-ink path.ffc-ink-auto {
 
 .ffc-layer-row.is-group {
   font-weight: var(--font-semibold);
+}
+
+/*
+ * Every row has the slot, so icons line up whether or not the row is a group that can collapse.
+ * Colours and the turn come from core's collapse-icon variables, so themes style it like the file explorer.
+ * The padding widens the hit area without moving the row's contents.
+ */
+.ffc-layer-toggle {
+  --icon-size: var(--icon-xs);
+  --ffc-toggle-pad: var(--size-2-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-sizing: content-box;
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+  padding: var(--ffc-toggle-pad);
+  margin: calc(-1 * var(--ffc-toggle-pad));
+  border-radius: var(--radius-s);
+  color: var(--collapse-icon-color);
+}
+
+.is-mobile .ffc-layer-toggle {
+  --ffc-toggle-pad: var(--size-4-2);
+}
+
+.ffc-layer-toggle.collapse-icon:hover {
+  color: var(--icon-color-hover);
+}
+
+.ffc-layer-toggle:focus-visible {
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+
+.ffc-layer-toggle svg.svg-icon {
+  transition: transform 100ms ease-in-out;
+}
+
+.ffc-layer-row.is-collapsed .ffc-layer-toggle {
+  color: var(--collapse-icon-color-collapsed);
+}
+
+.ffc-layer-row.is-collapsed .ffc-layer-toggle svg.svg-icon {
+  transform: rotate(calc(var(--direction) * -1 * 90deg));
+}
+
+/* A collapsed group with the selection inside it. */
+.ffc-layer-row.has-selection .ffc-layer-label {
+  color: var(--text-accent);
 }
 
 .ffc-layer-icon {

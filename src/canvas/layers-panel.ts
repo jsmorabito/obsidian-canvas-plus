@@ -2,12 +2,14 @@ import { DropdownComponent, SearchComponent, prepareSimpleSearch, setIcon } from
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasViewLike, focusNode, shieldFromCanvas } from './adapter.ts';
 import {
-  ALL_LAYERS, FilterOption, Layer, LayerKind, buildLayers, filterLayers, filterOptions, firstMatch, matchesFilter, searchText,
+  ALL_LAYERS, FilterOption, Layer, LayerKind, buildLayers, filterLayers, filterOptions, firstMatch, matchesFilter, searchText, someLayer, walk,
 } from './layers-tree.ts';
 import { beginLabelEdit } from './placement.ts';
 
 const OPEN_KEY = 'ffc-canvas-layers-open';
 const HOVER_CLASS = 'ffc-layer-hover';
+/** Makes label ids unique across every open canvas. */
+let nextLabelId = 0;
 
 const ICONS: Record<LayerKind, string> = {
   group: 'frame', note: 'file-text', text: 'type', card: 'sticky-note', image: 'image', file: 'file', link: 'link', ink: 'pencil',
@@ -17,7 +19,8 @@ const ICONS: Record<LayerKind, string> = {
  * Floating panel on the left listing groups and what they
  * contain. Click to select and zoom to an item, Shift-click to add it to
  * the selection, as on the canvas itself, hover to outline it on the canvas, double-click a group to
- * rename it. A search box and a filter narrow the list. Whether it's open is a per-viewer preference.
+ * rename it, select its triangle to collapse it. A search box and a filter narrow the list, and show
+ * every result even inside a collapsed group. Whether it's open is a per-viewer preference.
  */
 export class LayersPanel {
   private el: HTMLElement;
@@ -34,6 +37,10 @@ export class LayersPanel {
   private optionsKey = '';
   /** What the list currently shows, for Enter in the search box. */
   private visible: Layer[] = [];
+  /** Ids of the groups collapsed in the list. Lasts as long as the view. */
+  private collapsed = new Set<string>();
+  /** Whether the canvas had no layers at the last update, for the empty message. */
+  private emptyCanvas = false;
 
   constructor(private plugin: CanvasPlusPlugin, private view: CanvasViewLike) {
     this.open = plugin.app.loadLocalStorage(OPEN_KEY) !== 'closed';
@@ -138,22 +145,29 @@ export class LayersPanel {
     }
   }
 
-  /** Redraw from the canvas, only when what the list shows (or the selection) changed. */
+  /** Rebuild from the canvas, then redraw if what the list shows (or the selection) changed. */
   update(): void {
     const canvas = this.canvas;
     if (!canvas) return;
     const roots = buildLayers(this.plugin, canvas);
     this.syncFilterOptions(roots);
-    const visible = this.filtering ? filterLayers(roots, this.keeper()) : roots;
-    this.visible = visible;
+    this.pruneCollapsed(roots);
+    this.emptyCanvas = roots.length === 0;
+    this.visible = this.filtering ? filterLayers(roots, this.keeper()) : roots;
+    this.render(canvas);
+  }
+
+  /** Redraw the list last built by `update`, only when it would look different. */
+  private render(canvas: CanvasLike): void {
+    const visible = this.visible;
     const selection = canvas.selection ?? new Set<object>();
-    const signature = JSON.stringify([this.query, this.filter, this.flatten(visible, selection)]);
+    const signature = JSON.stringify([this.query, this.filter, [...this.collapsed], this.flatten(visible, selection)]);
     if (signature === this.shown) return;
     this.shown = signature;
     this.clearHover();
     this.bodyEl.empty();
     if (visible.length === 0) {
-      this.bodyEl.createDiv({ cls: 'ffc-layers-empty', text: roots.length === 0 ? 'Nothing on the canvas yet.' : 'No matching layers.' });
+      this.bodyEl.createDiv({ cls: 'ffc-layers-empty', text: this.emptyCanvas ? 'Nothing on the canvas yet.' : 'No matching layers.' });
       return;
     }
     this.renderList(canvas, visible, 0, selection);
@@ -163,6 +177,14 @@ export class LayersPanel {
     return layers.map((l) => [l.label, l.kind, l.type, l.dimmed, selection.has(l.node), this.flatten(l.children, selection)]);
   }
 
+  /** Forget collapsed groups that are no longer on the canvas. */
+  private pruneCollapsed(roots: Layer[]): void {
+    if (this.collapsed.size === 0) return;
+    const ids = new Set<string>();
+    walk(roots, (l) => { if (l.node.id) ids.add(l.node.id); });
+    for (const id of this.collapsed) if (!ids.has(id)) this.collapsed.delete(id);
+  }
+
   private renderList(canvas: CanvasLike, layers: Layer[], depth: number, selection: Set<object>): void {
     for (const layer of layers) {
       const row = this.bodyEl.createDiv({ cls: 'ffc-layer-row' });
@@ -170,9 +192,17 @@ export class LayersPanel {
       row.toggleClass('is-selected', selection.has(layer.node));
       row.toggleClass('is-group', layer.kind === 'group');
       row.toggleClass('is-dimmed', !!layer.dimmed);
+      // Search and filter always show every result, so groups only collapse when neither is active.
+      const id = layer.kind === 'group' && layer.children.length > 0 && !this.filtering ? layer.node.id : undefined;
+      const collapsed = !!id && this.collapsed.has(id);
+      row.toggleClass('is-collapsed', collapsed);
+      // A collapsed group hides its contents, so it says when the selection is inside.
+      row.toggleClass('has-selection', collapsed && someLayer(layer.children, (l) => selection.has(l.node)));
+      const toggle = row.createDiv({ cls: 'ffc-layer-toggle' });
       setIcon(row.createSpan({ cls: 'ffc-layer-icon' }), ICONS[layer.kind]);
-      row.createSpan({ cls: 'ffc-layer-label', text: layer.label });
+      const label = row.createSpan({ cls: 'ffc-layer-label', text: layer.label });
       if (layer.type) row.createSpan({ cls: 'ffc-note-chip', text: layer.type });
+      if (id) this.makeToggle(toggle, label, id, collapsed);
 
       row.addEventListener('click', (e) => {
         if (e.shiftKey) canvas.toggleSelect?.(layer.node);
@@ -185,8 +215,40 @@ export class LayersPanel {
       });
       row.addEventListener('mouseenter', () => layer.node.nodeEl?.addClass(HOVER_CLASS));
       row.addEventListener('mouseleave', () => layer.node.nodeEl?.removeClass(HOVER_CLASS));
-      this.renderList(canvas, layer.children, depth + 1, selection);
+      if (!collapsed) this.renderList(canvas, layer.children, depth + 1, selection);
     }
+  }
+
+  /**
+   * Core's tree collapse icon: a triangle that turns when the group collapses. It's named by the
+   * group's label rather than an aria-label, so hovering it doesn't pop a tooltip.
+   */
+  private makeToggle(toggle: HTMLElement, label: HTMLElement, id: string, collapsed: boolean): void {
+    toggle.addClass('collapse-icon');
+    setIcon(toggle, 'right-triangle');
+    label.id = `ffc-layer-label-${nextLabelId++}`;
+    toggle.setAttrs({ role: 'button', tabindex: '0', 'aria-expanded': String(!collapsed), 'aria-labelledby': label.id });
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleCollapsed(id);
+    });
+    toggle.addEventListener('dblclick', (e) => e.stopPropagation());
+    toggle.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      e.stopPropagation();
+      this.toggleCollapsed(id);
+      // The list was redrawn, so put focus back on the new toggle for this group.
+      this.bodyEl.querySelector<HTMLElement>(`[data-group-id="${CSS.escape(id)}"]`)?.focus();
+    });
+    toggle.dataset.groupId = id;
+  }
+
+  private toggleCollapsed(id: string): void {
+    if (this.collapsed.has(id)) this.collapsed.delete(id);
+    else this.collapsed.add(id);
+    const canvas = this.canvas;
+    if (canvas) this.render(canvas);
   }
 
   private clearHover(): void {
