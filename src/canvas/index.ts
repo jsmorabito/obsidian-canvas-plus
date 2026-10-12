@@ -3,6 +3,7 @@ import type { CanvasPlusPlugin } from '../main.ts';
 import { asCanvasView, isElement } from './adapter.ts';
 import { CanvasController } from './controller.ts';
 import { registerIcons } from './icons.ts';
+import { PanelStore } from './panel-store.ts';
 import { actionForKey, toolForKey } from './tools.ts';
 
 /** Elements where typing must never trigger a tool shortcut. */
@@ -18,6 +19,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
  */
 export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
   plugin.register(registerIcons());
+  const panelStore = new PanelStore(plugin);
   const controllers = new Map<ItemView, CanvasController>();
   let active: CanvasController | null = null;
 
@@ -78,7 +80,7 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
       }
       if (!controllers.has(view)) {
         wireDocument(view.containerEl.doc);
-        controllers.set(view, new CanvasController(plugin, view));
+        controllers.set(view, new CanvasController(plugin, view, panelStore));
       }
     });
     for (const [view, controller] of controllers) {
@@ -120,5 +122,7 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
     for (const controller of controllers.values()) controller.destroy();
     controllers.clear();
     active = null;
+    // The controllers saved their panels as they went: write them now rather than after the plugin is gone.
+    panelStore.flush();
   });
 }

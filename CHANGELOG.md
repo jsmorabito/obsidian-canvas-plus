@@ -5,6 +5,18 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Tab panels: select **Add panel** in the canvas controls on the right to
+  open a new tab floating over the canvas. It starts on the new tab screen
+  and works like any tab, plus **Open widget**: a searchable list of the views core
+  and community plugins add (outline, graph, bookmarks and so on). Drag
+  its header to move it and its edges to resize it; the canvas moves
+  underneath. Panels, their positions and what they
+  show come back when the canvas is opened again.
+
 ## [1.2.1]
 
 ### Added

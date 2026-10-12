@@ -836,3 +836,103 @@ svg.ffc-ink path.ffc-ink-auto {
   --ffc-minimap-reserve: var(--ffc-minimap-height);
 }
 
+
+/* Tab panels */
+.ffc-tab-panels {
+  position: absolute;
+  inset: 0;
+  z-index: var(--layer-cover);
+  pointer-events: none;
+}
+
+.ffc-tab-panel {
+  position: absolute;
+  left: var(--ffc-panel-x);
+  top: var(--ffc-panel-y);
+  z-index: var(--ffc-panel-z, 1);
+  width: var(--ffc-panel-w);
+  height: var(--ffc-panel-h);
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-l);
+}
+
+.ffc-tab-panel .view-header {
+  cursor: grab;
+  touch-action: none;
+}
+
+.ffc-tab-panel.is-moving .view-header {
+  cursor: grabbing;
+}
+
+.ffc-tab-panel .nav-header {
+  position: relative;
+  cursor: grab;
+  touch-action: none;
+}
+
+.ffc-tab-panel.is-moving .nav-header {
+  cursor: grabbing;
+}
+
+.ffc-tab-panel-close.mod-nav {
+  position: absolute;
+  top: var(--size-4-2);
+  right: var(--size-4-2);
+}
+
+.ffc-tab-panel-close.mod-floating {
+  position: absolute;
+  top: var(--size-4-1);
+  right: var(--size-4-1);
+  z-index: 2;
+}
+
+.ffc-tab-panel-split {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-m);
+}
+
+.ffc-tab-panel-split > .workspace-leaf {
+  width: 100%;
+  height: 100%;
+}
+
+/* A web page would swallow the pointer mid-drag. */
+.ffc-tab-panel.is-moving .ffc-tab-panel-split,
+.ffc-tab-panel.is-resizing .ffc-tab-panel-split {
+  pointer-events: none;
+}
+
+.ffc-tab-panel-resize {
+  position: absolute;
+  z-index: 1;
+  touch-action: none;
+  --ffc-grip: 6px;
+}
+
+.ffc-tab-panel-resize.mod-n,
+.ffc-tab-panel-resize.mod-s { left: var(--ffc-grip); right: var(--ffc-grip); height: var(--ffc-grip); cursor: ns-resize; }
+.ffc-tab-panel-resize.mod-e,
+.ffc-tab-panel-resize.mod-w { top: var(--ffc-grip); bottom: var(--ffc-grip); width: var(--ffc-grip); cursor: ew-resize; }
+.ffc-tab-panel-resize.mod-n { top: calc(var(--ffc-grip) / -2); }
+.ffc-tab-panel-resize.mod-s { bottom: calc(var(--ffc-grip) / -2); }
+.ffc-tab-panel-resize.mod-e { right: calc(var(--ffc-grip) / -2); }
+.ffc-tab-panel-resize.mod-w { left: calc(var(--ffc-grip) / -2); }
+
+.ffc-tab-panel-resize.mod-ne,
+.ffc-tab-panel-resize.mod-nw,
+.ffc-tab-panel-resize.mod-se,
+.ffc-tab-panel-resize.mod-sw { width: calc(var(--ffc-grip) * 2); height: calc(var(--ffc-grip) * 2); }
+.ffc-tab-panel-resize.mod-ne { top: calc(var(--ffc-grip) / -2); right: calc(var(--ffc-grip) / -2); cursor: nesw-resize; }
+.ffc-tab-panel-resize.mod-sw { bottom: calc(var(--ffc-grip) / -2); left: calc(var(--ffc-grip) / -2); cursor: nesw-resize; }
+.ffc-tab-panel-resize.mod-nw { top: calc(var(--ffc-grip) / -2); left: calc(var(--ffc-grip) / -2); cursor: nwse-resize; }
+.ffc-tab-panel-resize.mod-se { bottom: calc(var(--ffc-grip) / -2); right: calc(var(--ffc-grip) / -2); cursor: nwse-resize; }

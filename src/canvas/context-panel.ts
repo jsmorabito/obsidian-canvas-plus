@@ -3,7 +3,7 @@ import type { CanvasPlusPlugin } from '../main.ts';
 import type { NoteType, RelationType } from '../note-types.ts';
 import {
   CanvasEdgeLike, CanvasLike, CanvasNodeLike, CanvasViewLike, batch, createFileNode, dropEdge, focusNode,
-  isEdge, newEdgeId, nodeBox, putEdge, removeNode, shieldFromCanvas,
+  isEdge, newId, nodeBox, putEdge, removeNode, shieldFromCanvas,
 } from './adapter.ts';
 import { PLACE_GAP, SIZE_NOTE_CARD } from './constants.ts';
 import { fitNodeToCard, noteOfNode } from './note-card.ts';
@@ -193,7 +193,7 @@ export class ContextPanel {
       const toBox = nodeBox(to);
       const toTheRight = fromBox && toBox ? toBox.x >= fromBox.x : true;
       putEdge(canvas, {
-        id: newEdgeId(),
+        id: newId(),
         fromNode: from.id, fromSide: toTheRight ? 'right' : 'left',
         toNode: to.id, toSide: toTheRight ? 'left' : 'right',
         toEnd: 'arrow',

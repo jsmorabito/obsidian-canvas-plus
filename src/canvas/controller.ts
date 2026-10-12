@@ -7,6 +7,8 @@ import { ContextPanel } from './context-panel.ts';
 import { attachUndoJournal } from './undo-journal.ts';
 import { LayersPanel } from './layers-panel.ts';
 import { Minimap } from './minimap.ts';
+import { CanvasPanels } from './canvas-panels.ts';
+import { PanelStore } from './panel-store.ts';
 import { CLICK_SLOP_PX, FIELD_KIND, INK_FALLBACK_HEX, SIZE_NOTE_CARD } from './constants.ts';
 import { clearNoteCards, decorateNoteCards, fitNodeToCard, noteOfNode, setCardOwner, toggleViews } from './note-card.ts';
 import { injectViewToggleButton } from './view-toggle.ts';
@@ -49,11 +51,12 @@ export class CanvasController {
   private panel: ContextPanel;
   private layers: LayersPanel;
   private minimap: Minimap;
+  private tabPanels: CanvasPanels;
   private ink: InkTools;
   /** Owns the markdown renderers behind styled link nodes. */
   private component = new Component();
 
-  constructor(private plugin: CanvasPlusPlugin, view: CanvasViewLike) {
+  constructor(private plugin: CanvasPlusPlugin, view: CanvasViewLike, panelStore: PanelStore) {
     this.view = view;
     this.doc = view.containerEl.doc;
     this.component.load();
@@ -62,6 +65,7 @@ export class CanvasController {
     this.panel = new ContextPanel(plugin, view);
     this.layers = new LayersPanel(plugin, view);
     this.minimap = new Minimap(plugin, view);
+    this.tabPanels = new CanvasPanels(plugin, view, panelStore);
     // The layers panel covers the left edge. The minimap covers the lower-left corner, which matters only where it reaches past the panel.
     setInsets(view.canvas!, () => {
       const left = this.layers.insetPx;
@@ -197,6 +201,7 @@ export class CanvasController {
     this.panel.destroy();
     this.layers.destroy();
     this.minimap.destroy();
+    this.tabPanels.destroy();
     for (const fn of this.cleanups) fn();
     this.cleanups = [];
     this.toolbar?.destroy();

@@ -98,6 +98,8 @@ export interface CanvasLike {
   markDirty?: (node: CanvasNodeLike) => void;
   /** Obsidian's own bottom menu (Card, Note, Media buttons). */
   cardMenuEl?: HTMLElement;
+  /** Obsidian's control groups down the right side (settings, zoom, undo, help). */
+  canvasControlsEl?: HTMLElement;
   /**
    * Obsidian's drag from a menu button: shows an outline of `size` that follows the pointer (with
    * snapping) and calls `onDrop` with the top-left of where it landed, if that is on the canvas.
@@ -283,8 +285,8 @@ export function putEdge(canvas: CanvasLike, data: Record<string, unknown>): void
   canvas.importData({ nodes: [], edges: [data] }, false);
 }
 
-/** A fresh edge id, in the form Obsidian uses (16 hex characters). */
-export function newEdgeId(): string {
+/** A fresh id, in the form Obsidian uses for nodes and edges (16 hex characters). */
+export function newId(): string {
   const bytes = new Uint8Array(8);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
