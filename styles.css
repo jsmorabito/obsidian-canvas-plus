@@ -143,6 +143,15 @@
   background-color: var(--canvas-color);
 }
 
+/* Like a group's label: it picks the anchor up, so it shows the grab hand (unless the canvas is read-only). */
+.canvas-wrapper:not(.mod-readonly) .canvas-node[data-ffc-kind="anchor"] .ffc-anchor-label:not(.is-editing) {
+  cursor: grab;
+}
+
+.canvas-wrapper:not(.mod-readonly) .canvas-node[data-ffc-kind="anchor"] .ffc-anchor-label:not(.is-editing):active {
+  cursor: grabbing;
+}
+
 /* Core's label is capped at the node's width; an anchor is just an icon wide, so let its name run on. */
 .canvas-node[data-ffc-kind="anchor"] .ffc-anchor-label {
   max-width: none;
@@ -155,6 +164,35 @@
   border-radius: var(--radius-s);
   background-color: var(--background-primary);
   box-shadow: 0 0 0 2px var(--interactive-accent);
+}
+
+/*
+ * A framed anchor marks what a presentation shows at that stop. It holds nothing: moving it moves only the frame.
+ * Like a core group, it lets presses through to the canvas until it is selected (pick it up by its name), and its
+ * resize handles stay live. Core's node border, dashed so it reads as a frame rather than a card or group.
+ */
+.canvas-node[data-ffc-kind="anchor"][data-ffc-frame]:not(.is-focused):not(.is-selected) {
+  pointer-events: none;
+}
+
+.canvas-node[data-ffc-kind="anchor"][data-ffc-frame] .ffc-anchor-label,
+.canvas-node[data-ffc-kind="anchor"][data-ffc-frame] .canvas-node-resizer {
+  pointer-events: initial;
+}
+
+.canvas-node[data-ffc-kind="anchor"][data-ffc-frame] .canvas-node-container {
+  border-color: var(--canvas-color);
+  border-style: dashed;
+}
+
+.canvas-node[data-ffc-kind="anchor"][data-ffc-frame].is-selected .canvas-node-container,
+.canvas-node[data-ffc-kind="anchor"][data-ffc-frame].is-focused .canvas-node-container {
+  border-color: var(--color-accent);
+}
+
+/* The name above it says what a frame is, so it has no icon. */
+.canvas-node[data-ffc-kind="anchor"][data-ffc-frame] .canvas-node-container::before {
+  content: none;
 }
 
 /* ── Ink: a stroke is a chrome-less text node holding an inline SVG ──────── */
@@ -674,7 +712,16 @@ svg.ffc-ink path.ffc-ink-auto {
   width: 100%;
 }
 
+/* Held to drag on touch: the hold mustn't select the row's text or open the system's callout instead. */
+.ffc-reorderable {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Positioned, so core's drop indicator can mark a place in the list while anchors are reordered. */
 .ffc-layers-body {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -856,7 +903,7 @@ svg.ffc-ink path.ffc-ink-auto {
   display: none;
 }
 
-/* Anchors mark the stops while editing; the presentation itself shows only what is around them. */
+/* Anchors and frames mark the stops while editing; the presentation itself shows only what they frame. */
 .ffc-presenting .canvas-node[data-ffc-kind="anchor"] {
   visibility: hidden;
 }

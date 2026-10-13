@@ -120,6 +120,10 @@ export function buildLayers(plugin: CanvasPlusPlugin, canvas: CanvasLike): Layer
 
 /** Filter values: `all`, `kind:<kind>` for a whole kind of layer, or `type:<name>` for notes of one note type. */
 export const ALL_LAYERS = 'all';
+const KIND_PREFIX = 'kind:';
+
+/** The filter value that shows one kind of layer. */
+export const kindFilter = (kind: LayerKind): string => `${KIND_PREFIX}${kind}`;
 
 export interface FilterOption {
   value: string;
@@ -161,7 +165,7 @@ export function filterOptions(layers: Layer[]): FilterOption[] {
   const options: FilterOption[] = [{ value: ALL_LAYERS, label: 'All layers' }];
   for (const { kind, label } of KIND_ORDER) {
     if (!kinds.has(kind)) continue;
-    options.push({ value: `kind:${kind}`, label });
+    options.push({ value: kindFilter(kind), label });
     // Each note type sits right after "Notes", so the two read as one list.
     if (kind === 'note') {
       for (const type of [...types].sort((a, b) => a.localeCompare(b))) options.push({ value: `type:${type}`, label: type });
@@ -172,7 +176,7 @@ export function filterOptions(layers: Layer[]): FilterOption[] {
 
 export function matchesFilter(layer: Layer, filter: string): boolean {
   if (filter === ALL_LAYERS) return true;
-  if (filter.startsWith('kind:')) return layer.kind === filter.slice('kind:'.length);
+  if (filter.startsWith(KIND_PREFIX)) return layer.kind === filter.slice(KIND_PREFIX.length);
   if (filter.startsWith('type:')) return layer.type === filter.slice('type:'.length);
   return true;
 }

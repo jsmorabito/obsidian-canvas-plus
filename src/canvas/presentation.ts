@@ -4,10 +4,11 @@ import {
   Box, CanvasLike, CanvasNodeLike, CanvasViewLike, finishViewportMove, glideTo, isReadonly, nodeBox, savedReadonly, selectedNodes,
   setReadonly, zoomToBox,
 } from './adapter.ts';
-import { anchorLabel, isAnchor } from './anchor.ts';
+import { anchorLabel, isAnchor, isAnchorFrame } from './anchor.ts';
 import { PRESENT_ICON } from './icons.ts';
-import { readingOrder, smallestContaining } from './layers-tree.ts';
+import { smallestContaining } from './layers-tree.ts';
 import { PresentationBar } from './presentation-bar.ts';
+import { byStopOrder } from './stop-order.ts';
 
 /** On the view's content while presenting: hides the panels and menus (see styles.css). */
 const PRESENTING_CLASS = 'ffc-presenting';
@@ -17,18 +18,19 @@ interface Stop {
   box: Box;
 }
 
-/** The stops of a presentation: the anchors, in reading order (top to bottom, then left to right). */
+/** The stops of a presentation: the anchors, in presentation order (as set in the layers panel, else reading order). */
 function findStops(canvas: CanvasLike): Stop[] {
   const stops: Stop[] = [];
   for (const node of canvas.nodes?.values() ?? []) {
     const box = isAnchor(node) ? nodeBox(node) : null;
     if (box) stops.push({ node, box });
   }
-  return stops.sort(readingOrder);
+  return byStopOrder(stops);
 }
 
-/** What a stop shows: the smallest group around its anchor, the group the layers panel lists it in. */
+/** What a stop shows: a framed anchor's own box, or else the smallest group around it (the one the layers panel lists it in). */
 function frameOf(canvas: CanvasLike, stop: Stop): Box | null {
+  if (isAnchorFrame(stop.node)) return stop.box;
   const groups: Array<{ box: Box }> = [];
   for (const node of canvas.nodes?.values() ?? []) {
     const box = node.getData?.().type === 'group' ? nodeBox(node) : null;

@@ -9,6 +9,16 @@ export const SIZE_CARD  = { width: 260, height: 120 };
 export const SIZE_TEXT  = { width: 240, height: 40 };
 export const SIZE_GROUP = { width: 480, height: 320 };
 export const SIZE_ANCHOR = { width: 40, height: 40 };
+/**
+ * Extra field on an anchor drawn as a frame: the node's own box is what a presentation shows at that stop.
+ * Stored in canvas files, so the name must not change.
+ */
+export const FIELD_FRAME = 'ffcFrame';
+/**
+ * Extra field on an anchor: its place in the presentation order (1, 2, 3…), set by reordering in the layers
+ * panel. Anchors without one follow in reading order. Stored in canvas files, so the name must not change.
+ */
+export const FIELD_STOP = 'ffcStop';
 
 /** Minimums when drag-creating a node. */
 export const MIN_DRAW_WIDTH       = 80;

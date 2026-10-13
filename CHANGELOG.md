@@ -18,11 +18,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or the header button ends it. While presenting, the canvas is read-only
   and the panels and menus are hidden. **Next presentation stop** and
   **Previous presentation stop** can be given hotkeys, for a clicker.
+- Anchor frames: drag with the Anchor tool to draw a frame, the area a
+  presentation shows at that stop. Like a core group it lets clicks through
+  until selected, but it holds nothing: moving it moves only the frame.
+- Presentation order: filter the layers panel to **Anchors** to list them
+  numbered in presentation order, and drag a row to reorder (on touch, hold
+  the row first). Canvases never reordered keep reading order; once one has
+  an order, new anchors go last. Locked canvases can't be reordered.
 
 ### Changed
 
 - Tool shortcuts work whenever the canvas is the active tab, through the
   view's own key scope, as core's shortcuts do.
+- New anchors are named Anchor 1, Anchor 2 and so on.
+- An anchor's name works like a group's label: it shows the grab hand,
+  pressing it selects and drags the anchor, and double-clicking renames it.
+
+### Fixed
+
+- A new anchor could stay looking as if it was being renamed after clicking
+  away. Renaming now always ends on a click elsewhere, and when the canvas
+  closes or the plugin unloads.
 
 ## [1.3.0]
 

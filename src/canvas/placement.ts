@@ -2,14 +2,20 @@ import {
   CanvasLike, CanvasNodeLike, batch, createGroupNode, createTextNode, removeNode, setExtra,
 } from './adapter.ts';
 import {
-  FIELD_KIND, KIND_ANCHOR, KIND_TEXT, MIN_DRAW_HEIGHT, MIN_DRAW_HEIGHT_TEXT, MIN_DRAW_WIDTH,
+  FIELD_FRAME, FIELD_KIND, FIELD_STOP, KIND_ANCHOR, KIND_TEXT, MIN_DRAW_HEIGHT, MIN_DRAW_HEIGHT_TEXT, MIN_DRAW_WIDTH,
   SIZE_ANCHOR, SIZE_CARD, SIZE_GROUP, SIZE_TEXT,
 } from './constants.ts';
 import type { PlaceTool } from './tools.ts';
-import { DEFAULT_ANCHOR_LABEL, editAnchorLabel } from './anchor.ts';
+import { editAnchorLabel, nextAnchorLabel } from './anchor.ts';
+import { nextStopNumber } from './stop-order.ts';
 import { eachFrameUntil } from '../utils/helpers.ts';
 type Point = { x: number; y: number };
-export interface PlacedRect { pos: Point; size: { width: number; height: number } }
+export interface PlacedRect {
+  pos: Point;
+  size: { width: number; height: number };
+  /** Dragged out rather than clicked. */
+  drawn?: boolean;
+}
 
 const DEFAULT_SIZE: Record<PlaceTool, { width: number; height: number }> = {
   text: SIZE_TEXT, card: SIZE_CARD, group: SIZE_GROUP, anchor: SIZE_ANCHOR,
@@ -18,9 +24,13 @@ const DEFAULT_SIZE: Record<PlaceTool, { width: number; height: number }> = {
 /**
  * Where a node lands. A click (`end` null) puts text at the click point and
  * centres anchors, cards and groups on it; a drag sets the box, with minimum sizes.
+ * An anchor drag smaller than that minimum counts as a click: a frame that small is a hand that wandered while
+ * clicking, and it drops a plain anchor where the press started.
  */
 export function placementRect(tool: PlaceTool, start: Point, end: Point | null): PlacedRect {
-  if (!end) {
+  const tooSmallForFrame = tool === 'anchor' && !!end
+    && (Math.abs(end.x - start.x) < MIN_DRAW_WIDTH || Math.abs(end.y - start.y) < MIN_DRAW_HEIGHT);
+  if (!end || tooSmallForFrame) {
     const size = DEFAULT_SIZE[tool];
     const pos = tool === 'text' ? start
       : { x: start.x - size.width / 2, y: start.y - size.height / 2 };
@@ -33,6 +43,7 @@ export function placementRect(tool: PlaceTool, start: Point, end: Point | null):
       width: Math.round(Math.max(Math.abs(end.x - start.x), MIN_DRAW_WIDTH)),
       height: Math.round(Math.max(Math.abs(end.y - start.y), minH)),
     },
+    drawn: true,
   };
 }
 
@@ -45,12 +56,18 @@ export function placeNode(canvas: CanvasLike, tool: PlaceTool, rect: PlacedRect)
       return group;
     }
     if (tool === 'anchor') {
+      // Once the canvas has a presentation order, a new anchor goes last in it.
+      const stop = nextStopNumber(canvas);
       // Not focused: core would focus the node a moment later, taking focus from the label being renamed.
-      const anchor = createTextNode(canvas, { ...rect, text: DEFAULT_ANCHOR_LABEL, focus: false });
+      const anchor = createTextNode(canvas, { ...rect, text: nextAnchorLabel(canvas), focus: false });
       if (anchor) {
         setExtra(anchor, FIELD_KIND, KIND_ANCHOR);
+        if (stop !== undefined) setExtra(anchor, FIELD_STOP, stop);
+        // A drawn anchor is a frame: its box is what a presentation shows at that stop.
+        if (rect.drawn) setExtra(anchor, FIELD_FRAME, true);
+        // The node exists before it is on the page, and the label can't take focus until it is.
         eachFrameUntil(() => {
-          if (!anchor.nodeEl) return false;
+          if (!anchor.nodeEl?.isConnected) return false;
           editAnchorLabel(canvas, anchor);
           return true;
         });

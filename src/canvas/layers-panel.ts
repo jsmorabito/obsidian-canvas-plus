@@ -1,12 +1,17 @@
 import { DropdownComponent, SearchComponent, prepareSimpleSearch, setIcon } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
-import { CanvasLike, CanvasNodeLike, CanvasViewLike, batch, editPlainText, focusNode, getExtra, patchData, shieldFromCanvas } from './adapter.ts';
+import {
+  CanvasLike, CanvasNodeLike, CanvasViewLike, batch, editPlainText, focusNode, getExtra, isReadonly, patchData, shieldFromCanvas,
+} from './adapter.ts';
 import { FIELD_LINK_NAME } from './constants.ts';
 import { createShowButton, loadOpen, saveOpen } from './floating-panel.ts';
 import {
-  ALL_LAYERS, FilterOption, Layer, LayerKind, buildLayers, filterLayers, filterOptions, firstMatch, matchesFilter, searchText, someLayer, walk,
+  ALL_LAYERS, FilterOption, Layer, LayerKind, buildLayers, filterLayers, filterOptions, firstMatch, kindFilter, matchesFilter, searchText,
+  someLayer, walk,
 } from './layers-tree.ts';
 import { beginLabelEdit } from './placement.ts';
+import { isReordering, makeReorderable } from './reorder-rows.ts';
+import { byStopOrder, renumberStops } from './stop-order.ts';
 
 const OPEN_KEY = 'ffc-canvas-layers-open';
 const HOVER_CLASS = 'ffc-layer-hover';
@@ -52,7 +57,8 @@ function linkUrl(node: CanvasNodeLike): string {
  * contain. Click to select and zoom to an item, Shift-click to add it to
  * the selection, as on the canvas itself, hover to outline it on the canvas, double-click a group or anchor to
  * rename it, select the pencil on a group or link to rename it in the list, select its triangle to collapse it. A search box and a filter narrow the list, and show
- * every result even inside a collapsed group. Whether it's open is a per-viewer preference.
+ * every result even inside a collapsed group. Filtered to anchors, it lists them in presentation order instead,
+ * numbered, and dragging one changes the order. Whether it's open is a per-viewer preference.
  */
 export class LayersPanel {
   private el: HTMLElement;
@@ -129,6 +135,31 @@ export class LayersPanel {
     return this.query.trim() !== '' || this.filter !== ALL_LAYERS;
   }
 
+  /**
+   * Filtered to anchors with nothing searched for, the list is the presentation order: flat, numbered, and
+   * dragged to reorder. Anywhere else it stays the canvas's spatial tree, where a drag would read as moving nodes.
+   */
+  private get ordering(): boolean {
+    return this.filter === kindFilter('anchor') && this.query.trim() === '';
+  }
+
+  /** Every anchor, in presentation order, without the groups around them. */
+  private stopList(roots: Layer[]): Layer[] {
+    const anchors: Layer[] = [];
+    walk(roots, (l) => { if (l.kind === 'anchor') anchors.push({ ...l, children: [] }); });
+    return byStopOrder(anchors);
+  }
+
+  /** Move stop `from` to `to` and number every anchor in the new order, as one undo step. Not on a locked canvas. */
+  private moveStop(canvas: CanvasLike, nodes: CanvasNodeLike[], from: number, to: number): void {
+    if (isReadonly(canvas)) return;
+    const order = [...nodes];
+    const [moved] = order.splice(from, 1);
+    order.splice(to, 0, moved);
+    renumberStops(canvas, order);
+    this.update();
+  }
+
   /** Whether a layer is a result: it passes the filter and every word of the search is in its name or type. */
   private keeper(): (layer: Layer) => boolean {
     const text = this.query.trim();
@@ -180,7 +211,7 @@ export class LayersPanel {
     this.syncFilterOptions(roots);
     this.pruneCollapsed(roots);
     this.emptyCanvas = roots.length === 0;
-    this.visible = this.filtering ? filterLayers(roots, this.keeper()) : roots;
+    this.visible = this.ordering ? this.stopList(roots) : this.filtering ? filterLayers(roots, this.keeper()) : roots;
     this.render(canvas);
   }
 
@@ -188,8 +219,12 @@ export class LayersPanel {
   private render(canvas: CanvasLike): void {
     const visible = this.visible;
     const selection = canvas.selection ?? new Set<object>();
-    const signature = JSON.stringify([this.query, this.filter, [...this.collapsed], this.flatten(visible, selection)]);
-    if (signature === this.shown || this.renaming) return;
+    // Locking the canvas changes whether the order can be dragged, so it redraws the list too.
+    const signature = JSON.stringify([
+      this.query, this.filter, [...this.collapsed], this.ordering && isReadonly(canvas), this.flatten(visible, selection),
+    ]);
+    // Not while a row is renamed or dragged: rebuilding the list would throw that away.
+    if (signature === this.shown || this.renaming || isReordering(this.bodyEl)) return;
     this.shown = signature;
     this.clearHover();
     this.bodyEl.empty();
@@ -198,6 +233,13 @@ export class LayersPanel {
       return;
     }
     this.renderList(canvas, this.bodyEl, visible, selection);
+    // Core's lock means no edits, the order included: the list still shows it, but it can't be dragged.
+    if (this.ordering && !isReadonly(canvas)) {
+      // The anchors as they were drawn, so a redraw while the drop is handled can't shift which one moves.
+      const nodes = visible.map((l) => l.node);
+      const rows = Array.from(this.bodyEl.querySelectorAll<HTMLElement>('.ffc-layer-row'));
+      makeReorderable(this.bodyEl, rows, (from, to) => this.moveStop(canvas, nodes, from, to));
+    }
   }
 
   private flatten(layers: Layer[], selection: Set<object>): unknown[] {
@@ -214,7 +256,7 @@ export class LayersPanel {
 
   /** Core's tree markup and classes, as in the file explorer and outline, so themes style the list like those. */
   private renderList(canvas: CanvasLike, parent: HTMLElement, layers: Layer[], selection: Set<object>): void {
-    for (const layer of layers) {
+    for (const [i, layer] of layers.entries()) {
       const item = parent.createDiv({ cls: 'tree-item' });
       const row = item.createDiv({ cls: 'tree-item-self is-clickable ffc-layer-row' });
       row.toggleClass('is-selected', selection.has(layer.node));
@@ -230,8 +272,11 @@ export class LayersPanel {
       setIcon(row.createSpan({ cls: 'ffc-layer-icon' }), ICONS[layer.kind]);
       const label = row.createDiv({ cls: 'tree-item-inner ffc-layer-label', text: layer.label });
       const rename = RENAMES[layer.kind];
-      if (layer.type || rename) {
+      // In presentation order, each anchor's stop number, in core's flair (where the file explorer puts counts).
+      const stop = this.ordering ? i + 1 : undefined;
+      if (layer.type || rename || stop) {
         const flair = row.createDiv({ cls: 'tree-item-flair-outer' });
+        if (stop) flair.createSpan({ cls: 'tree-item-flair', text: String(stop) });
         if (layer.type) flair.createSpan({ cls: 'ffc-note-chip', text: layer.type });
         if (rename) this.makeRename(canvas, flair, row, label, layer.node, rename);
       }

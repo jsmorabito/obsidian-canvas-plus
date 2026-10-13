@@ -194,7 +194,7 @@ export class CanvasController {
       if (typeof kind === 'string') el.setAttribute('data-ffc-kind', kind);
       else el.removeAttribute('data-ffc-kind');
       if (ink) this.syncInk(node, ink);
-      if (isAnchor(node, data)) syncAnchor(canvas, node);
+      if (isAnchor(node, data)) syncAnchor(canvas, node, data);
       else clearAnchor(node);
     }
   }
@@ -308,8 +308,7 @@ export class CanvasController {
     e.preventDefault();
     e.stopPropagation();
     if (type !== 'pointerdown' || e.button !== 0) return;
-    if (tool === 'anchor') this.beginClick(tool, e);
-    else this.beginDraw(tool, e);
+    this.beginDraw(tool, e);
   }
 
   /** Create the node, go back to Select, and style it now and once it has mounted. */
@@ -320,25 +319,8 @@ export class CanvasController {
     window.requestAnimationFrame(() => this.sweep());
   }
 
-  /** An anchor has no box to draw: it goes where the press started, once the button is released. */
-  private beginClick(tool: 'anchor', down: PointerEvent): void {
-    const start = toCanvasPoint(this.view.canvas!, down);
-    if (!start) return;
-    const stopTracking = trackPointer(this.doc, down.pointerId, {
-      up: () => {
-        finish();
-        this.place(tool, placementRect(tool, start, null));
-      },
-      cancel: () => this.setTool('select'),
-    });
-    const finish = (): void => {
-      stopTracking();
-      this.cancelDraw = null;
-    };
-    this.cancelDraw = finish;
-  }
-
-  private beginDraw(tool: Exclude<PlaceTool, 'anchor'>, down: PointerEvent): void {
+  /** A click places the tool's node at its default size; a drag draws its box (for an anchor, a frame). */
+  private beginDraw(tool: PlaceTool, down: PointerEvent): void {
     const canvas = this.view.canvas!;
     const start = toCanvasPoint(canvas, down);
     if (!start) return;

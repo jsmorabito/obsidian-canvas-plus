@@ -22,6 +22,8 @@ export interface CanvasNodeLike {
   width?: number;
   height?: number;
   startEditing?: () => void;
+  /** Core's press on a node: select it and drag. Bound to the node's box, and to a group's label. */
+  onPointerdown?: (e: PointerEvent) => void;
   moveAndResize?: (rect: { x: number; y: number; width: number; height: number }) => void;
   getData?: () => Record<string, unknown>;
   setData?: (data: Record<string, unknown>) => void;
@@ -250,6 +252,18 @@ export function zoomToBox(canvas: CanvasLike, box: Box): void {
     }
   }
   canvas.zoomToBbox?.({ minX: box.x - padX, minY: box.y, maxX: box.x + box.width, maxY: box.y + box.height + padY });
+}
+
+/**
+ * Press `node` from an element of ours outside its box, as core does from a group's label: select it and drag
+ * it (or neither on a read-only canvas). Without core's handler, just select it.
+ */
+export function pressNode(canvas: CanvasLike, node: CanvasNodeLike, e: PointerEvent): void {
+  if (node.onPointerdown) node.onPointerdown(e);
+  else if (e.button === 0) {
+    if (e.shiftKey) canvas.toggleSelect?.(node);
+    else canvas.selectOnly?.(node);
+  }
 }
 
 /** Whether the view's file has core's lock saved on, which core applies whenever it loads the file. */
