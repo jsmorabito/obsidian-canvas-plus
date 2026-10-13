@@ -18,6 +18,9 @@ A panel on the left lists groups, anchors and what they contain; select an ancho
 **Minimap**  
 An overview of the whole canvas in the lower left, with a box for the part in view. Select or drag on it to move the view. Hide it with the button in its corner; it starts hidden on phones.
 
+**Presenting**  
+Select the presentation button in the view header, next to core's view buttons, or run **Toggle presentation**, to step through the canvas's anchors like slides, starting from the selected anchor or the first. Each stop shows the smallest group around its anchor, or centres an anchor outside any group, and the view eases there as it does for core's zoom to selection (at once if your system asks for reduced motion). Move with the arrow keys, Space and Shift+Space, or Page Up and Page Down, or with the bar at the bottom; select the count, or press `G`, for a menu of every stop. `Esc` or the header button ends it, leaving the view where it is. While presenting, the canvas is read-only (core's lock) and the panels, menus and anchors are hidden. **Next presentation stop** and **Previous presentation stop** are commands too, so they can be given hotkeys, for a presentation clicker.
+
 **Tab panels**  
 Select **Add panel** above the help button in the controls on the right to open a new tab floating over the canvas. It starts on the new tab screen and works like any tab: create a note, go to a file, follow links, go back and forward. Its new tab screen also has **Open widget**, a searchable list of the views core and community plugins add, such as the outline, graph view or bookmarks, to open in the panel. Drag its header to move it and drag an edge or corner to resize it. Panels float above the canvas, not on it, so the canvas pans and zooms underneath. Each canvas remembers its panels, where they sit and what they show, and brings them back when you open it again. Close one with the × at the right end of its header.
 

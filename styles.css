@@ -837,6 +837,60 @@ svg.ffc-ink path.ffc-ink-auto {
 }
 
 
+/* ── Presentation ────────────────────────────────────────────────────────── */
+
+/*
+ * While presenting, only the canvas shows: no editing menus, and no panels, which leaves the whole view to fit a stop
+ * in. Core's controls go too: their lock would turn editing back on mid-presentation, and save that for the file.
+ */
+.ffc-presenting .ffc-layers-panel,
+.ffc-presenting .ffc-layers-show,
+.ffc-presenting .ffc-minimap,
+.ffc-presenting .ffc-minimap-show,
+.ffc-presenting .ffc-context-panel,
+.ffc-presenting .ffc-tab-panels,
+.ffc-presenting .ffc-panel-add,
+.ffc-presenting .canvas-card-menu,
+.ffc-presenting .canvas-controls,
+.ffc-presenting .canvas-menu-container {
+  display: none;
+}
+
+/* Anchors mark the stops while editing; the presentation itself shows only what is around them. */
+.ffc-presenting .canvas-node[data-ffc-kind="anchor"] {
+  visibility: hidden;
+}
+
+/* Core's control group, laid out in a row where the card menu sits while editing. */
+.ffc-presentation-bar {
+  position: absolute;
+  bottom: var(--size-4-4);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--layer-cover);
+  flex-direction: row;
+}
+
+/* Core divides a column of controls with bottom borders; a row is divided between its items instead. */
+.ffc-presentation-bar .canvas-control-item {
+  border-bottom: none;
+}
+
+.ffc-presentation-bar .canvas-control-item:not(:last-child) {
+  border-inline-end: 1px solid var(--background-modifier-border);
+}
+
+.is-mobile .ffc-presentation-bar .canvas-control-item {
+  border: none;
+}
+
+/* The count is a control like the arrows (it opens the menu of stops). Tabular figures keep the bar from changing width. */
+.ffc-presentation-bar .ffc-presentation-count {
+  min-width: 4em;
+  font-size: var(--font-ui-small);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Tab panels */
 .ffc-tab-panels {
   position: absolute;

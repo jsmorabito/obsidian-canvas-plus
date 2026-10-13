@@ -75,7 +75,21 @@ function contains(outer: Box, inner: Box): boolean {
     && outer.y + outer.height >= inner.y + inner.height;
 }
 
-const readingOrder = (a: Layer, b: Layer): number => a.box.y - b.box.y || a.box.x - b.box.x;
+/**
+ * The group a box belongs to: the smallest of `groups` that fully contains it, other than `self`. This is how
+ * the layers panel nests the canvas, and which group a presentation shows for an anchor.
+ */
+export function smallestContaining<T extends { box: Box }>(groups: Iterable<T>, box: Box, self?: T): T | undefined {
+  const area = (b: Box): number => b.width * b.height;
+  let found: T | undefined;
+  for (const group of groups) {
+    if (group !== self && contains(group.box, box) && (!found || area(group.box) < area(found.box))) found = group;
+  }
+  return found;
+}
+
+/** Top to bottom, then left to right. */
+export const readingOrder = (a: { box: Box }, b: { box: Box }): number => a.box.y - b.box.y || a.box.x - b.box.x;
 
 /**
  * Groups and what they contain. A node belongs to the smallest group that
@@ -91,9 +105,7 @@ export function buildLayers(plugin: CanvasPlusPlugin, canvas: CanvasLike): Layer
   const groups = layers.filter((l) => l.kind === 'group');
   const roots: Layer[] = [];
   for (const layer of layers) {
-    const parent = groups
-      .filter((g) => g !== layer && contains(g.box, layer.box))
-      .sort((a, b) => a.box.width * a.box.height - b.box.width * b.box.height)[0];
+    const parent = smallestContaining(groups, layer.box, layer);
     (parent ? parent.children : roots).push(layer);
   }
   const sortAll = (list: Layer[]): void => {

@@ -74,7 +74,12 @@ export interface CanvasLike {
   removeNode?: (node: CanvasNodeLike) => void;
   selectOnly?: (node: CanvasNodeLike) => void;
   toggleSelect?: (node: CanvasNodeLike) => void;
+  /** Sets where the view is heading; core's frame loop then eases the view there (about 300ms). */
   zoomToBbox?: (bbox: { minX: number; minY: number; maxX: number; maxY: number }) => void;
+  /** When set, core's next frame lands the view on its target at once instead of easing (as a canvas does when it opens). */
+  finishViewportAnimation?: boolean;
+  /** The zoom the view is heading to (log2 of its scale); core eases the on-screen zoom towards it. */
+  tZoom?: number;
   /** Centre the view on a canvas point, at once, keeping the zoom. */
   panTo?: (x: number, y: number) => void;
   /** Core asks for its next frame through this whenever the view pans or zooms, or a node moves or changes. */
@@ -106,12 +111,20 @@ export interface CanvasLike {
    */
   dragTempNode?: (e: PointerEvent, size: { width: number; height: number }, onDrop: (pos: { x: number; y: number }) => void) => void;
   importData?: (data: { nodes: unknown[]; edges: unknown[] }, replace?: boolean) => unknown;
+  /** Core's read-only mode, the lock in the canvas controls: nothing can be moved, edited, added or deleted. */
+  readonly?: boolean;
+  /** Core saves the mode only when the lock itself is selected, so setting it here lasts until the view closes. */
+  setReadonly?: (readonly: boolean) => void;
   /** The selection pop-up menu. Obsidian empties and rebuilds `menuEl` on every selection change. */
   menu?: { menuEl?: HTMLElement; containerEl?: HTMLElement; render?: (rebuild?: boolean) => void };
 }
 
 export interface CanvasViewLike extends ItemView {
   canvas?: CanvasLike;
+  /** The canvas file shown. A view can go on to show another one, as a note's view does. */
+  file?: TFile | null;
+  /** What core keeps for this file on this device only: `readonly` when its lock is on. */
+  getLocalData?: () => unknown;
 }
 
 /** Returns the view as a canvas view whose canvas has finished mounting, else null. */
@@ -210,16 +223,20 @@ export function setInsets(canvas: CanvasLike, source: (() => Insets) | null): vo
   else insetSources.delete(canvas);
 }
 
-/**
- * Select `node` and zoom the view onto it, clear of the floating panels set with `setInsets`: the box is
- * padded on the left and bottom, by amounts worked out from the zoom Obsidian will pick (it fits a box
- * with 10% margin, max zoom 1).
- */
+/** Select `node` and zoom the view onto it with `zoomToBox`. */
 export function focusNode(canvas: CanvasLike, node: CanvasNodeLike): void {
   const box = nodeBox(node);
   canvas.deselectAll?.();
   canvas.selectOnly?.(node);
-  if (!box) return;
+  if (box) zoomToBox(canvas, box);
+}
+
+/**
+ * Zoom the view onto `box`, clear of the floating panels set with `setInsets`: the box is padded on the
+ * left and bottom, by amounts worked out from the zoom Obsidian will pick (it fits a box with 10% margin,
+ * max zoom 1).
+ */
+export function zoomToBox(canvas: CanvasLike, box: Box): void {
   const insets = insetSources.get(canvas)?.() ?? { left: 0, bottom: 0 };
   const rect = canvas.wrapperEl.getBoundingClientRect();
   const fitZoom = (w: number, h: number): number => Math.min(1, rect.width / (1.1 * w), rect.height / (1.1 * h));
@@ -233,6 +250,45 @@ export function focusNode(canvas: CanvasLike, node: CanvasNodeLike): void {
     }
   }
   canvas.zoomToBbox?.({ minX: box.x - padX, minY: box.y, maxX: box.x + box.width, maxY: box.y + box.height + padY });
+}
+
+/** Whether the view's file has core's lock saved on, which core applies whenever it loads the file. */
+export function savedReadonly(view: CanvasViewLike): boolean | undefined {
+  const data = view.getLocalData?.();
+  if (!data || typeof data !== 'object' || !('readonly' in data)) return undefined;
+  return data.readonly === true;
+}
+
+export function isReadonly(canvas: CanvasLike): boolean {
+  return !!canvas.readonly;
+}
+
+/** Switch core's read-only mode, as its lock does, without saving it as the canvas's own setting. */
+export function setReadonly(canvas: CanvasLike, readonly: boolean): void {
+  canvas.setReadonly?.(readonly);
+}
+
+/**
+ * Centre the view on a canvas point, keeping the zoom, with core's own easing. `panTo` would jump; this asks
+ * `zoomToBbox` for a box the size of the view, less the 10% margin it adds. The size comes from the zoom the
+ * view is heading to, not the one on screen, so a move made while another is still easing keeps the zoom
+ * that one was going to. It doesn't zoom in past 100%, so a view zoomed in further also zooms out to 100%.
+ */
+export function glideTo(canvas: CanvasLike, x: number, y: number): void {
+  const rect = canvas.wrapperEl.getBoundingClientRect();
+  const scale = canvas.tZoom === undefined ? NaN : 2 ** canvas.tZoom;
+  if (!Number.isFinite(scale) || scale <= 0 || rect.width === 0 || rect.height === 0 || !canvas.zoomToBbox) {
+    canvas.panTo?.(x, y);
+    return;
+  }
+  const halfW = rect.width / scale / 2.2;
+  const halfH = rect.height / scale / 2.2;
+  canvas.zoomToBbox({ minX: x - halfW, minY: y - halfH, maxX: x + halfW, maxY: y + halfH });
+}
+
+/** Land the view's current move at once instead of easing there, as core does when a canvas opens. */
+export function finishViewportMove(canvas: CanvasLike): void {
+  canvas.finishViewportAnimation = true;
 }
 
 /** Centre of what the user is looking at, in canvas coordinates. */

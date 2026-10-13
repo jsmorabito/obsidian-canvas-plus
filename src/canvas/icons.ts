@@ -4,6 +4,8 @@ import { addIcon, removeIcon } from 'obsidian';
 export const NOTE_TYPES_ICON = 'ffc-note-types';
 /** Icon id for adding a tab panel: Lucide's file-plus-corner with the dog-ear rounded off like the other corners. */
 export const PANEL_ICON = 'ffc-panel-add';
+/** Icon id for presenting a canvas: Lucide's presentation, which Obsidian doesn't bundle. */
+export const PRESENT_ICON = 'ffc-presentation';
 
 /** Each icon's paths, drawn on a 24 x 24 grid. */
 const ICONS: Record<string, string[]> = {
@@ -16,6 +18,7 @@ const ICONS: Record<string, string[]> = {
     'M11.35 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9.35',
     'M14 19h6', 'M17 16v6',
   ],
+  [PRESENT_ICON]: ['M2 3h20', 'M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3', 'm7 21 5-5 5 5'],
 };
 
 /**

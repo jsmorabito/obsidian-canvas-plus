@@ -1,17 +1,9 @@
 import { ItemView, WorkspaceLeaf, debounce } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
-import { asCanvasView, isElement } from './adapter.ts';
+import { asCanvasView } from './adapter.ts';
 import { CanvasController } from './controller.ts';
 import { registerIcons } from './icons.ts';
 import { PanelStore } from './panel-store.ts';
-import { actionForKey, toolForKey } from './tools.ts';
-
-/** Elements where typing must never trigger a tool shortcut. */
-function isTypingTarget(target: EventTarget | null): boolean {
-  // Not `instanceof HTMLElement`: that is false for an element in a popout window.
-  if (!isElement(target)) return false;
-  return (target as HTMLElement).isContentEditable || target.closest('input, textarea, select, [contenteditable="true"], .cm-editor') !== null;
-}
 
 /**
  * Attaches canvas tools (toolbar, shortcuts, placement) to every open canvas
@@ -21,49 +13,6 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
   plugin.register(registerIcons());
   const panelStore = new PanelStore(plugin);
   const controllers = new Map<ItemView, CanvasController>();
-  let active: CanvasController | null = null;
-
-  // Shortcuts and "which canvas is active" are tracked per window: a popout window has its own document, and
-  // events in it never reach the main window's. Each document is wired once, when a canvas first appears in it.
-  const wired = new WeakSet<Document>();
-  const wireDocument = (doc: Document): void => {
-    if (wired.has(doc)) return;
-    wired.add(doc);
-    // "Active" means the last pointerdown or focus landed inside that canvas.
-    plugin.registerDomEvent(doc, 'pointerdown', (e) => {
-      const hit = [...controllers.values()].find((c) => c.contains(e.target));
-      if (hit) { active = hit; return; }
-      // Picking from a modal, menu or suggestion list shouldn't switch shortcuts off.
-      const popup = isElement(e.target) && e.target.closest('.modal-container, .menu, .suggestion-container, .tooltip');
-      if (!popup) active = null;
-    }, true);
-    plugin.registerDomEvent(doc, 'focusin', (e) => {
-      const hit = [...controllers.values()].find((c) => c.contains(e.target));
-      if (hit) active = hit;
-    }, true);
-
-    plugin.registerDomEvent(doc, 'keydown', (e) => {
-      if (!active || e.defaultPrevented || e.isComposing) return;
-      if (plugin.app.workspace.getActiveViewOfType(ItemView) !== active.view) return;
-      if (e.key === 'Escape') {
-        // A field being typed in, like a search box or a name being edited, gets Escape for itself.
-        if (!isTypingTarget(e.target) && active.escape()) e.stopPropagation();
-        return;
-      }
-      if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target)) return;
-      const key = e.key.toLowerCase();
-      const action = e.shiftKey ? undefined : actionForKey(key);
-      if (action) {
-        e.preventDefault();
-        active.runAction(action.id);
-        return;
-      }
-      const tool = toolForKey(key, e.shiftKey);
-      if (!tool) return;
-      e.preventDefault();
-      active.setTool(tool.id);
-    }, true);
-  };
 
   const sync = (): void => {
     const seen = new Set<ItemView>();
@@ -76,10 +25,8 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
       if (existing && existing.doc !== view.containerEl.doc) {
         existing.destroy();
         controllers.delete(view);
-        if (active === existing) active = null;
       }
       if (!controllers.has(view)) {
-        wireDocument(view.containerEl.doc);
         controllers.set(view, new CanvasController(plugin, view, panelStore));
       }
     });
@@ -87,20 +34,48 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
       if (seen.has(view)) continue;
       controller.destroy();
       controllers.delete(view);
-      if (active === controller) active = null;
     }
+  };
+  const activeController = (): CanvasController | undefined => {
+    const view = plugin.app.workspace.getActiveViewOfType(ItemView);
+    return view ? controllers.get(view) : undefined;
   };
   plugin.addCommand({
     id: 'toggle-canvas-note-card',
     name: 'Cycle selected canvas note cards between card, embed and styled link',
     checkCallback: (checking) => {
-      const view = plugin.app.workspace.getActiveViewOfType(ItemView);
-      const controller = view ? controllers.get(view) : undefined;
+      const controller = activeController();
       if (!controller) return false;
       if (!checking) controller.toggleSelectedCards();
       return true;
     },
   });
+  plugin.addCommand({
+    id: 'toggle-canvas-presentation',
+    name: 'Toggle presentation',
+    checkCallback: (checking) => {
+      const controller = activeController();
+      if (!controller) return false;
+      if (!checking) controller.presenter.toggle();
+      return true;
+    },
+  });
+  // Only offered while presenting, for a hotkey or a presentation clicker.
+  for (const [id, name, step] of [
+    ['next-presentation-stop', 'Next presentation stop', 'next'],
+    ['previous-presentation-stop', 'Previous presentation stop', 'previous'],
+  ] as const) {
+    plugin.addCommand({
+      id,
+      name,
+      checkCallback: (checking) => {
+        const presenter = activeController()?.presenter;
+        if (!presenter?.presenting) return false;
+        if (!checking) presenter[step]();
+        return true;
+      },
+    });
+  }
   // The canvas mounts a beat after its leaf appears.
   const syncSoon = (): void => { window.setTimeout(() => { sync(); sweepVisible(); }, 50); };
 
@@ -121,7 +96,6 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
   plugin.register(() => {
     for (const controller of controllers.values()) controller.destroy();
     controllers.clear();
-    active = null;
     // The controllers saved their panels as they went: write them now rather than after the plugin is gone.
     panelStore.flush();
   });

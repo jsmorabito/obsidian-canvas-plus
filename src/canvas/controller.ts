@@ -1,7 +1,7 @@
 import type { CanvasPlusPlugin } from '../main.ts';
 import { Component, Notice } from 'obsidian';
 import {
-  CanvasLike, CanvasNodeLike, CanvasViewLike, getExtra, isElement, isNode, patchData, selectedNodes, setInsets, toCanvasPoint, watchSelection,
+  CanvasLike, CanvasNodeLike, CanvasViewLike, getExtra, isElement, patchData, selectedNodes, setInsets, toCanvasPoint, watchSelection,
 } from './adapter.ts';
 import { ContextPanel } from './context-panel.ts';
 import { attachUndoJournal } from './undo-journal.ts';
@@ -21,6 +21,8 @@ import { readInk } from './ink-nodes.ts';
 import { PlacedRect, placeNode, placementRect } from './placement.ts';
 import { clearAnchor, isAnchor, keepMenuClearOfLabels, syncAnchor } from './anchor.ts';
 import { CardMenu } from './card-menu.ts';
+import { Presenter } from './presentation.ts';
+import { registerToolShortcuts } from './shortcuts.ts';
 import { trackPointer } from './pointer-session.ts';
 import { eachFrameUntil } from '../utils/helpers.ts';
 import { ActionId, isInkTool, isPlacementTool, PlaceTool, ToolId } from './tools.ts';
@@ -53,6 +55,7 @@ export class CanvasController {
   private minimap: Minimap;
   private tabPanels: CanvasPanels;
   private ink: InkTools;
+  readonly presenter: Presenter;
   /** Owns the markdown renderers behind styled link nodes. */
   private component = new Component();
 
@@ -73,6 +76,8 @@ export class CanvasController {
       return { left, bottom: corner.width > left ? corner.height : 0 };
     });
     this.ink = new InkTools(view);
+    this.cleanups.push(registerToolShortcuts(plugin.app, view, this));
+    this.presenter = new Presenter(plugin, view, () => this.setTool('select'));
     this.cleanups.push(attachUndoJournal(view.canvas!, plugin.app));
     this.cleanups.push(keepMenuClearOfLabels(view.canvas!));
     this.cleanups.push(watchSelection(view.canvas!, () => {
@@ -116,10 +121,6 @@ export class CanvasController {
       doc.removeEventListener('pointerdown', down, true);
       doc.removeEventListener('pointerup', up, true);
     });
-  }
-
-  contains(target: EventTarget | null): boolean {
-    return isNode(target) && this.view.containerEl.contains(target);
   }
 
   setTool(tool: ToolId): void {
@@ -181,21 +182,25 @@ export class CanvasController {
     this.relations.sweep();
     this.panel.update();
     this.layers.update();
+    this.presenter.refresh();
     this.injectKeyImage();
     for (const node of nodes.values()) {
       const el = node.nodeEl;
       if (!el) continue;
-      const ink = readInk(node);
-      const kind = ink ? 'ink' : getExtra(node, FIELD_KIND);
+      // Read once: every check below would otherwise copy the node's data again.
+      const data = node.getData?.();
+      const ink = readInk(node, data);
+      const kind = ink ? 'ink' : getExtra(node, FIELD_KIND, data);
       if (typeof kind === 'string') el.setAttribute('data-ffc-kind', kind);
       else el.removeAttribute('data-ffc-kind');
       if (ink) this.syncInk(node, ink);
-      if (isAnchor(node)) syncAnchor(canvas, node);
+      if (isAnchor(node, data)) syncAnchor(canvas, node);
       else clearAnchor(node);
     }
   }
 
   destroy(): void {
+    this.presenter.destroy();
     this.cancelDraw?.();
     this.relations.destroy();
     this.panel.destroy();

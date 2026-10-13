@@ -5,6 +5,25 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Present a canvas: select the presentation button in the view header (or
+  run **Toggle presentation**) to step through its anchors like slides.
+  Each stop shows the smallest group around its anchor, or centres an anchor
+  outside any group, and the view eases there; with reduced motion it moves
+  at once. Use the arrow keys, Space or Page Up/Down, or the bar at the
+  bottom; select the count (or press `G`) for a menu of every stop. `Esc`
+  or the header button ends it. While presenting, the canvas is read-only
+  and the panels and menus are hidden. **Next presentation stop** and
+  **Previous presentation stop** can be given hotkeys, for a clicker.
+
+### Changed
+
+- Tool shortcuts work whenever the canvas is the active tab, through the
+  view's own key scope, as core's shortcuts do.
+
 ## [1.3.0]
 
 ### Added
