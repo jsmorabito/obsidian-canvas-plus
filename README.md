@@ -39,7 +39,7 @@ Select **Add panel** above the help button in the controls on the right to open 
 ![A tab panel floating over the canvas](docs/mockups/panels.svg)
 
 **With Note Types**  
-These need the Note Types plugin enabled. Without it, the rest of Canvas Plus works as usual.
+These need the [Note Types](https://github.com/jsmorabito/obsidian-note-types) plugin enabled. Without it, the rest of Canvas Plus works as usual.
 
 - **Note cards.** Typed notes appear as cards showing an optional key image, the title and any properties you list under **Canvas card fields** for that note type (in Note Types' settings). A button in the selection toolbar, or the **Cycle selected canvas note cards between card, embed and styled link** command, switches a card to a full embed or to a styled link, the same pill the editor shows.
 - **Add note (`N`).** Add a typed note to the canvas, or create a new note of a type and its card in one step.
@@ -59,7 +59,7 @@ This relies on Obsidian's undocumented canvas internals, collected in `src/canva
 
 1. Copy `main.js`, `manifest.json`, and `styles.css` into `<Vault>/.obsidian/plugins/canvas-plus/`.
 2. Reload Obsidian.
-3. Enable **Canvas Plus** under **Settings → Community plugins**. Enable **Note Types** too for note cards and relations.
+3. Enable **Canvas Plus** under **Settings → Community plugins**. Enable [**Note Types**](https://github.com/jsmorabito/obsidian-note-types) too for note cards and relations.
 
 ---
 
@@ -73,7 +73,7 @@ If a note's key image is a web address, Obsidian loads it from that address when
 
 ## For developers: the Note Types API
 
-Canvas Plus talks to Note Types only through the API Note Types publishes on its plugin instance (`app.plugins.getPlugin('filtered-file-commands').api`, defined in Note Types' `src/api.ts`). The bridge is `src/note-types.ts`: it looks the API up on every use, checks its `version`, and falls back to a stand-in where no note has a type.
+Canvas Plus talks to [Note Types](https://github.com/jsmorabito/obsidian-note-types) only through the API Note Types publishes on its plugin instance (`app.plugins.getPlugin('filtered-file-commands').api`, defined in Note Types' `src/api.ts`). The bridge is `src/note-types.ts`: it looks the API up on every use, checks its `version`, and falls back to a stand-in where no note has a type.
 
 ---
 

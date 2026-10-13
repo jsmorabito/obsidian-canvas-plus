@@ -44,6 +44,7 @@ const ICONS = {
   redo: ['<path d="m15 14 5-5-5-5"/>', '<path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>'],
   layers: ['<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/>', '<path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/>', '<path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>'],
   map: ['<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/>', '<path d="M15 5.764v15M9 3.236v15"/>'],
+  book: ['<path d="M12 7v14"/>', '<path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>'],
   back: ['<path d="m12 19-7-7 7-7M19 12H5"/>'],
   fwd: ['<path d="M5 12h14M12 5l7 7-7 7"/>'],
   sidebar: ['<rect width="18" height="18" x="3" y="3" rx="2"/>', '<path d="M9 3v18"/>'],
@@ -88,8 +89,10 @@ const STYLE = `
   .ic { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 `;
 
-function defs(w, h) {
+/** Shared definitions, with only the icons that `body` uses. */
+function defs(w, h, body) {
   const symbols = Object.entries(ICONS)
+    .filter(([id]) => body.includes(`#i-${id}"`))
     .map(([id, parts]) => `<symbol id="i-${id}" viewBox="0 0 24 24" class="ic">${parts.join('')}</symbol>`)
     .join('');
   return `<defs>
@@ -106,7 +109,7 @@ function svg(title, body, w = W, h = H) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${title}">
 <title>${title}</title>
 <style>${STYLE}</style>
-${defs(w, h)}
+${defs(w, h, body)}
 <g clip-path="url(#frame)">
   <rect width="${w}" height="${h}" class="bg"/>
   <rect width="${w}" height="${h}" fill="url(#dots)"/>
@@ -414,13 +417,11 @@ scenes.panels = () => {
     ${card(238, 92, 150, 96, 'Attendees', [90, 110, 70])}
     ${card(68, 204, 320, 76, 'Decisions', [250, 200])}
     ${card(48, 340, 200, 100, 'Follow-ups', [150, 120, 90])}
-    ${box(px, py, pw, ph, { r: 12, shadow: true })}
-    <path d="M${px} ${py + 12}a12 12 0 0 1 12-12h${pw - 24}a12 12 0 0 1 12 12v28h-${pw}z" class="fill-alt"/>
-    <line x1="${px}" y1="${py + 40}" x2="${px + pw}" y2="${py + 40}" class="line"/>
-    ${icon('left', px + 12, py + 11, 18, 'cm')}${icon('right', px + 36, py + 11, 18, 'cf')}
-    ${text(px + pw / 2, py + 25, 'Meeting notes', { size: 13, weight: 600, anchor: 'middle' })}
-    ${icon('x', px + pw - 30, py + 11, 18, 'cm')}
-    ${text(px + 32, py + 92, 'Meeting notes', { size: 24, weight: 700 })}
+    ${box(px, py, pw, ph, { r: 10, shadow: true })}
+    ${icon('back', px + 16, py + 14, 17, 'cf')}${icon('fwd', px + 42, py + 14, 17, 'cf')}
+    ${text(px + 76, py + 28, 'Meeting notes', { size: 14, weight: 500 })}
+    ${icon('book', px + pw - 94, py + 14, 17, 'cm')}${icon('more', px + pw - 66, py + 14, 17, 'cm')}${icon('x', px + pw - 36, py + 14, 17, 'cm')}
+    ${text(px + 32, py + 96, 'Meeting notes', { size: 26, weight: 700 })}
     ${lines(px + 32, py + 116, [320, 300, 220], { gap: 16, h: 7 })}
     ${text(px + 32, py + 190, 'Next steps', { size: 16, weight: 650 })}
     ${[0, 1, 2].map((i) => `<circle cx="${px + 38}" cy="${py + 214 + i * 22}" r="3" class="tm"/>${lines(px + 50, py + 211 + i * 22, [[210, 250, 170][i]], { h: 7 })}`).join('')}
