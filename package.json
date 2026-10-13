@@ -1,6 +1,6 @@
 {
   "name": "canvas-plus",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Canvas tools, free text, ink and layers for Obsidian, with note cards and relations when Note Types is enabled.",
   "main": "main.js",
   "scripts": {
