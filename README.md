@@ -1,5 +1,7 @@
 # Canvas Plus — Obsidian Plugin
 
+![Canvas Plus on an Obsidian canvas: the tool bar, layers panel and minimap](docs/mockups/hero.svg)
+
 Drawing and layout tools for Obsidian's canvas. Paired with the [Note Types](https://github.com/jsmorabito/obsidian-note-types) plugin, typed notes become cards and edges between them become relations.
 
 ---

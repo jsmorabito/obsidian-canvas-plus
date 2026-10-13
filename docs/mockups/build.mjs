@@ -37,6 +37,16 @@ const ICONS = {
   filter: ['<path d="M3 6h18M7 12h10M10 18h4"/>'],
   more: ['<circle cx="12" cy="12" r="1"/>', '<circle cx="19" cy="12" r="1"/>', '<circle cx="5" cy="12" r="1"/>'],
   check: ['<path d="M20 6 9 17l-5-5"/>'],
+  settings: ['<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>', '<circle cx="12" cy="12" r="3"/>'],
+  reset: ['<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>', '<path d="M21 3v5h-5"/>'],
+  fit: ['<path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>'],
+  undo: ['<path d="M9 14 4 9l5-5"/>', '<path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>'],
+  redo: ['<path d="m15 14 5-5-5-5"/>', '<path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>'],
+  layers: ['<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/>', '<path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/>', '<path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>'],
+  map: ['<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/>', '<path d="M15 5.764v15M9 3.236v15"/>'],
+  back: ['<path d="m12 19-7-7 7-7M19 12H5"/>'],
+  fwd: ['<path d="M5 12h14M12 5l7 7-7 7"/>'],
+  sidebar: ['<rect width="18" height="18" x="3" y="3" rx="2"/>', '<path d="M9 3v18"/>'],
   grip: ['<circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/>'],
 };
 
@@ -55,6 +65,9 @@ const STYLE = `
   .ink-red { stroke: #e93147; } .ink-green { stroke: #08b94e; }
   .hl-yellow { stroke: #f5c400; stroke-opacity: .38; }
   .shadow { flood-color: #1b1b30; flood-opacity: .08; }
+  .gfill { fill: #ffffff; fill-opacity: .6; }
+  .o-fill { fill: #f6e5dc; stroke: #d9a184; stroke-width: 1.2; } .o-t { fill: #a8461a; }
+  .chrome { fill: #ececf0; } .ink-dark { stroke: #222228; }
   @media (prefers-color-scheme: dark) {
     .bg { fill: #1c1c1f; } .dot { fill: #38383e; }
     .surface { fill: #26262a; stroke: #36363c; }
@@ -68,11 +81,14 @@ const STYLE = `
     .on-a { fill: #ffffff; }
     .hl-yellow { stroke-opacity: .3; }
     .shadow { flood-color: #000000; flood-opacity: .35; }
+    .gfill { fill: #ffffff; fill-opacity: .025; }
+    .o-fill { fill: #3a2a22; stroke: #8a5235; } .o-t { fill: #f0a274; }
+    .chrome { fill: #161618; } .ink-dark { stroke: #e4e4e9; }
   }
   .ic { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 `;
 
-function defs() {
+function defs(w, h) {
   const symbols = Object.entries(ICONS)
     .map(([id, parts]) => `<symbol id="i-${id}" viewBox="0 0 24 24" class="ic">${parts.join('')}</symbol>`)
     .join('');
@@ -82,21 +98,21 @@ function defs() {
     <filter id="sh" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="8" class="shadow"/></filter>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9c7ff"/><stop offset="1" stop-color="#e9d8ff"/></linearGradient>
     <linearGradient id="dusk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd1b3"/><stop offset="1" stop-color="#f6a8c4"/></linearGradient>
-    <clipPath id="frame"><rect width="${W}" height="${H}" rx="14"/></clipPath>
+    <clipPath id="frame"><rect width="${w}" height="${h}" rx="14"/></clipPath>
   </defs>`;
 }
 
-function svg(title, body) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${title}">
+function svg(title, body, w = W, h = H) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${title}">
 <title>${title}</title>
 <style>${STYLE}</style>
-${defs()}
+${defs(w, h)}
 <g clip-path="url(#frame)">
-  <rect width="${W}" height="${H}" class="bg"/>
-  <rect width="${W}" height="${H}" fill="url(#dots)"/>
+  <rect width="${w}" height="${h}" class="bg"/>
+  <rect width="${w}" height="${h}" fill="url(#dots)"/>
   ${body}
 </g>
-<rect x=".5" y=".5" width="${W - 1}" height="${H - 1}" rx="14" class="line"/>
+<rect x=".5" y=".5" width="${w - 1}" height="${h - 1}" rx="14" class="line"/>
 </svg>
 `;
 }
@@ -127,18 +143,42 @@ function card(x, y, w, h, title, widths = [w - 60, w - 90, w - 120], { selected 
 }
 
 /** A core group: outline with its label above. */
-function group(x, y, w, h, label, { cls = 'line-strong', labelCls = 'tm' } = {}) {
-  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" class="${cls}" stroke-width="1.5"/>
-    ${text(x + 4, y - 9, label, { size: 13, cls: labelCls, weight: 500 })}`;
+function group(x, y, w, h, label, { size = 17 } = {}) {
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" class="gfill"/>
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" class="line-strong" stroke-width="1.2"/>
+    ${text(x + 4, y - 10, label, { size, cls: 't', weight: 400 })}`;
+}
+
+/** A core file node coloured orange, with its name above as core shows it. */
+function fileCard(x, y, w, h, title, { label = title, size = 14 } = {}) {
+  return `${text(x, y - 9, label, { size: 12.5, cls: 'tf' })}
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" class="o-fill"/>
+    ${text(x + 12, y + h / 2 + size * .35, title, { size, cls: 'o-t', weight: 650 })}`;
+}
+
+/** Core's controls on the right, as stacked button groups. */
+function controls(x, y, active) {
+  const groups = [['settings'], ['plus', 'reset', 'fit', 'minus'], ['undo', 'redo'], ['panel'], ['help']];
+  const s = 40;
+  let out = '';
+  groups.forEach((g) => {
+    out += box(x, y, s, g.length * s, { r: 8, shadow: true });
+    g.forEach((id, i) => {
+      if (id === active) out += `<rect x="${x + 4}" y="${y + i * s + 4}" width="${s - 8}" height="${s - 8}" rx="6" class="asoft"/>`;
+      out += icon(id, x + 11, y + i * s + 11, 18, id === active ? 'ca' : id === 'redo' ? 'cf' : 'cm');
+    });
+    y += g.length * s + 8;
+  });
+  return out;
 }
 
 /** An anchor: its icon, with its name above. */
-const anchor = (x, y, name, cls = 'cm') =>
-  `${icon('anchor', x, y, 20, cls)}${text(x + 10, y - 8, name, { size: 12, cls: cls === 'ca' ? 'a' : 'tm', weight: 500, anchor: 'middle' })}`;
+const anchor = (x, y, name) =>
+  `${icon('anchor', x, y, 20, 'ca')}${text(x + 10, y - 9, name, { size: 12.5, cls: 'tf', anchor: 'middle' })}`;
 
 /** Tool bar from groups of tools. Returns markup and the x of each tool by id. */
-function toolbar(cx, y, groups, active) {
-  const size = 34, gap = 2, sep = 13, pad = 6;
+function toolbar(cx, y, groups, active, size = 34) {
+  const gap = 2, sep = 13, pad = 6, is = Math.round(size * .53);
   let w = pad * 2;
   groups.forEach((g, i) => { w += g.length * size + (g.length - 1) * gap + (i ? sep : 0); });
   let x = cx - w / 2 + pad;
@@ -146,13 +186,13 @@ function toolbar(cx, y, groups, active) {
   let out = box(cx - w / 2, y, w, size + pad * 2, { r: 12, shadow: true });
   groups.forEach((g, gi) => {
     if (gi) {
-      out += `<line x1="${x + sep / 2 - gap / 2}" y1="${y + 14}" x2="${x + sep / 2 - gap / 2}" y2="${y + size + pad * 2 - 14}" class="line" stroke-width="1"/>`;
+      out += `<line x1="${x + sep / 2 - gap / 2}" y1="${y}" x2="${x + sep / 2 - gap / 2}" y2="${y + size + pad * 2}" class="line" stroke-width="1"/>`;
       x += sep;
     }
     g.forEach((id) => {
       pos[id] = x + size / 2;
       if (id === active) out += `<rect x="${x}" y="${y + pad}" width="${size}" height="${size}" rx="8" class="asoft"/>`;
-      out += icon(id, x + 8, y + pad + 8, 18, id === active ? 'ca' : 'cm');
+      out += icon(id, x + (size - is) / 2, y + pad + (size - is) / 2, is, id === active ? 'ca' : 'cm');
       x += size + gap;
     });
   });
@@ -191,6 +231,24 @@ const pill = (x, y, label, { cls = 'asoft', tcls = 'a', size = 11 } = {}) => {
   const w = label.length * size * 0.6 + 16;
   return `<rect x="${x}" y="${y}" width="${w}" height="${size + 9}" rx="${(size + 9) / 2}" class="${cls}"/>${text(x + w / 2, y + size + 2.5, label, { size, cls: tcls, weight: 600, anchor: 'middle' })}`;
 };
+
+/** Obsidian's view header: back and forward, the title, and the view's buttons. */
+function viewHeader(w, y, title, presenting = false) {
+  return `<rect y="${y}" width="${w}" height="44" class="fill-surface"/>
+    <line x1="0" y1="${y + 44}" x2="${w}" y2="${y + 44}" class="line"/>
+    ${icon('back', 18, y + 13, 18, 'cf')}${icon('fwd', 46, y + 13, 18, 'cf')}
+    ${text(80, y + 27, title, { size: 14, weight: 500 })}
+    ${presenting ? `<rect x="${w - 84}" y="${y + 7}" width="30" height="30" rx="7" class="asoft"/>` : ''}
+    ${icon('present', w - 78, y + 13, 18, presenting ? 'ca' : 'cm')}
+    ${icon('more', w - 42, y + 13, 18, 'cm')}`;
+}
+
+/** A note card with a key image on top and its title below. */
+function imageCard(x, y, w, h, title, grad = 'sky') {
+  return `${box(x, y, w, h, { r: 8, shadow: true })}
+    ${keyImage(x + 8, y + 8, w - 16, h - 52, grad, 5)}
+    ${text(x + 12, y + h - 17, title, { size: 14, weight: 600 })}`;
+}
 
 // ---------- scenes ----------
 
@@ -333,21 +391,18 @@ scenes.present = () => {
   return svg('Presenting a canvas stop by stop', `
     <rect width="${W}" height="${head}" class="fill-surface"/>
     <line x1="0" y1="${head}" x2="${W}" y2="${head}" class="line"/>
-    ${icon('left', 16, 13, 18, 'cf')}${icon('right', 42, 13, 18, 'cf')}
-    ${text(W / 2, 27, 'Roadmap', { size: 13, cls: 'tm', weight: 500, anchor: 'middle' })}
-    <rect x="${W - 82}" y="7" width="30" height="30" rx="7" class="asoft"/>
-    ${icon('present', W - 76, 13, 18, 'ca')}${icon('more', W - 40, 13, 18, 'cm')}
+    ${viewHeader(W, 0, 'Roadmap', true)}
     ${text(96, 112, 'Q4 roadmap', { size: 34, weight: 700 })}
     ${text(98, 142, 'Three bets for the quarter', { size: 15, cls: 'tm' })}
     ${card(96, 170, 240, 108, 'Faster sync', [190, 160, 120, 140])}
     ${card(360, 170, 240, 108, 'Shared canvases', [180, 170, 100, 150])}
     ${card(624, 170, 240, 108, 'Mobile ink', [170, 190, 130, 90])}
     ${menu}
-    ${box(bx, by, barW, 44, { r: 12, shadow: true })}
-    ${icon('left', bx + 12, by + 12, 20, 'cm')}
-    <rect x="${W / 2 - 34}" y="${by + 7}" width="68" height="30" rx="7" class="fill-hover"/>
-    ${text(W / 2, by + 27, '2 / 5', { size: 14, weight: 600, anchor: 'middle' })}
-    ${icon('right', bx + barW - 32, by + 12, 20, 'cm')}
+    ${box(bx, by, barW, 44, { r: 8, shadow: true })}
+    <path d="M${bx + 48} ${by}v44M${bx + barW - 48} ${by}v44" class="line"/>
+    ${icon('left', bx + 14, by + 12, 20, 'cm')}
+    ${text(W / 2, by + 27, '2 / 5', { size: 14, weight: 500, anchor: 'middle' })}
+    ${icon('right', bx + barW - 34, by + 12, 20, 'cm')}
   `);
 };
 
@@ -371,11 +426,7 @@ scenes.panels = () => {
     ${[0, 1, 2].map((i) => `<circle cx="${px + 38}" cy="${py + 214 + i * 22}" r="3" class="tm"/>${lines(px + 50, py + 211 + i * 22, [[210, 250, 170][i]], { h: 7 })}`).join('')}
     ${lines(px + 32, py + 300, [330, 290, 310, 180], { gap: 16, h: 7 })}
     <path d="M${px + pw - 8} ${py + ph - 20}L${px + pw - 20} ${py + ph - 8}M${px + pw - 8} ${py + ph - 13}L${px + pw - 13} ${py + ph - 8}" class="line-strong" stroke-width="1.5" stroke-linecap="round"/>
-    ${box(W - 62, 150, 44, 172, { r: 12, shadow: true })}
-    ${icon('plus', W - 50, 162, 20, 'cm')}${icon('minus', W - 50, 198, 20, 'cm')}
-    <line x1="${W - 54}" y1="232" x2="${W - 26}" y2="232" class="line"/>
-    <rect x="${W - 57}" y="240" width="34" height="34" rx="8" class="asoft"/>
-    ${icon('panel', W - 50, 247, 20, 'ca')}${icon('help', W - 50, 286, 20, 'cm')}
+    ${controls(W - 58, 40, 'panel')}
   `);
 };
 
@@ -410,6 +461,110 @@ scenes.notetypes = () => {
         ${icon('note', sx + 24, y + 28, 16, 'cm')}${text(sx + 48, y + 41, v, { size: 13, weight: 500 })}`;
     }).join('')}
   `);
+};
+
+scenes.hero = () => {
+  const w = 1280, h = 800, top = 88;
+  // Canvas content, in screen units. Groups start with '#'; the rest are drawn by hand below.
+  const nodes = [
+    [320, 230, 430, 230, '#'], [340, 280, 190, 64], [550, 280, 180, 64], [340, 370, 190, 64],
+    [800, 230, 360, 230, '#'], [820, 270, 150, 160], [990, 280, 150, 64],
+    [340, 568, 200, 60], [640, 540, 170, 150], [870, 578, 230, 110],
+    // Off screen: only the minimap shows these.
+    [1340, 200, 300, 260, '#'], [1360, 240, 120, 80], [1500, 240, 120, 80], [1360, 340, 260, 90],
+    [1300, 560, 220, 120], [-120, 520, 160, 110], [500, 860, 340, 160, '#'], [520, 890, 140, 90], [680, 890, 140, 90],
+  ];
+  const bounds = [-140, 100, 1680, 1040];
+  const mx = 16, mw = 248, mh = 150, my = h - 16 - mh;
+  const s = Math.min((mw - 24) / (bounds[2] - bounds[0]), (mh - 24) / (bounds[3] - bounds[1]));
+  const ox = mx + (mw - (bounds[2] - bounds[0]) * s) / 2 - bounds[0] * s;
+  const oy = my + (mh - (bounds[3] - bounds[1]) * s) / 2 - bounds[1] * s;
+  const mini = nodes.map(([x, y, nw, nh, k]) =>
+    `<rect x="${ox + x * s}" y="${oy + y * s}" width="${nw * s}" height="${nh * s}" rx="1.5" class="${k ? 'line-strong' : 'bar-t'}"${k ? ' stroke-width="1"' : ''}/>`).join('');
+  const vb = [ox, oy + top * s, w * s, (h - top) * s];
+
+  const lp = { x: 16, y: top + 16, w: 248 };
+  const rows = [
+    { d: 0, ic: 'text', label: 'Product launch' },
+    { d: 0, ic: 'group', label: 'Research', open: true },
+    { d: 1, ic: 'note', label: 'User interviews' },
+    { d: 1, ic: 'note', label: 'Survey results' },
+    { d: 1, ic: 'note', label: 'Competitors' },
+    { d: 1, ic: 'anchor', label: 'Kickoff' },
+    { d: 0, ic: 'group', label: 'Design', open: true, sel: true },
+    { d: 1, ic: 'note', label: 'Wireframes' },
+    { d: 1, ic: 'note', label: 'Brand guide' },
+    { d: 0, ic: 'note', label: 'Launch checklist' },
+    { d: 0, ic: 'note', label: 'Moodboard' },
+    { d: 0, ic: 'anchor', label: 'Retro' },
+  ];
+  const lh = 104 + rows.length * 30 + 8;
+  let list = '';
+  rows.forEach((r, i) => {
+    const y = lp.y + 100 + i * 30;
+    const x = lp.x + 10 + r.d * 20;
+    if (r.sel) list += `<rect x="${lp.x + 8}" y="${y - 4}" width="${lp.w - 16}" height="27" rx="6" class="asoft"/>`;
+    if (r.open) list += icon('down', x, y + 3, 13, 'cf');
+    list += icon(r.ic, x + (r.d ? 4 : 17), y + 2, 15, r.sel ? 'ca' : 'cm');
+    list += text(x + (r.d ? 27 : 40), y + 14, r.label, { size: 12.5, cls: r.sel ? 'a' : 't', weight: r.sel ? 600 : 400 });
+  });
+
+  const bar = toolbar(w / 2, h - 82, TOOLS, 'pointer', 40);
+  return svg('Canvas Plus: tool bar, layers panel and minimap on an Obsidian canvas', `
+    <!-- canvas content -->
+    <path d="M314 160 C 420 156, 520 158, 590 157" class="hl-yellow" stroke-width="26" stroke-linecap="round" fill="none"/>
+    ${text(320, 168, 'Product launch', { size: 34, weight: 700 })}
+    ${text(322, 196, 'Everything for the December release', { size: 15, cls: 'tm' })}
+    ${group(320, 250, 430, 210, 'Research')}
+    ${fileCard(340, 300, 190, 60, 'User interviews')}
+    ${fileCard(550, 300, 180, 60, 'Survey results')}
+    ${fileCard(340, 388, 190, 60, 'Competitors')}
+    ${anchor(626, 410, 'Kickoff')}
+    ${group(800, 250, 380, 210, 'Design')}
+    <rect x="797" y="247" width="386" height="216" rx="12" class="as" stroke-width="2"/>
+    ${imageCard(820, 276, 160, 164, 'Wireframes')}
+    ${fileCard(1000, 300, 160, 60, 'Brand guide')}
+    ${text(1002, 412, 'Ship by Dec 12', { size: 13 })}
+    ${pill(1098, 399, '#launch', { size: 11 })}
+    <path d="M730 330 C 770 330, 770 330, 794 330" class="line-strong" stroke-width="2" fill="none"/>
+    <path d="M786 324 l8 6 -8 6" class="line-strong" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M992 396 C 1040 384, 1150 384, 1166 404 C 1178 424, 1110 432, 1050 430 C 1000 428, 984 414, 996 398" class="ink-red" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+    ${fileCard(340, 568, 200, 60, 'Launch checklist')}
+    <path d="M556 600 l10 10 l22 -24" class="ink-green" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    ${imageCard(640, 540, 170, 150, 'Moodboard', 'dusk')}
+    ${anchor(880, 548, 'Retro')}
+    <rect x="870" y="578" width="230" height="110" rx="8" class="line-strong" stroke-dasharray="4 4" stroke-width="1.2"/>
+    ${fileCard(890, 616, 190, 52, 'Retro notes')}
+
+    <!-- window chrome -->
+    <rect width="${w}" height="44" class="chrome"/>
+    <circle cx="22" cy="22" r="6" fill="#ff5f57"/><circle cx="42" cy="22" r="6" fill="#febc2e"/><circle cx="62" cy="22" r="6" fill="#28c840"/>
+    ${icon('sidebar', 86, 13, 18, 'cm')}
+    <path d="M124 44v-30a8 8 0 0 1 8-8h176a8 8 0 0 1 8 8v30z" class="fill-surface"/>
+    ${icon('group', 138, 16, 15, 'cm')}${text(162, 28.5, 'Roadmap', { size: 13, weight: 500 })}${icon('x', 290, 17, 14, 'cm')}
+    ${text(336, 28.5, 'Meeting notes', { size: 13, cls: 'tm' })}
+    <line x1="472" y1="16" x2="472" y2="30" class="line-strong"/>
+    ${text(488, 28.5, 'New tab', { size: 13, cls: 'tm' })}
+    ${viewHeader(w, 44, 'Roadmap')}
+
+    <!-- layers panel -->
+    ${box(lp.x, lp.y, lp.w, lh, { r: 12, shadow: true })}
+    ${icon('layers', lp.x + 16, lp.y + 17, 16, 'c')}${text(lp.x + 40, lp.y + 30, 'Layers', { size: 14, weight: 700 })}
+    ${box(lp.x + 12, lp.y + 48, lp.w - 66, 30, { r: 8, cls: 'surface-alt' })}
+    ${icon('search', lp.x + 22, lp.y + 56, 14, 'cf')}${text(lp.x + 44, lp.y + 67.5, 'Search layers', { size: 12, cls: 'tf' })}
+    ${box(lp.x + lp.w - 48, lp.y + 48, 36, 30, { r: 8, cls: 'surface-alt' })}${icon('filter', lp.x + lp.w - 38, lp.y + 55, 16, 'cm')}
+    ${list}
+
+    <!-- minimap -->
+    ${box(mx, my, mw, mh, { r: 12, shadow: true })}
+    ${mini}
+    <rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" rx="2" class="asoft"/>
+    <rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" rx="2" class="as" stroke-width="1.5"/>
+    ${icon('hide', mx + mw - 24, my + 8, 13, 'cf')}
+
+    ${controls(w - 58, top + 16)}
+    ${bar.out}
+  `, w, h);
 };
 
 for (const [name, make] of Object.entries(scenes)) {
