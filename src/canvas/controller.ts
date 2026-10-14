@@ -22,6 +22,7 @@ import { PlacedRect, placeNode, placementRect } from './placement.ts';
 import { clearAnchor, isAnchor, keepMenuClearOfLabels, syncAnchor } from './anchor.ts';
 import { CardMenu } from './card-menu.ts';
 import { Presenter } from './presentation.ts';
+import { Focuser } from './focus.ts';
 import { registerToolShortcuts } from './shortcuts.ts';
 import { trackPointer } from './pointer-session.ts';
 import { eachFrameUntil } from '../utils/helpers.ts';
@@ -56,6 +57,7 @@ export class CanvasController {
   private tabPanels: CanvasPanels;
   private ink: InkTools;
   readonly presenter: Presenter;
+  readonly focuser: Focuser;
   /** Owns the markdown renderers behind styled link nodes. */
   private component = new Component();
 
@@ -78,6 +80,8 @@ export class CanvasController {
     this.ink = new InkTools(view);
     this.cleanups.push(registerToolShortcuts(plugin.app, view, this));
     this.presenter = new Presenter(plugin, view, () => this.setTool('select'));
+    // Added after the present button, so it sits just before it in the header.
+    this.focuser = new Focuser(plugin, view);
     this.cleanups.push(attachUndoJournal(view.canvas!, plugin.app));
     this.cleanups.push(keepMenuClearOfLabels(view.canvas!));
     this.cleanups.push(watchSelection(view.canvas!, () => {
@@ -166,11 +170,20 @@ export class CanvasController {
     return true;
   }
 
-  /** Esc: abandon an in-progress draw and return to Select. Returns whether it did anything. */
+  /**
+   * Esc: abandon an in-progress draw and return to Select, or else, with nothing selected (core's Esc deselects),
+   * bring Obsidian's panels back from focus. Returns whether it did anything.
+   */
   escape(): boolean {
-    if (this.tool === 'select' && !this.cancelDraw) return false;
-    this.setTool('select');
-    return true;
+    if (this.tool !== 'select' || this.cancelDraw) {
+      this.setTool('select');
+      return true;
+    }
+    if (this.focuser.focused && (this.view.canvas?.selection?.size ?? 0) === 0) {
+      this.focuser.stop();
+      return true;
+    }
+    return false;
   }
 
   /** Tag node elements so CSS can style them: free text has no card chrome, note cards get a type chip. */
@@ -201,6 +214,7 @@ export class CanvasController {
 
   destroy(): void {
     this.presenter.destroy();
+    this.focuser.destroy();
     this.cancelDraw?.();
     this.relations.destroy();
     this.panel.destroy();

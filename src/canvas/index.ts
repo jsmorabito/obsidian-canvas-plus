@@ -60,6 +60,16 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
       return true;
     },
   });
+  plugin.addCommand({
+    id: 'toggle-canvas-focus',
+    name: 'Toggle canvas focus',
+    checkCallback: (checking) => {
+      const controller = activeController();
+      if (!controller) return false;
+      if (!checking) controller.focuser.toggle();
+      return true;
+    },
+  });
   // Only offered while presenting, for a hotkey or a presentation clicker.
   for (const [id, name, step] of [
     ['next-presentation-stop', 'Next presentation stop', 'next'],

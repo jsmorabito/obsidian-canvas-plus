@@ -938,6 +938,48 @@ svg.ffc-ink path.ffc-ink-auto {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Canvas focus: the canvas fills the window. The ribbons, sidebars, tab bars and status bar are hidden, as are
+ * the other tabs and splits beside it; the split it is in then grows to fill the space. Tab panels on the canvas
+ * hold leaves of their own, so nothing inside the canvas is touched. Everything beside the root split goes, so
+ * ribbons other plugins add (Commander's right ribbon) go too; they style theirs strongly, hence the !important.
+ */
+body.ffc-canvas-focus .workspace > :not(.workspace-split.mod-root) {
+  display: none !important;
+}
+
+body.ffc-canvas-focus .status-bar,
+body.ffc-canvas-focus .mobile-navbar,
+body.ffc-canvas-focus .workspace-tab-header-container:not(.ffc-focus-leaf *),
+body.ffc-canvas-focus .workspace-tab-container > .workspace-tab-header:not(.ffc-focus-leaf *),
+body.ffc-canvas-focus .workspace-leaf-resize-handle:not(.ffc-focus-leaf *),
+body.ffc-canvas-focus .workspace-split.mod-root .workspace-split:not(:has(.ffc-focus-leaf)):not(.ffc-focus-leaf *),
+body.ffc-canvas-focus .workspace-split.mod-root .workspace-tabs:not(:has(.ffc-focus-leaf)):not(.ffc-focus-leaf *),
+body.ffc-canvas-focus .workspace-split.mod-root .workspace-leaf:not(:has(.ffc-focus-leaf)):not(.ffc-focus-leaf *) {
+  display: none;
+}
+
+/* With the tab bar gone, the view header makes room for the window's own buttons, as the tab bar did. */
+body.ffc-canvas-focus.is-hidden-frameless:not(.is-fullscreen).mod-macos .ffc-focus-leaf > .view-header {
+  padding-inline-start: 80px;
+}
+
+body.ffc-canvas-focus.is-hidden-frameless:not(.is-fullscreen):not(.mod-macos) .ffc-focus-leaf > .view-header {
+  padding-inline-end: calc(var(--size-4-2) + var(--frame-right-space));
+}
+
+/* And it moves the window, as the tab bar did, everywhere but its buttons and title. */
+body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header,
+body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-header-title-container {
+  -webkit-app-region: drag;
+}
+
+body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-header-left,
+body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-header-title-container > *,
+body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-actions {
+  -webkit-app-region: no-drag;
+}
+
 /* Tab panels */
 .ffc-tab-panels {
   position: absolute;

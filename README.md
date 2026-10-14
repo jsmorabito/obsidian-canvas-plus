@@ -33,6 +33,9 @@ Select the presentation button in the view header, next to core's view buttons, 
 
 ![Presenting a canvas, with the menu of stops open](docs/mockups/present.svg)
 
+**Focusing**  
+Select the focus button in the view header, next to the presentation button, or run **Toggle canvas focus**, to let the canvas fill the window: the ribbons, sidebars, tab bars, status bar and any other tabs are hidden, leaving the canvas and its view header. Select it again, or press `Esc` with nothing selected, to bring them back. A canvas in a sidebar can't be focused; move it into the main area first. The window stays as it is; it isn't full screen. Opening another tab or a sidebar view brings them back too.
+
 **Tab panels**  
 Select **Add panel** above the help button in the controls on the right to open a new tab floating over the canvas. It starts on the new tab screen and works like any tab: create a note, go to a file, follow links, go back and forward. Its new tab screen also has **Open widget**, a searchable list of the views core and community plugins add, such as the outline, graph view or bookmarks, to open in the panel. Drag its header to move it and drag an edge or corner to resize it. Panels float above the canvas, not on it, so the canvas pans and zooms underneath. Each canvas remembers its panels, where they sit and what they show, and brings them back when you open it again. Close one with the × at the right end of its header.
 

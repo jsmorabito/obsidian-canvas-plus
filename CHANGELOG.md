@@ -5,6 +5,17 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Focus a canvas: select the focus button in the view header, next to the
+  presentation button (or run **Toggle canvas focus**), to hide the
+  ribbons, sidebars, tab bars, status bar and any other tabs, so the canvas
+  fills the window. Select it again (or press `Esc` with nothing selected)
+  to bring them back. The window itself stays as it is; it isn't full
+  screen. A canvas in a sidebar can't be focused.
+
 ## [1.4.0]
 
 ### Added
