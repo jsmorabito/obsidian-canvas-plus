@@ -17,8 +17,8 @@ export const HEADER_GRAB_PX = 16;
 export interface PanelDropTarget {
   /** Returns whether the pointer is over it. */
   dragOver(e: PointerEvent): boolean;
-  /** The drag ended. Returns true if it was let go over the target, which then holds the panel. */
-  drop(e: PointerEvent): boolean;
+  /** The drag ended: let go at `e`, or cancelled (null). Returns true if it was let go over the target, which then holds the panel. */
+  drop(e: PointerEvent | null): boolean;
 }
 
 /** Shown on a panel's card in the tray. */

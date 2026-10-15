@@ -22,8 +22,8 @@ export interface TabPanelHooks {
   onMove: () => void;
   /** The panel is being dragged by its header. Returns whether it's over somewhere that would take it. */
   onDrag?: (e: PointerEvent) => boolean;
-  /** It was let go. Returns true if that took it (the panel is then gone). */
-  onDrop?: (e: PointerEvent) => boolean;
+  /** The drag ended: let go at `e`, or cancelled (null). Returns true if that took it (the panel is then gone). */
+  onDrop?: (e: PointerEvent | null) => boolean;
   onClose: () => void;
   onRaise: () => void;
 }
@@ -223,8 +223,16 @@ export class TabPanel {
     });
   }
 
-  /** `release` is told where the pointer was let go, and returns true if that took the panel away. */
-  private track(down: PointerEvent, cls: string, apply: (e: PointerEvent) => void, release?: (e: PointerEvent) => boolean): void {
+  /**
+   * `release` is told where the pointer was let go, or null if the gesture was cancelled, and returns true if that
+   * took the panel away.
+   */
+  private track(
+    down: PointerEvent,
+    cls: string,
+    apply: (e: PointerEvent) => void,
+    release?: (e: PointerEvent | null) => boolean,
+  ): void {
     this.stopGesture?.();
     this.el.addClass(cls);
     const stopTracking = trackPointer(this.el.doc, down.pointerId, {
@@ -236,7 +244,7 @@ export class TabPanel {
       stopTracking();
       this.stopGesture = null;
       this.el.removeClass(cls);
-      if (e && release?.(e)) return;
+      if (release?.(e ?? null)) return;
       this.hooks.onMove();
     };
     this.stopGesture = () => end();

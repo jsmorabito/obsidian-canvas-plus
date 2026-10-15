@@ -18,6 +18,8 @@ export interface TrayItem {
 }
 
 const EMPTY: TrayItem[] = [];
+/** Each tray array already checked, so a redraw check on every canvas frame doesn't walk it again. */
+const checked = new WeakMap<unknown[], TrayItem[]>();
 
 const isItem = (o: unknown): o is TrayItem => typeof o === 'object' && o !== null
   && typeof (o as TrayItem).id === 'string' && Array.isArray((o as TrayItem).nodes) && Array.isArray((o as TrayItem).edges);
@@ -25,7 +27,13 @@ const isItem = (o: unknown): o is TrayItem => typeof o === 'object' && o !== nul
 /** What the canvas's tray holds. The same array until it changes, so a caller can tell when to redraw. */
 export function readTray(canvas: CanvasLike): TrayItem[] {
   const value = getCanvasExtra(canvas, FIELD_TRAY);
-  return Array.isArray(value) && value.every(isItem) ? value : EMPTY;
+  if (!Array.isArray(value)) return EMPTY;
+  let items = checked.get(value);
+  if (!items) {
+    items = value.every(isItem) ? value : EMPTY;
+    checked.set(value, items);
+  }
+  return items;
 }
 
 export function writeTray(canvas: CanvasLike, items: TrayItem[]): void {
@@ -60,10 +68,12 @@ export function trayItemsFrom(plugin: CanvasPlusPlugin, canvas: CanvasLike, node
     return box && data && node.id ? [{ node, box, data }] : [];
   });
   const area = (b: Box): number => b.width * b.height;
+  // Largest first. A group is only owned by one before it, so two the same size can't each own the other.
   const groups = entries.filter((e) => e.data.type === 'group').sort((a, b) => area(b.box) - area(a.box));
   const members = new Map<(typeof entries)[number], Array<(typeof entries)[number]>>();
   for (const entry of entries) {
-    const owner = groups.find((g) => g !== entry && within(g.box, entry.box) && area(g.box) >= area(entry.box));
+    const rank = groups.indexOf(entry);
+    const owner = groups.find((g, i) => g !== entry && (rank < 0 || i < rank) && within(g.box, entry.box));
     if (!owner) members.set(entry, members.get(entry) ?? []);
     else members.set(owner, [...(members.get(owner) ?? []), entry]);
   }

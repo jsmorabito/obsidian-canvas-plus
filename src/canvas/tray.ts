@@ -1,8 +1,8 @@
 import { Platform, setIcon } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import {
-  CanvasLike, CanvasNodeLike, CanvasViewLike, afterCanvasFrame, batch, draggedNodes, holdEdgePan, isReadonly, removeNode,
-  shieldFromCanvas,
+  CanvasLike, CanvasNodeLike, CanvasViewLike, afterCanvasFrame, batch, draggedNodes, holdEdgePan, isElement, isReadonly,
+  removeNode, shieldFromCanvas,
 } from './adapter.ts';
 import { CLICK_SLOP_PX } from './constants.ts';
 import { loadOpen, saveOpen } from './floating-panel.ts';
@@ -10,11 +10,18 @@ import { LAYER_ICONS } from './layers-tree.ts';
 import { trackPointer } from './pointer-session.ts';
 import { CanvasPanels, HEADER_GRAB_PX, PanelDropTarget, describePanel } from './canvas-panels.ts';
 import { PanelRecord } from './panel-store.ts';
+import { PRESENTING_CLASS } from './presentation.ts';
 import { TrayItem, itemBox, readTray, restoreItem, trayItemsFrom, writeTray } from './tray-items.ts';
 
 const OPEN_KEY = 'ffc-canvas-tray-open';
-/** On the canvas's view content while presenting (see presentation.ts). */
-const PRESENTING_CLASS = 'ffc-presenting';
+/** Core's menus and controls, and the toolbar the tray is in: a press there never starts a drag of nodes. */
+const CANVAS_UI = '.canvas-card-menu, .canvas-controls, .canvas-menu-container';
+
+/** Follows a pointer for the tray: `update` with each move, and `release` when it's let go. */
+interface OverWatch {
+  update(e: PointerEvent): void;
+  release(): void;
+}
 
 /**
  * The tray: holds things for later. Its button sits in the bottom toolbar after the eraser, and its strip opens
@@ -47,6 +54,8 @@ export class Tray implements PanelDropTarget {
    * every move, just after the dragged thing has moved, would lay out the whole pane each time.
    */
   private stripRect: DOMRect | null = null;
+  /** The timer that takes dropped nodes once core has finished its drag. */
+  private pendingTake = 0;
 
   constructor(
     private plugin: CanvasPlusPlugin,
@@ -103,8 +112,8 @@ export class Tray implements PanelDropTarget {
     return over;
   }
 
-  drop(e: PointerEvent): boolean {
-    const over = this.hits(e);
+  drop(e: PointerEvent | null): boolean {
+    const over = e !== null && this.hits(e);
     this.stripEl.removeClass('is-target');
     this.setDragging(false);
     return over;
@@ -112,6 +121,7 @@ export class Tray implements PanelDropTarget {
 
   destroy(): void {
     this.endDrag?.();
+    window.clearTimeout(this.pendingTake);
     this.el.remove();
     for (const el of this.toolbarEls) el.remove();
     for (const fn of this.cleanups) fn();
@@ -165,36 +175,37 @@ export class Tray implements PanelDropTarget {
   }
 
   /**
-   * Hold core's edge scrolling while a dragging pointer is over the strip, which is near the canvas's top
-   * edge: a drag held there would otherwise scroll the canvas under it. Returns what to call with each of the
-   * pointer's moves, and with its release to let go.
+   * Hold core's edge scrolling while a dragging pointer is over the strip, which sits near the canvas's edge: a
+   * drag held there would otherwise scroll the canvas under it.
    */
-  private watchOver(e: PointerEvent, canvas: CanvasLike, onOver?: (over: boolean) => void): (move: PointerEvent) => void {
-    let release: (() => void) | null = null;
+  private watchOver(e: PointerEvent, canvas: CanvasLike, onOver?: (over: boolean) => void): OverWatch {
+    let unhold: (() => void) | null = null;
     const set = (over: boolean): void => {
-      if (over === (release !== null)) return;
-      if (over) release = holdEdgePan(canvas);
+      if (over === (unhold !== null)) return;
+      if (over) unhold = holdEdgePan(canvas);
       else {
-        release?.();
-        release = null;
+        unhold?.();
+        unhold = null;
       }
       onOver?.(over);
     };
     set(this.hits(e));
-    return (move) => set(move.type === 'pointermove' && this.hits(move));
+    return { update: (move) => set(this.hits(move)), release: () => set(false) };
   }
 
   /** A press on the canvas: if it turns into a drag of nodes, show the strip, and take them if they're dropped on it. */
   private onPress(canvas: CanvasLike, down: PointerEvent): void {
     if (down.button !== 0 || down.defaultPrevented || isReadonly(canvas)) return;
     if (this.view.contentEl.hasClass(PRESENTING_CLASS)) return;
+    // A drag from the toolbar (a tray card, the note button) is core's own drag of a stand-in, not of nodes.
+    if (isElement(down.target) && down.target.closest(CANVAS_UI)) return;
     this.endDrag?.();
     let dragged: CanvasNodeLike[] | null = null;
     let over = false;
-    let track: ((e: PointerEvent) => void) | null = null;
+    let watch: OverWatch | null = null;
     const finish = (): void => {
       stop();
-      track?.(new PointerEvent('pointerup'));
+      watch?.release();
       this.endDrag = null;
     };
     const stop = trackPointer(this.view.containerEl.doc, down.pointerId, {
@@ -205,12 +216,12 @@ export class Tray implements PanelDropTarget {
           if (nodes.length === 0) return;
           dragged = nodes;
           this.setDragging(true);
-          track = this.watchOver(e, canvas, (o) => {
+          watch = this.watchOver(e, canvas, (o) => {
             over = o;
             this.stripEl.toggleClass('is-target', o);
           });
         }
-        track?.(e);
+        watch?.update(e);
       },
       up: (e) => {
         // Core's alt (Ctrl on Windows and Linux) drag leaves the nodes and drops copies: those stay on the canvas.
@@ -223,7 +234,7 @@ export class Tray implements PanelDropTarget {
           return;
         }
         // Once core has finished its drag, and with the strip still there so the nodes don't flash into view.
-        window.setTimeout(() => {
+        this.pendingTake = window.setTimeout(() => {
           this.take(canvas, take);
           this.setDragging(false);
         }, 0);
@@ -244,10 +255,12 @@ export class Tray implements PanelDropTarget {
     const nodes = dragged.filter((n) => n.id && canvas.nodes?.get(n.id) === n);
     if (nodes.length === 0) return;
     const items = trayItemsFrom(this.plugin, canvas, nodes);
+    // Only what the items hold leaves the canvas: a node they couldn't keep stays where it is.
+    const kept = new Set(items.flatMap((item) => item.nodes.map((n) => n.id)));
     canvas.deselectAll?.();
     batch(canvas, () => {
       writeTray(canvas, [...readTray(canvas), ...items]);
-      for (const node of nodes) removeNode(canvas, node);
+      for (const node of nodes) if (kept.has(node.id)) removeNode(canvas, node);
     });
     this.sync();
     this.onChange();
@@ -290,17 +303,22 @@ export class Tray implements PanelDropTarget {
   private dragOut(canvas: CanvasLike, item: TrayItem, e: PointerEvent): void {
     if (e.button !== 0 || isReadonly(canvas) || !canvas.dragTempNode) return;
     const box = itemBox(item);
-    const track = this.watchOver(e, canvas);
+    // The strip may have moved since it was last measured (the pen colours lift it).
+    this.stripRect = null;
+    const watch = this.watchOver(e, canvas);
     // Let go over the strip, it stays in the tray, though the canvas is under it too.
     let onStrip = false;
     const stop = trackPointer(this.view.containerEl.doc, e.pointerId, {
-      move: track,
+      move: (m) => watch.update(m),
       up: (u) => {
         stop();
         onStrip = this.hits(u);
-        track(u);
+        watch.release();
       },
-      cancel: () => { stop(); track(new PointerEvent('pointerup')); },
+      cancel: () => {
+        stop();
+        watch.release();
+      },
     });
     canvas.dragTempNode(e, { width: box.width, height: box.height }, (pos) => {
       if (!onStrip) this.restore(canvas, item, pos);
@@ -322,6 +340,7 @@ export class Tray implements PanelDropTarget {
   private dragPanelOut(record: PanelRecord, e: PointerEvent): void {
     if (e.button !== 0) return;
     e.preventDefault();
+    this.stripRect = null;
     const doc = this.view.containerEl.doc;
     const ghost = doc.body.createDiv({ cls: 'ffc-canvas-ghost' });
     let moved = false;

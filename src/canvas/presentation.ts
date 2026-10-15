@@ -11,7 +11,7 @@ import { PresentationBar } from './presentation-bar.ts';
 import { byStopOrder } from './stop-order.ts';
 
 /** On the view's content while presenting: hides the panels and menus (see styles.css). */
-const PRESENTING_CLASS = 'ffc-presenting';
+export const PRESENTING_CLASS = 'ffc-presenting';
 
 interface Stop {
   node: CanvasNodeLike;
