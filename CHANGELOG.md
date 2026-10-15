@@ -18,11 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tray: a holding strip that opens just above the bottom toolbar, from a
   tray button after the eraser. Drag anything on the canvas and the strip
   appears as a drop zone (or, while the tray is open, drop on the tray);
-  drop it there and it becomes a small card (a group goes in with everything
-  inside it). Tab panels go in the same way, dragged by their header. Drag a
-  card back onto the canvas to put it back. Select the tray button to keep
-  the strip open and see what it holds, and again to close it. What the tray
-  holds is saved in the canvas file, and undo puts things back.
+  drop it there and it becomes a small card, and the tray stays open to show
+  it (a group goes in with everything inside it). Tab panels go in the same
+  way, dragged by their header. Drag a card back onto the canvas to put it
+  back. Select the tray button to keep the strip open and see what it holds,
+  and again to close it. What the tray holds is saved in the canvas file,
+  and undo puts things back.
 
 ## [1.4.0]
 

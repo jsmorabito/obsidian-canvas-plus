@@ -27,7 +27,7 @@ interface OverWatch {
  * The tray: holds things for later. Its button sits in the bottom toolbar after the eraser, and its strip opens
  * just above the toolbar. Dragging anything on the canvas shows the strip as a drop zone (when it's open, the
  * strip itself takes the drop); dropping there takes the dragged nodes off the canvas and keeps each as a small
- * card. A tab panel dragged there by its header goes in
+ * card, and leaves the tray open to show it. A tab panel dragged there by its header goes in
  * too. Dragging a card back onto the canvas puts it back. The button keeps the strip open, to see what it holds,
  * or closes it again.
  *
@@ -116,6 +116,8 @@ export class Tray implements PanelDropTarget {
     const over = e !== null && this.hits(e);
     this.stripEl.removeClass('is-target');
     this.setDragging(false);
+    // Stays open to show where the panel went.
+    if (over && !this.open) this.setOpen(true);
     return over;
   }
 
@@ -262,6 +264,8 @@ export class Tray implements PanelDropTarget {
       writeTray(canvas, [...readTray(canvas), ...items]);
       for (const node of nodes) if (kept.has(node.id)) removeNode(canvas, node);
     });
+    // Stays open to show where they went.
+    if (!this.open) this.setOpen(true);
     this.sync();
     this.onChange();
   }
