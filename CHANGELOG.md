@@ -5,7 +5,7 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.5.0]
 
 ### Added
 
@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   back. Select the tray button to keep the strip open and see what it holds,
   and again to close it. What the tray holds is saved in the canvas file,
   and undo puts things back.
+
+### Fixed
+
+- Dragging a tab panel that shows a long note no longer lags: a panel's
+  place and size are no longer inherited by everything it shows, and it
+  moves by transform.
 
 ## [1.4.0]
 
