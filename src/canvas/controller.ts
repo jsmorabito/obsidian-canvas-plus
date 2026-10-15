@@ -127,8 +127,8 @@ export class CanvasController {
       doc.removeEventListener('pointerdown', down, true);
       doc.removeEventListener('pointerup', up, true);
     });
-    // Last: its header button sits before the focus button, and it leaves presses an armed tool took alone.
-    this.tray = new Tray(plugin, view, this.tabPanels, () => this.sweep());
+    // Last: its button joins the toolbar after the drawing tools, and it leaves presses an armed tool took alone.
+    this.tray = new Tray(plugin, view, this.tabPanels, menuEl, () => this.sweep());
   }
 
   setTool(tool: ToolId): void {

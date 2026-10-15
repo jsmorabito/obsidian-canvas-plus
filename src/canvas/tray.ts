@@ -17,26 +17,10 @@ const OPEN_KEY = 'ffc-canvas-tray-open';
 const PRESENTING_CLASS = 'ffc-presenting';
 
 /**
- * Core's settings control group moves from the top of the controls to just above help, leaving the top for the
- * tray. Returns a function that puts it back.
- */
-function moveSettingsAboveHelp(controls: HTMLElement): () => void {
-  const group = (selector: string): Element | null => controls.querySelector(selector)?.closest('.canvas-control-group') ?? null;
-  const settings = group('.lucide-settings, .lucide-cog');
-  if (!settings) return () => { /* nothing moved */ };
-  const next = settings.nextSibling;
-  // Help is desktop only: without it, settings goes last.
-  controls.insertBefore(settings, group('.lucide-help-circle, .lucide-circle-help'));
-  return () => {
-    if (settings.parentElement !== controls) return;
-    controls.insertBefore(settings, next?.parentNode === controls ? next : controls.firstChild);
-  };
-}
-
-/**
- * The tray: holds things for later. Its button tops core's controls down the right of the canvas, and its strip
- * opens to the left of the button. Dragging anything on the canvas shows the strip; dropping there takes the
- * dragged nodes off the canvas and keeps each as a small card. A tab panel dragged there by its header goes in
+ * The tray: holds things for later. Its button sits in the bottom toolbar after the eraser, and its strip opens
+ * just above the toolbar. Dragging anything on the canvas shows the strip as a drop zone (when it's open, the
+ * strip itself takes the drop); dropping there takes the dragged nodes off the canvas and keeps each as a small
+ * card. A tab panel dragged there by its header goes in
  * too. Dragging a card back onto the canvas puts it back. The button keeps the strip open, to see what it holds,
  * or closes it again.
  *
@@ -47,8 +31,9 @@ export class Tray implements PanelDropTarget {
   private el: HTMLElement;
   private stripEl: HTMLElement;
   private itemsEl: HTMLElement;
-  private hintEl: HTMLElement;
   private buttonEl: HTMLElement;
+  /** What the button adds to the toolbar: a divider and the button's group. */
+  private toolbarEls: HTMLElement[] = [];
   private open: boolean;
   /** A drag of canvas nodes is under way, so the strip shows as somewhere to drop them. */
   private dragging = false;
@@ -67,31 +52,37 @@ export class Tray implements PanelDropTarget {
     private plugin: CanvasPlusPlugin,
     private view: CanvasViewLike,
     private panels: CanvasPanels,
+    menuEl: HTMLElement | null,
     private onChange: () => void,
   ) {
     const canvas = view.canvas!;
     this.open = loadOpen(plugin.app, OPEN_KEY, false);
-    // The button is core's own control group, at the top of core's controls where settings was.
-    const controls = canvas.canvasControlsEl;
-    // Made in the canvas's own window, which may be a popout.
-    this.el = (controls ?? view.contentEl).createDiv({ cls: 'ffc-tray' });
-    if (controls) {
-      controls.prepend(this.el);
-      this.cleanups.push(moveSettingsAboveHelp(controls));
+    // Made in the canvas's own window, which may be a popout. Above the bottom toolbar, or without one, floating
+    // where it would be with the button beside it.
+    this.el = (menuEl ?? view.contentEl).createDiv({ cls: 'ffc-tray' });
+    let group: HTMLElement;
+    if (menuEl) {
+      // After the drawing tools (the last group of tools), before the pen colours.
+      const tools = menuEl.querySelectorAll<HTMLElement>(':scope > .ffc-menu-tools');
+      const divider = menuEl.createDiv({ cls: 'canvas-card-menu-divider' });
+      group = menuEl.createDiv({ cls: 'ffc-menu-tools ffc-tray-toggle' });
+      tools[tools.length - 1]?.after(divider, group);
+      this.toolbarEls = [divider, group];
     } else {
       this.el.addClass('mod-floating');
+      group = this.el.createDiv({ cls: 'canvas-control-group ffc-tray-toggle' });
     }
-    const group = this.el.createDiv({ cls: 'canvas-control-group ffc-tray-toggle' });
     this.buttonEl = group.createDiv({
       cls: 'canvas-control-item',
-      attr: { 'aria-label': 'Tray', 'data-tooltip-position': 'left' },
+      attr: { 'aria-label': 'Tray', 'data-tooltip-position': 'top' },
     });
     setIcon(this.buttonEl, 'inbox');
     this.buttonEl.addEventListener('click', () => this.setOpen(!this.open));
     this.stripEl = this.el.createDiv({ cls: 'ffc-tray-strip' });
     this.itemsEl = this.stripEl.createDiv({ cls: 'ffc-tray-items' });
-    this.hintEl = this.stripEl.createDiv({ cls: 'ffc-tray-hint' });
+    this.stripEl.createDiv({ cls: 'ffc-tray-hint', text: 'Drag anything here to hold it for later' });
     shieldFromCanvas(this.el);
+    for (const el of this.toolbarEls) shieldFromCanvas(el);
 
     // After the controller's own listeners, so a press an armed tool has taken is left alone.
     const press = (e: PointerEvent): void => this.onPress(canvas, e);
@@ -122,6 +113,7 @@ export class Tray implements PanelDropTarget {
   destroy(): void {
     this.endDrag?.();
     this.el.remove();
+    for (const el of this.toolbarEls) el.remove();
     for (const fn of this.cleanups) fn();
     this.cleanups = [];
   }
@@ -153,8 +145,10 @@ export class Tray implements PanelDropTarget {
   private layout(): void {
     this.stripRect = null;
     this.el.toggleClass('is-shown', this.open || this.dragging);
-    this.el.toggleClass('is-dragging', this.dragging);
-    this.hintEl.setText(this.dragging ? 'Drop here to hold it in the tray' : 'Drag anything here to hold it for later');
+    // Open, the tray is already where to drop: no drop zone over it.
+    const dropZone = this.dragging && !this.open;
+    this.el.toggleClass('is-dragging', dropZone);
+
     this.buttonEl.toggleClass('is-active', this.open);
   }
 

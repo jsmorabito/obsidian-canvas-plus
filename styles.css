@@ -1105,26 +1105,38 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
 
 /* ── Tray ────────────────────────────────────────────────────────────────── */
 
-/* Tops core's controls down the right of the canvas; the strip opens to the left of the button. */
+/* Opens just above the bottom toolbar, centred on it, and above the pen colours while those show. */
 .ffc-tray {
-  position: relative;
+  position: absolute;
+  bottom: calc(100% + var(--size-4-2));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(48em, 90vw);
+  pointer-events: none;
 }
 
-/* Without core's controls to join, it floats in their place. */
+.canvas-card-menu:has(> .ffc-pen-colors:not([style*="display: none"])) > .ffc-tray {
+  bottom: calc(100% + var(--size-4-2) * 2 + 40px);
+}
+
+/* Without the toolbar to join, it floats where the toolbar would be, with the button beside it. */
 .ffc-tray.mod-floating {
-  position: absolute;
-  top: var(--size-4-2);
-  right: var(--size-4-2);
+  bottom: var(--size-4-2);
   z-index: var(--layer-cover);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--size-4-2);
+}
+
+.ffc-tray-toggle,
+.ffc-tray-strip {
+  pointer-events: auto;
 }
 
 .ffc-tray-strip {
   display: none;
-  position: absolute;
-  top: 0;
-  right: calc(100% + var(--size-4-2));
+  position: relative;
   min-width: 18em;
-  max-width: min(48em, 70vw);
   height: 48px;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
@@ -1189,7 +1201,7 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   font-size: var(--font-ui-smaller);
 }
 
-/* Says what the strip is for while it's empty, and where to drop while something is dragged. */
+/* Placeholder while the tray is empty, whether it's open or shown for a drag. */
 .ffc-tray-hint {
   display: none;
   position: absolute;
@@ -1203,13 +1215,8 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   pointer-events: none;
 }
 
-.ffc-tray.is-empty .ffc-tray-hint,
-.ffc-tray.is-dragging .ffc-tray-hint {
+.ffc-tray.is-empty .ffc-tray-hint {
   display: flex;
-}
-
-.ffc-tray.is-dragging .ffc-tray-items {
-  opacity: 0.3;
 }
 
 .ffc-tray.is-dragging .ffc-tray-strip {

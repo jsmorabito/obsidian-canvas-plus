@@ -15,14 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fills the window. Select it again (or press `Esc` with nothing selected)
   to bring them back. The window itself stays as it is; it isn't full
   screen. A canvas in a sidebar can't be focused.
-- Tray: a holding strip over the canvas, opening to the left of its button
-  at the top of the canvas controls (settings moves down above help). Drag anything
-  on the canvas and the strip appears; drop it there and it becomes a small
-  card (a group goes in with everything inside it). Tab panels go in the
-  same way, dragged by their header. Drag a card back onto the canvas to
-  put it back. Select the tray button to keep the strip open and see what it holds, and again to close
-  it. What the tray holds is saved in the canvas file, and undo puts things
-  back.
+- Tray: a holding strip that opens just above the bottom toolbar, from a
+  tray button after the eraser. Drag anything on the canvas and the strip
+  appears as a drop zone (or, while the tray is open, drop on the tray);
+  drop it there and it becomes a small card (a group goes in with everything
+  inside it). Tab panels go in the same way, dragged by their header. Drag a
+  card back onto the canvas to put it back. Select the tray button to keep
+  the strip open and see what it holds, and again to close it. What the tray
+  holds is saved in the canvas file, and undo puts things back.
 
 ## [1.4.0]
 
