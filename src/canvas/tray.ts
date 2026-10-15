@@ -65,7 +65,7 @@ export class Tray implements PanelDropTarget {
     private onChange: () => void,
   ) {
     const canvas = view.canvas!;
-    this.open = loadOpen(plugin.app, OPEN_KEY, false);
+    this.open = loadOpen(plugin.app, OPEN_KEY);
     // Made in the canvas's own window, which may be a popout. Above the bottom toolbar, or without one, floating
     // where it would be with the button beside it.
     this.el = (menuEl ?? view.contentEl).createDiv({ cls: 'ffc-tray' });

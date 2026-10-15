@@ -5,6 +5,16 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- The layers panel and the minimap now start hidden, on every device, until
+  you show them with their buttons in the canvas's top left and lower left.
+  Each remembers whether you last left it open. If you used either one
+  before but never hid it, it will be hidden after updating: select its
+  button once to bring it back.
+
 ## [1.5.0]
 
 ### Added

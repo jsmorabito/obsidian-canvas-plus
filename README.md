@@ -19,12 +19,12 @@ Marker and highlighter strokes, with a pen color row (none plus the six canvas p
 ![Marker and highlighter strokes with the pen color row](docs/mockups/ink.svg)
 
 **Layers panel**  
-A panel on the left lists groups, anchors and what they contain; select an anchor to jump to it. Hover a group or web link and select the pencil to rename it; a link's name shows in place of its URL. It has a search box and a filter by kind of layer or note type. Filtered to **Anchors**, it lists them numbered in presentation order instead; drag a row to reorder them (on touch, hold the row first).
+A panel on the left lists groups, anchors and what they contain; select an anchor to jump to it. Hover a group or web link and select the pencil to rename it; a link's name shows in place of its URL. It has a search box and a filter by kind of layer or note type. Filtered to **Anchors**, it lists them numbered in presentation order instead; drag a row to reorder them (on touch, hold the row first). It starts hidden: select the layers button in the top left to show it.
 
 ![The layers panel listing groups, anchors and notes](docs/mockups/layers.svg)
 
 **Minimap**  
-An overview of the whole canvas in the lower left, with a box for the part in view. Select or drag on it to move the view. Hide it with the button in its corner; it starts hidden on phones.
+An overview of the whole canvas in the lower left, with a box for the part in view. Select or drag on it to move the view. It starts hidden: select the map button in the lower left to show it, and the button in its corner to hide it again.
 
 ![The minimap in the lower left with a box for the part in view](docs/mockups/minimap.svg)
 

@@ -1,10 +1,10 @@
 import { App, setIcon } from 'obsidian';
 import { shieldFromCanvas } from './adapter.ts';
 
-/** Whether a floating panel is open, a per-viewer preference. `fallback` until the viewer has chosen. */
-export function loadOpen(app: App, key: string, fallback = true): boolean {
+/** Whether a floating panel is open, a per-viewer preference. Closed until the viewer opens it. */
+export function loadOpen(app: App, key: string): boolean {
   const stored = app.loadLocalStorage(key) as string | null;
-  return stored ? stored !== 'closed' : fallback;
+  return stored === 'open';
 }
 
 export function saveOpen(app: App, key: string, open: boolean): void {

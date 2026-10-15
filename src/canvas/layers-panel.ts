@@ -54,7 +54,7 @@ function linkUrl(node: CanvasNodeLike): string {
  * the selection, as on the canvas itself, hover to outline it on the canvas, double-click a group or anchor to
  * rename it, select the pencil on a group or link to rename it in the list, select its triangle to collapse it. A search box and a filter narrow the list, and show
  * every result even inside a collapsed group. Filtered to anchors, it lists them in presentation order instead,
- * numbered, and dragging one changes the order. Whether it's open is a per-viewer preference.
+ * numbered, and dragging one changes the order. Whether it's open is a per-viewer preference, closed by default.
  */
 export class LayersPanel {
   private el: HTMLElement;
@@ -120,6 +120,7 @@ export class LayersPanel {
     this.open = open;
     saveOpen(this.plugin.app, OPEN_KEY, open);
     this.applyOpen();
+    this.update();
   }
 
   private applyOpen(): void {
@@ -199,10 +200,10 @@ export class LayersPanel {
     }
   }
 
-  /** Rebuild from the canvas, then redraw if what the list shows (or the selection) changed. */
+  /** Rebuild from the canvas, then redraw if what the list shows (or the selection) changed. Not while closed: opening rebuilds it. */
   update(): void {
     const canvas = this.canvas;
-    if (!canvas) return;
+    if (!canvas || !this.open) return;
     const roots = buildLayers(this.plugin, canvas);
     this.syncFilterOptions(roots);
     this.pruneCollapsed(roots);

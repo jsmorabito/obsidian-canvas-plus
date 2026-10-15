@@ -1,4 +1,4 @@
-import { EventRef, Platform, setIcon } from 'obsidian';
+import { EventRef, setIcon } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasViewLike, afterCanvasFrame, shieldFromCanvas } from './adapter.ts';
 import { createShowButton, loadOpen, saveOpen } from './floating-panel.ts';
@@ -14,7 +14,7 @@ const PAD_PX = 8;
 /**
  * A small overview of the whole canvas in the lower left, with a box for the part in view. Press or drag on it
  * to move the view there; pressing inside the box drags it from where it was held. Whether it's open is a
- * per-viewer preference, closed by default on phones where there's little room.
+ * per-viewer preference, closed by default.
  */
 export class Minimap {
   private el: HTMLElement;
@@ -36,7 +36,7 @@ export class Minimap {
   private cssRef: EventRef;
 
   constructor(private plugin: CanvasPlusPlugin, private view: CanvasViewLike) {
-    this.open = loadOpen(plugin.app, OPEN_KEY, !Platform.isPhone);
+    this.open = loadOpen(plugin.app, OPEN_KEY);
     this.el = view.contentEl.createDiv({ cls: 'ffc-minimap' });
     this.mapEl = this.el.createEl('canvas', { cls: 'ffc-minimap-map' });
     this.probe = this.el.createDiv({ cls: 'ffc-minimap-probe' });
