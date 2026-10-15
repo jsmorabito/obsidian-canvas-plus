@@ -20,6 +20,10 @@ type Handle = typeof HANDLES[number];
 
 export interface TabPanelHooks {
   onMove: () => void;
+  /** The panel is being dragged by its header. Returns whether it's over somewhere that would take it. */
+  onDrag?: (e: PointerEvent) => boolean;
+  /** It was let go. Returns true if that took it (the panel is then gone). */
+  onDrop?: (e: PointerEvent) => boolean;
   onClose: () => void;
   onRaise: () => void;
 }
@@ -183,10 +187,17 @@ export class TabPanel {
     if (down.button !== 0) return;
     down.preventDefault();
     const start = this.clamp(this.record.x, this.record.y);
+    // Only touch the class when it changes: rewriting it on every move restyles the panel and all it holds.
+    let overTarget = false;
     this.track(down, 'is-moving', (e) => {
       const at = this.clamp(start.x + e.clientX - down.clientX, start.y + e.clientY - down.clientY);
       this.record.x = at.x;
       this.record.y = at.y;
+      const over = this.hooks.onDrag?.(e) ?? false;
+      if (over !== overTarget) this.el.toggleClass('is-over-target', overTarget = over);
+    }, (e) => {
+      if (overTarget) this.el.removeClass('is-over-target');
+      return this.hooks.onDrop?.(e) ?? false;
     });
   }
 
@@ -212,20 +223,22 @@ export class TabPanel {
     });
   }
 
-  private track(down: PointerEvent, cls: string, apply: (e: PointerEvent) => void): void {
+  /** `release` is told where the pointer was let go, and returns true if that took the panel away. */
+  private track(down: PointerEvent, cls: string, apply: (e: PointerEvent) => void, release?: (e: PointerEvent) => boolean): void {
     this.stopGesture?.();
     this.el.addClass(cls);
     const stopTracking = trackPointer(this.el.doc, down.pointerId, {
       move: (e) => { apply(e); this.place(); },
-      up: () => end(),
+      up: (e) => end(e),
       cancel: () => end(),
     });
-    const end = (): void => {
+    const end = (e?: PointerEvent): void => {
       stopTracking();
       this.stopGesture = null;
       this.el.removeClass(cls);
+      if (e && release?.(e)) return;
       this.hooks.onMove();
     };
-    this.stopGesture = end;
+    this.stopGesture = () => end();
   }
 }

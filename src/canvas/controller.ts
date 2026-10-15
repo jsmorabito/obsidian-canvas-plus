@@ -23,6 +23,7 @@ import { clearAnchor, isAnchor, keepMenuClearOfLabels, syncAnchor } from './anch
 import { CardMenu } from './card-menu.ts';
 import { Presenter } from './presentation.ts';
 import { Focuser } from './focus.ts';
+import { Tray } from './tray.ts';
 import { registerToolShortcuts } from './shortcuts.ts';
 import { trackPointer } from './pointer-session.ts';
 import { eachFrameUntil } from '../utils/helpers.ts';
@@ -58,6 +59,7 @@ export class CanvasController {
   private ink: InkTools;
   readonly presenter: Presenter;
   readonly focuser: Focuser;
+  private tray: Tray;
   /** Owns the markdown renderers behind styled link nodes. */
   private component = new Component();
 
@@ -125,6 +127,8 @@ export class CanvasController {
       doc.removeEventListener('pointerdown', down, true);
       doc.removeEventListener('pointerup', up, true);
     });
+    // Last: its header button sits before the focus button, and it leaves presses an armed tool took alone.
+    this.tray = new Tray(plugin, view, this.tabPanels, () => this.sweep());
   }
 
   setTool(tool: ToolId): void {
@@ -196,6 +200,7 @@ export class CanvasController {
     this.panel.update();
     this.layers.update();
     this.presenter.refresh();
+    this.tray.sync();
     this.injectKeyImage();
     for (const node of nodes.values()) {
       const el = node.nodeEl;
@@ -215,6 +220,7 @@ export class CanvasController {
   destroy(): void {
     this.presenter.destroy();
     this.focuser.destroy();
+    this.tray.destroy();
     this.cancelDraw?.();
     this.relations.destroy();
     this.panel.destroy();

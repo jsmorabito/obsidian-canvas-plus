@@ -13,9 +13,16 @@ export interface PanelRecord {
 interface StoredData {
   /** By canvas path. */
   panels?: Record<string, PanelRecord[]>;
+  /** Panels put in a canvas's tray, by canvas path. */
+  held?: Record<string, PanelRecord[]>;
 }
 
-/** Tab panels, persisted in the plugin's data. Writes are debounced; `flush` writes them now. */
+type ListKey = 'panels' | 'held';
+
+/** Shared, so a canvas with nothing held always gets the same list back. */
+const NONE: PanelRecord[] = [];
+
+/** Tab panels, and those put in a tray, persisted in the plugin's data. Writes are debounced; `flush` writes them now. */
 export class PanelStore {
   private data: StoredData = {};
   readonly ready: Promise<void>;
@@ -29,11 +36,24 @@ export class PanelStore {
 
   private async load(): Promise<void> {
     const loaded = (await this.plugin.loadData()) as StoredData | null;
-    this.data = { ...loaded, panels: { ...loaded?.panels, ...this.data.panels } };
+    this.data = { ...loaded, panels: { ...loaded?.panels, ...this.data.panels }, held: { ...loaded?.held, ...this.data.held } };
   }
 
   get(path: string): PanelRecord[] {
     return this.data.panels?.[path] ?? [];
+  }
+
+  /** The panels in a canvas's tray. The same list until it changes. */
+  getHeld(path: string): PanelRecord[] {
+    return this.data.held?.[path] ?? NONE;
+  }
+
+  hold(path: string, record: PanelRecord): void {
+    this.write(path, [...this.getHeld(path), { ...record }], 'held');
+  }
+
+  unhold(path: string, id: string): void {
+    this.write(path, this.getHeld(path).filter((r) => r.id !== id), 'held');
   }
 
   add(path: string, record: PanelRecord): void {
@@ -56,29 +76,31 @@ export class PanelStore {
     this.save.run();
   }
 
-  private write(path: string, list: PanelRecord[]): void {
-    const panels = this.data.panels ??= {};
-    if (list.length > 0) panels[path] = list;
-    else delete panels[path];
+  private write(path: string, list: PanelRecord[], key: ListKey = 'panels'): void {
+    const lists = this.data[key] ??= {};
+    if (list.length > 0) lists[path] = list;
+    else delete lists[path];
     this.save();
   }
 
   private onRename(file: TAbstractFile, oldPath: string): void {
-    const panels = this.data.panels;
-    if (!panels) return;
     let changed = false;
-    // A renamed folder moves every canvas in it.
-    for (const path of Object.keys(panels)) {
-      const moved = path === oldPath ? file.path : path.startsWith(`${oldPath}/`) ? file.path + path.slice(oldPath.length) : null;
-      if (!moved) continue;
-      panels[moved] = panels[path]!;
-      delete panels[path];
-      changed = true;
+    for (const lists of [this.data.panels, this.data.held]) {
+      if (!lists) continue;
+      // A renamed folder moves every canvas in it.
+      for (const path of Object.keys(lists)) {
+        const moved = path === oldPath ? file.path : path.startsWith(`${oldPath}/`) ? file.path + path.slice(oldPath.length) : null;
+        if (!moved) continue;
+        lists[moved] = lists[path]!;
+        delete lists[path];
+        changed = true;
+      }
     }
     if (changed) this.save();
   }
 
   private onDelete(file: TAbstractFile): void {
     if (this.data.panels?.[file.path]) this.write(file.path, []);
+    if (this.data.held?.[file.path]) this.write(file.path, [], 'held');
   }
 }

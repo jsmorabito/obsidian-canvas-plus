@@ -117,6 +117,14 @@ export interface CanvasLike {
   readonly?: boolean;
   /** Core saves the mode only when the lock itself is selected, so setting it here lasts until the view closes. */
   setReadonly?: (readonly: boolean) => void;
+  /** Core's edge scrolling while something is dragged near the canvas's edge calls this every frame. */
+  panBy?: (x: number, y: number) => void;
+  /**
+   * The canvas file as loaded, or the history entry undo last applied. `getData` spreads it under the nodes and
+   * edges, so a field of ours here is saved with the file and undone with the canvas. History entries share
+   * it: replace it, never change it in place.
+   */
+  data?: Record<string, unknown>;
   /** The selection pop-up menu. Obsidian empties and rebuilds `menuEl` on every selection change. */
   menu?: { menuEl?: HTMLElement; containerEl?: HTMLElement; render?: (rebuild?: boolean) => void };
 }
@@ -342,6 +350,49 @@ export function relabeled(data: Record<string, unknown>, label: string | undefin
     delete out.fromEnd;
   }
   return out;
+}
+
+/** A field of ours on the canvas file itself, beside its nodes and edges. */
+export function getCanvasExtra(canvas: CanvasLike, key: string): unknown {
+  return canvas.data?.[key];
+}
+
+/** Set (or, with undefined, remove) a field on the canvas file. Saved and recorded for undo by the caller, as with nodes. */
+export function setCanvasExtra(canvas: CanvasLike, key: string, value: unknown): void {
+  const data: Record<string, unknown> = { ...canvas.data };
+  if (value === undefined) delete data[key];
+  else data[key] = value;
+  canvas.data = data;
+}
+
+/** Add (or replace, by id) nodes and edges from JSON Canvas data, without saving. */
+export function importNodes(canvas: CanvasLike, nodes: Record<string, unknown>[], edges: Record<string, unknown>[]): void {
+  if (!canvas.importData) throw new Error('Canvas internals changed: importData is unavailable');
+  canvas.importData({ nodes, edges }, false);
+}
+
+/** The nodes core is moving in a drag of the selection (a group drags what it contains too), or none. */
+export function draggedNodes(canvas: CanvasLike): CanvasNodeLike[] {
+  // Most pointer moves aren't node drags: ask the DOM first rather than visit every node.
+  if (!canvas.wrapperEl.querySelector('.canvas-node.is-dragging')) return [];
+  return [...(canvas.nodes?.values() ?? [])].filter((n) => n.nodeEl?.hasClass('is-dragging'));
+}
+
+/**
+ * Stop core's edge scrolling until the returned function is called. A drag held over something of ours just
+ * outside the canvas would otherwise scroll the canvas the whole time.
+ */
+export function holdEdgePan(canvas: CanvasLike): () => void {
+  const original = canvas.panBy;
+  if (!original) return () => { /* nothing to restore */ };
+  const own = Object.prototype.hasOwnProperty.call(canvas, 'panBy');
+  const held = (): void => { /* held */ };
+  canvas.panBy = held;
+  return () => {
+    if (canvas.panBy !== held) return;
+    if (own) canvas.panBy = original;
+    else Reflect.deleteProperty(canvas, 'panBy');
+  };
 }
 
 /** Remove an edge without saving; the caller saves or restores it. */

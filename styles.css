@@ -896,6 +896,7 @@ svg.ffc-ink path.ffc-ink-auto {
 .ffc-presenting .ffc-minimap-show,
 .ffc-presenting .ffc-context-panel,
 .ffc-presenting .ffc-tab-panels,
+.ffc-presenting .ffc-tray,
 .ffc-presenting .ffc-panel-add,
 .ffc-presenting .canvas-card-menu,
 .ffc-presenting .canvas-controls,
@@ -988,10 +989,22 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   pointer-events: none;
 }
 
+/*
+ * A panel's place and size, read by the panel alone. Custom properties are inherited by default, so changing
+ * them on every step of a drag restyled everything the panel shows: a long note made dragging lag.
+ */
+@property --ffc-panel-x { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ffc-panel-y { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ffc-panel-w { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ffc-panel-h { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ffc-panel-z { syntax: '<integer>'; inherits: false; initial-value: 1; }
+
+/* Placed with a transform, not left and top, so a move doesn't lay the panel out again. */
 .ffc-tab-panel {
   position: absolute;
-  left: var(--ffc-panel-x);
-  top: var(--ffc-panel-y);
+  left: 0;
+  top: 0;
+  transform: translate(var(--ffc-panel-x), var(--ffc-panel-y));
   z-index: var(--ffc-panel-z, 1);
   width: var(--ffc-panel-w);
   height: var(--ffc-panel-h);
@@ -1007,6 +1020,11 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
 .ffc-tab-panel .view-header {
   cursor: grab;
   touch-action: none;
+}
+
+/* Over the tray while it's dragged: let go and it goes in. */
+.ffc-tab-panel.is-over-target {
+  opacity: 0.5;
 }
 
 .ffc-tab-panel.is-moving .view-header {
@@ -1049,10 +1067,14 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   height: 100%;
 }
 
-/* A web page would swallow the pointer mid-drag. */
-.ffc-tab-panel.is-moving .ffc-tab-panel-split,
-.ffc-tab-panel.is-resizing .ffc-tab-panel-split {
+/* A web page would swallow the pointer mid-drag, in the panel being dragged or one it passes over. */
+.ffc-tab-panels:has(.is-moving, .is-resizing) .ffc-tab-panel-split {
   pointer-events: none;
+}
+
+/* Its own layer while it moves, so each step is only a move on screen. */
+.ffc-tab-panel.is-moving {
+  will-change: transform;
 }
 
 .ffc-tab-panel-resize {
@@ -1079,3 +1101,129 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
 .ffc-tab-panel-resize.mod-sw { bottom: calc(var(--ffc-grip) / -2); left: calc(var(--ffc-grip) / -2); cursor: nesw-resize; }
 .ffc-tab-panel-resize.mod-nw { top: calc(var(--ffc-grip) / -2); left: calc(var(--ffc-grip) / -2); cursor: nwse-resize; }
 .ffc-tab-panel-resize.mod-se { bottom: calc(var(--ffc-grip) / -2); right: calc(var(--ffc-grip) / -2); cursor: nwse-resize; }
+
+
+/* ── Tray ────────────────────────────────────────────────────────────────── */
+
+/* Tops core's controls down the right of the canvas; the strip opens to the left of the button. */
+.ffc-tray {
+  position: relative;
+}
+
+/* Without core's controls to join, it floats in their place. */
+.ffc-tray.mod-floating {
+  position: absolute;
+  top: var(--size-4-2);
+  right: var(--size-4-2);
+  z-index: var(--layer-cover);
+}
+
+.ffc-tray-strip {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: calc(100% + var(--size-4-2));
+  min-width: 18em;
+  max-width: min(48em, 70vw);
+  height: 48px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+  overflow: hidden;
+}
+
+.ffc-tray.is-shown .ffc-tray-strip {
+  display: flex;
+}
+
+.ffc-tray-items {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-width: 0;
+  padding: 0 var(--size-4-2);
+  overflow-x: auto;
+}
+
+.ffc-tray-card {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--size-2-3);
+  max-width: 14em;
+  height: 32px;
+  padding: 0 var(--size-4-2) 0 var(--size-2-3);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--ffc-tray-color, var(--background-modifier-border));
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-small);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.ffc-tray-card:hover {
+  border-color: var(--background-modifier-border-hover);
+  border-left-color: var(--ffc-tray-color, var(--background-modifier-border-hover));
+}
+
+.ffc-tray-card-icon {
+  display: flex;
+  flex: none;
+  color: var(--text-muted);
+  --icon-size: var(--icon-s);
+}
+
+.ffc-tray-card-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ffc-tray-card-count {
+  flex: none;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+/* Says what the strip is for while it's empty, and where to drop while something is dragged. */
+.ffc-tray-hint {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--size-4-3);
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.ffc-tray.is-empty .ffc-tray-hint,
+.ffc-tray.is-dragging .ffc-tray-hint {
+  display: flex;
+}
+
+.ffc-tray.is-dragging .ffc-tray-items {
+  opacity: 0.3;
+}
+
+.ffc-tray.is-dragging .ffc-tray-strip {
+  border-style: dashed;
+  border-color: var(--background-modifier-border-hover);
+}
+
+.ffc-tray-strip.is-target {
+  background: var(--background-primary-alt);
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent), var(--shadow-s);
+}
+
+.ffc-tray-strip.is-target .ffc-tray-hint {
+  color: var(--text-accent);
+}
+

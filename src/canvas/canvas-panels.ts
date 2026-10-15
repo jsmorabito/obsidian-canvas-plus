@@ -10,6 +10,25 @@ const DEFAULT_WIDTH = 384;
 const DEFAULT_HEIGHT = 480;
 const CASCADE_PX = 24;
 const BASE_LAYER = 1;
+/** How far below the pointer a panel taken out of the tray puts its top edge, so the pointer is on its header. */
+export const HEADER_GRAB_PX = 16;
+
+/** Somewhere a panel can be dropped while it's dragged by its header: the canvas's tray. */
+export interface PanelDropTarget {
+  /** Returns whether the pointer is over it. */
+  dragOver(e: PointerEvent): boolean;
+  /** The drag ended. Returns true if it was let go over the target, which then holds the panel. */
+  drop(e: PointerEvent): boolean;
+}
+
+/** Shown on a panel's card in the tray. */
+export function describePanel(record: PanelRecord): string {
+  const state = record.state;
+  const file = state?.state?.file;
+  if (typeof file === 'string' && file) return (file.split('/').pop() ?? file).replace(/\.md$/, '');
+  if (!state || state.type === 'empty') return 'New tab';
+  return state.type.replace(/[-_]/g, ' ').replace(/^./, (c) => c.toUpperCase());
+}
 
 /** The tab panels over one canvas view, and the button that adds them. */
 export class CanvasPanels {
@@ -23,6 +42,8 @@ export class CanvasPanels {
   private resizeObserver: ResizeObserver;
   private destroyed = false;
   private loaded = false;
+  private target: PanelDropTarget | null = null;
+  private onHeldChange: () => void = () => { /* no tray yet */ };
   private saveStates = debounce(() => { for (const p of this.panels) this.save(p); }, 300, true);
 
   constructor(private plugin: CanvasPlusPlugin, private view: CanvasViewLike, private store: PanelStore) {
@@ -54,6 +75,45 @@ export class CanvasPanels {
     this.resizeObserver.disconnect();
     this.buttonGroup?.remove();
     this.layerEl.remove();
+  }
+
+  /** Let panels be dropped into the tray, which is told when the panels it holds change. */
+  setTray(target: PanelDropTarget, onHeldChange: () => void): void {
+    this.target = target;
+    this.onHeldChange = onHeldChange;
+  }
+
+  /** The panels this canvas's tray holds. */
+  held(): PanelRecord[] {
+    return this.store.getHeld(this.file?.path ?? '');
+  }
+
+  /** Take a panel out of the tray, with its header under the pointer. */
+  release(id: string, clientX: number, clientY: number): void {
+    const record = this.held().find((r) => r.id === id);
+    if (!this.file || !record) return;
+    const pane = this.layerEl.getBoundingClientRect();
+    const placed: PanelRecord = {
+      ...record,
+      x: Math.round(clientX - pane.left - record.width / 2),
+      y: Math.round(clientY - pane.top - HEADER_GRAB_PX),
+    };
+    this.store.unhold(this.file.path, id);
+    this.store.add(this.file.path, placed);
+    this.mount(placed);
+    this.onHeldChange();
+  }
+
+  /** Put a panel in the tray: it closes, and its place and what it shows are kept there. */
+  private stash(panel: TabPanel): void {
+    if (!this.file) return;
+    this.save(panel);
+    const record = this.store.get(this.file.path).find((r) => r.id === panel.record.id) ?? panel.record;
+    this.store.remove(this.file.path, record.id);
+    this.store.hold(this.file.path, record);
+    this.panels.remove(panel);
+    panel.destroy();
+    this.onHeldChange();
   }
 
   add(): void {
@@ -100,6 +160,7 @@ export class CanvasPanels {
     this.panels = [];
     this.file = file;
     if (file) for (const record of this.store.get(file.path)) this.mount({ ...record });
+    this.onHeldChange();
   }
 
   private mount(record: PanelRecord): TabPanel {
@@ -107,6 +168,12 @@ export class CanvasPanels {
       onMove: () => this.save(panel),
       onClose: () => this.forget(panel),
       onRaise: () => panel.setLayer(++this.layer),
+      onDrag: (e) => this.target?.dragOver(e) ?? false,
+      onDrop: (e) => {
+        if (!this.target?.drop(e)) return false;
+        this.stash(panel);
+        return true;
+      },
     });
     panel.setLayer(++this.layer);
     this.panels.push(panel);

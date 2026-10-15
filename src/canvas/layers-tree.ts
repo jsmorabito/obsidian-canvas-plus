@@ -21,6 +21,11 @@ export interface Layer {
   dimmed?: boolean;
 }
 
+/** The icon for each kind of layer. */
+export const LAYER_ICONS: Record<LayerKind, string> = {
+  group: 'frame', anchor: 'anchor', note: 'file-text', text: 'type', card: 'sticky-note', image: 'image', file: 'file', link: 'link', ink: 'pencil',
+};
+
 const IMAGE_EXT = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'bmp']);
 
 /** First non-empty line of `text` with markdown markup stripped. */
@@ -35,7 +40,8 @@ export function firstLine(text: string): string {
     .trim();
 }
 
-function describe(plugin: CanvasPlusPlugin, node: CanvasNodeLike): Pick<Layer, 'kind' | 'label' | 'type' | 'url'> {
+/** A node's kind and the name the layers panel lists it by. */
+export function describe(plugin: CanvasPlusPlugin, node: CanvasNodeLike): Pick<Layer, 'kind' | 'label' | 'type' | 'url'> {
   const ink = readInk(node);
   if (ink) return { kind: 'ink', label: ink.tool === 'highlighter' ? 'Highlight' : 'Drawing' };
   const data = node.getData?.() ?? {};

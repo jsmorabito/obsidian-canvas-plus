@@ -6,7 +6,7 @@ import {
 import { FIELD_LINK_NAME } from './constants.ts';
 import { createShowButton, loadOpen, saveOpen } from './floating-panel.ts';
 import {
-  ALL_LAYERS, FilterOption, Layer, LayerKind, buildLayers, filterLayers, filterOptions, firstMatch, kindFilter, matchesFilter, searchText,
+  ALL_LAYERS, FilterOption, LAYER_ICONS, Layer, LayerKind, buildLayers, filterLayers, filterOptions, firstMatch, kindFilter, matchesFilter, searchText,
   someLayer, walk,
 } from './layers-tree.ts';
 import { beginLabelEdit } from './placement.ts';
@@ -17,10 +17,6 @@ const OPEN_KEY = 'ffc-canvas-layers-open';
 const HOVER_CLASS = 'ffc-layer-hover';
 /** Makes label ids unique across every open canvas. */
 let nextLabelId = 0;
-
-const ICONS: Record<LayerKind, string> = {
-  group: 'frame', anchor: 'anchor', note: 'file-text', text: 'type', card: 'sticky-note', image: 'image', file: 'file', link: 'link', ink: 'pencil',
-};
 
 /** How a kind of layer is renamed from the list: the text to start editing from, and the data to save. */
 interface Rename {
@@ -269,7 +265,7 @@ export class LayersPanel {
       // A collapsed group hides its contents, so it says when the selection is inside.
       row.toggleClass('has-selection', collapsed && someLayer(layer.children, (l) => selection.has(l.node)));
       const toggle = id ? row.createDiv({ cls: 'tree-item-icon collapse-icon' }) : null;
-      setIcon(row.createSpan({ cls: 'ffc-layer-icon' }), ICONS[layer.kind]);
+      setIcon(row.createSpan({ cls: 'ffc-layer-icon' }), LAYER_ICONS[layer.kind]);
       const label = row.createDiv({ cls: 'tree-item-inner ffc-layer-label', text: layer.label });
       const rename = RENAMES[layer.kind];
       // In presentation order, each anchor's stop number, in core's flair (where the file explorer puts counts).
