@@ -12,13 +12,16 @@ import { SideEffect, batchWithEffect } from './undo-journal.ts';
 
 type Item =
   | { kind: 'note'; file: TFile; type: NoteType }
-  | { kind: 'create'; type: NoteType; title: string };
+  | { kind: 'create'; type: NoteType; title: string }
+  | { kind: 'create-any'; title: string; open: (title: string) => Promise<TFile | null> };
 
 /**
  * Add a typed note to the canvas. Lists only notes that belong to a note type.
- * When nothing matches, offers "New <Type>: <query>" for each type, which
- * creates the note and its card together. A note already on the canvas is
- * selected and zoomed to instead of being added twice.
+ * When no note is named exactly the query, offers "Create note…", which opens
+ * Note Types' new-note modal (type, fields, description) prefilled with the
+ * query and adds the created note's card. Older Note Types builds without that
+ * modal get "New <Type>: <query>" rows instead, and only when nothing matches.
+ * A note already on the canvas is selected and zoomed to instead of being added twice.
  */
 export class NotePicker extends SuggestModal<Item> {
   constructor(
@@ -65,12 +68,34 @@ export class NotePicker extends SuggestModal<Item> {
       const hit = match(`${n.file.basename} ${title}`);
       if (hit) scored.push({ item: { kind: 'note', ...n }, score: hit.score });
     }
-    if (scored.length > 0) return scored.sort((a, b) => b.score - a.score).map((s) => s.item);
+    const found = scored.sort((a, b) => b.score - a.score).map((s) => s.item);
+    const api = this.plugin.types;
+    if (api.openNewNoteModal && api.getNoteTypes().length > 0) {
+      if (this.noteExists(q, notes)) return found;
+      // Keep room for the create row: SuggestModal drops whatever is past `limit`.
+      const create: Item = { kind: 'create-any', title: q, open: (title) => api.openNewNoteModal?.(title) ?? Promise.resolve(null) };
+      return [...found.slice(0, Math.max(0, this.limit - 1)), create];
+    }
+    if (found.length > 0) return found;
     return this.plugin.types.getNoteTypes().map((type): Item => ({ kind: 'create', type, title: q }));
+  }
+
+  /** Whether a note named `query` already exists: any note by that name, or a typed note with that frontmatter title. */
+  private noteExists(query: string, notes: Array<{ file: TFile }>): boolean {
+    if (this.app.metadataCache.getFirstLinkpathDest(query, '')) return true;
+    const lower = query.toLowerCase();
+    return notes.some((n) => {
+      const title: unknown = this.app.metadataCache.getFileCache(n.file)?.frontmatter?.title;
+      return typeof title === 'string' && title.toLowerCase() === lower;
+    });
   }
 
   renderSuggestion(item: Item, el: HTMLElement): void {
     el.addClass('ffc-picker-row');
+    if (item.kind === 'create-any') {
+      el.createSpan({ text: `Create note "${item.title}"…`, cls: 'suggestion-title' });
+      return;
+    }
     if (item.kind === 'create') {
       el.createSpan({ text: `New ${item.type.name}: ${item.title}`, cls: 'suggestion-title' });
       return;
@@ -84,7 +109,10 @@ export class NotePicker extends SuggestModal<Item> {
       this.addOrFocus(item.file);
       return;
     }
-    void this.plugin.types.createNote(item.type, item.title).then(async (file) => {
+    const created = item.kind === 'create-any'
+      ? item.open(item.title)
+      : this.plugin.types.createNote(item.type, item.title);
+    void created.then(async (file) => {
       if (!file) return;
       // What the note holds right now, so undoing the card can take the note away only if nobody has touched it.
       const baseline = await this.app.vault.read(file);

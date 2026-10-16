@@ -72,6 +72,8 @@ export interface NoteTypesApi {
   getNoteTypeForFile(file: TFile): NoteType | undefined;
   getNoteTypeFiles(type: NoteType): TFile[];
   createNote(type: NoteType, title: string, fieldValues?: Record<string, string>, description?: string): Promise<TFile | null>;
+  /** Added after version 1 shipped: missing on older Note Types builds. */
+  openNewNoteModal?(initialTitle?: string): Promise<TFile | null>;
   getRelationTypes(): readonly RelationType[];
   resolveRelation(rt: RelationType): ResolvedRelation;
   addRelationType(name: string, reverseName?: string): Promise<RelationType>;
