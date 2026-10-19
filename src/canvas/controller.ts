@@ -102,6 +102,7 @@ export class CanvasController {
       })
       : null;
     this.toolbar?.setActive(this.tool);
+    this.toolbar?.setNoteButtonVisible(plugin.hasNoteTypes);
     this.toolbar?.setPenColor(this.ink.penColor);
 
     const wrapper = view.canvas!.wrapperEl;
@@ -195,6 +196,7 @@ export class CanvasController {
     const canvas = this.view.canvas;
     const nodes = canvas?.nodes;
     if (!canvas || !nodes) return;
+    this.toolbar?.setNoteButtonVisible(this.plugin.hasNoteTypes);
     decorateNoteCards(this.plugin, canvas);
     this.relations.sweep();
     this.panel.update();

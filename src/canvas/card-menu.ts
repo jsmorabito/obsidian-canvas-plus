@@ -38,6 +38,7 @@ export class CardMenu {
   private toolItems = new Map<ToolId, HTMLElement>();
   private penRow: HTMLElement;
   private swatches = new Map<string, HTMLElement>();
+  private noteButton: HTMLElement | null = null;
 
   constructor(private canvas: CanvasLike, private menuEl: HTMLElement, hooks: CardMenuHooks) {
     // Anything left by an earlier load, or an earlier version, has dead handlers: replace it.
@@ -95,6 +96,7 @@ export class CardMenu {
       cls: `canvas-card-menu-button mod-draggable ${ITEM_CLASS}`,
       attr: { 'aria-label': `Drag to add note (${key})`, 'data-tooltip-position': 'top' },
     });
+    this.noteButton = btn;
     setIcon(btn, NOTE_TYPES_ICON);
     btn.addEventListener('click', () => hooks.onNoteClick());
     // Obsidian's own drag from a menu button: it shows the outline of the card, snaps it, and
@@ -102,6 +104,11 @@ export class CardMenu {
     btn.addEventListener('pointerdown', (e) => {
       this.canvas.dragTempNode?.(e, SIZE_NOTE_CARD, (pos) => hooks.onNoteDrop(pos));
     });
+  }
+
+  /** Show the note button only while Note Types is available, since the picker needs it. */
+  setNoteButtonVisible(visible: boolean): void {
+    this.noteButton?.toggle(visible);
   }
 
   /** Mark the armed tool: its control item turns accent coloured, as core's active controls do. */
