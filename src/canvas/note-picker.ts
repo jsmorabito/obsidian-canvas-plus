@@ -11,12 +11,14 @@ import { fitNodeToCard, noteOfNode } from './note-card.ts';
 import { SideEffect, batchWithEffect } from './undo-journal.ts';
 
 type Item =
-  | { kind: 'note'; file: TFile; type: NoteType }
+  /** `type` is null for an untyped note, listed only when its name is exactly the query. */
+  | { kind: 'note'; file: TFile; type: NoteType | null }
   | { kind: 'create'; type: NoteType; title: string }
   | { kind: 'create-any'; title: string; open: (title: string) => Promise<TFile | null> };
 
 /**
- * Add a typed note to the canvas. Lists only notes that belong to a note type.
+ * Add a typed note to the canvas. Lists notes that belong to a note type, plus
+ * any other note whose name is exactly the query (so it can still be added).
  * When no note is named exactly the query, offers "Create note…", which opens
  * Note Types' new-note modal (type, fields, description) prefilled with the
  * query and adds the created note's card. Older Note Types builds without that
@@ -39,12 +41,27 @@ export class NotePicker extends SuggestModal<Item> {
     ]);
   }
 
+  /** Template folders (core Templates and Templater), whose notes are scaffolding rather than notes to add. */
+  private templateFolders(): string[] {
+    const app = this.app as unknown as {
+      internalPlugins?: { getPluginById?(id: string): { instance?: { options?: { folder?: string } } } | undefined };
+      plugins?: { plugins?: Record<string, { settings?: { templates_folder?: string } } | undefined> };
+    };
+    const folders = [
+      app.internalPlugins?.getPluginById?.('templates')?.instance?.options?.folder,
+      app.plugins?.plugins?.['templater-obsidian']?.settings?.templates_folder,
+    ];
+    return folders.filter((f): f is string => typeof f === 'string').map((f) => f.replace(/^\/+|\/+$/g, '')).filter(Boolean);
+  }
+
   private typedNotes(): Array<{ file: TFile; type: NoteType }> {
+    const folders = this.templateFolders();
     const seen = new Set<string>();
     const out: Array<{ file: TFile; type: NoteType }> = [];
     for (const type of this.plugin.types.getNoteTypes()) {
       for (const file of this.plugin.types.getNoteTypeFiles(type)) {
         if (seen.has(file.path)) continue;
+        if (folders.some((f) => file.path.startsWith(`${f}/`))) continue;
         seen.add(file.path);
         out.push({ file, type });
       }
@@ -69,6 +86,10 @@ export class NotePicker extends SuggestModal<Item> {
       if (hit) scored.push({ item: { kind: 'note', ...n }, score: hit.score });
     }
     const found = scored.sort((a, b) => b.score - a.score).map((s) => s.item);
+    const exact = this.app.metadataCache.getFirstLinkpathDest(q, '');
+    if (exact && exact.extension === 'md' && !this.templateFolders().some((f) => exact.path.startsWith(`${f}/`)) && !notes.some((n) => n.file.path === exact.path)) {
+      found.unshift({ kind: 'note', file: exact, type: null });
+    }
     const api = this.plugin.types;
     if (api.openNewNoteModal && api.getNoteTypes().length > 0) {
       if (this.noteExists(q, notes)) return found;
@@ -101,7 +122,7 @@ export class NotePicker extends SuggestModal<Item> {
       return;
     }
     el.createSpan({ text: item.file.basename, cls: 'suggestion-title' });
-    el.createSpan({ text: item.type.name, cls: 'ffc-note-chip' });
+    if (item.type) el.createSpan({ text: item.type.name, cls: 'ffc-note-chip' });
   }
 
   onChooseSuggestion(item: Item): void {
