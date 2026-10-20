@@ -18,6 +18,7 @@ import { imageFromDrop, injectKeyImageButton, setKeyImage } from './key-image.ts
 import { InkTools } from './ink-tools.ts';
 import { inkSvg, colorToHex } from './ink-render.ts';
 import { readInk } from './ink-nodes.ts';
+import { fitAllFreeText, fitFreeText, freeTextAt } from './free-text-fit.ts';
 import { PlacedRect, placeNode, placementRect } from './placement.ts';
 import { clearAnchor, isAnchor, keepMenuClearOfLabels, syncAnchor } from './anchor.ts';
 import { CardMenu } from './card-menu.ts';
@@ -112,6 +113,14 @@ export class CanvasController {
       wrapper.addEventListener(type, handler, true);
       this.cleanups.push(() => wrapper.removeEventListener(type, handler, true));
     }
+    // Free text grows as it is typed into.
+    const onInput = (e: Event): void => {
+      const canvas = this.view.canvas;
+      const node = canvas && freeTextAt(canvas, e.target);
+      if (canvas && node) fitFreeText(canvas, node);
+    };
+    wrapper.addEventListener('input', onInput, true);
+    this.cleanups.push(() => wrapper.removeEventListener('input', onInput, true));
     // Dropping an image on a note card sets its key image. Elsewhere the canvas handles the drop itself.
     for (const type of ['dragover', 'drop'] as const) {
       const handler = (e: DragEvent): void => this.onDrag(type, e);
@@ -204,6 +213,7 @@ export class CanvasController {
     this.presenter.refresh();
     this.tray.sync();
     this.injectKeyImage();
+    fitAllFreeText(canvas);
     for (const node of nodes.values()) {
       const el = node.nodeEl;
       if (!el) continue;
