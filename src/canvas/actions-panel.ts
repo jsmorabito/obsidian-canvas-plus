@@ -1,5 +1,9 @@
+import { DG_LOGO_ICON } from '../discourse-graphs.ts';
 import { setIcon } from 'obsidian';
 import { isElement, isNode, shieldFromCanvas } from './adapter.ts';
+
+/** The space between the toolbar and the panel above it. */
+const GAP = 8;
 
 export interface ActionEntry {
   section: string;
@@ -27,9 +31,13 @@ export class ActionsPanel {
   private index = 0;
   private stopOutside: (() => void) | null = null;
 
-  constructor(menuEl: HTMLElement, private anchor: HTMLElement, private getEntries: () => ActionEntry[]) {
+  /**
+   * It lives in `host` (the view), not in the menu: the menu sits under the tab panels, and nothing inside it can
+   * rise above them. It is placed over the menu when it opens.
+   */
+  constructor(private menuEl: HTMLElement, host: HTMLElement, private anchor: HTMLElement, private getEntries: () => ActionEntry[]) {
     // Core's own prompt markup (the quick switcher's), so themes and snippets style it like any other.
-    this.el = menuEl.createDiv({ cls: 'ffc-actions prompt' });
+    this.el = host.createDiv({ cls: 'ffc-actions prompt' });
     const search = this.el.createDiv({ cls: 'prompt-input-container' });
     this.input = search.createEl('input', {
       cls: 'prompt-input',
@@ -55,6 +63,7 @@ export class ActionsPanel {
     this.input.value = '';
     this.index = 0;
     this.render();
+    this.place();
     this.el.addClass('is-shown');
     this.anchor.addClass('is-active');
     this.input.focus();
@@ -66,6 +75,18 @@ export class ActionsPanel {
     };
     doc.addEventListener('pointerdown', onDown, true);
     this.stopOutside = () => doc.removeEventListener('pointerdown', onDown, true);
+  }
+
+  /** Centre it on the toolbar, just above it (and above the pen colours while those show). */
+  private place(): void {
+    const host = this.el.parentElement;
+    if (!host) return;
+    const menu = this.menuEl.getBoundingClientRect();
+    const view = host.getBoundingClientRect();
+    const pens = this.menuEl.querySelector<HTMLElement>(':scope > .ffc-pen-colors');
+    const lift = pens && pens.offsetParent ? pens.offsetHeight + GAP : 0;
+    this.el.style.left = `${Math.round(menu.left + menu.width / 2 - view.left)}px`;
+    this.el.style.bottom = `${Math.round(view.bottom - menu.top + GAP + lift)}px`;
   }
 
   hide(): void {
@@ -105,7 +126,9 @@ export class ActionsPanel {
           .createDiv({ cls: 'suggestion-title', text: section });
       }
       const row = this.list.createDiv({ cls: 'suggestion-item mod-complex' });
-      setIcon(row.createDiv({ cls: 'suggestion-icon' }).createSpan({ cls: 'suggestion-flair' }), entry.icon);
+      const flair = row.createDiv({ cls: 'suggestion-icon' }).createSpan({ cls: 'suggestion-flair' });
+      if (entry.icon === DG_LOGO_ICON) flair.addClass('ffc-dg-logo');
+      setIcon(flair, entry.icon);
       row.createDiv({ cls: 'suggestion-content' }).createDiv({ cls: 'suggestion-title', text: entry.label });
       if (entry.hint) row.createDiv({ cls: 'suggestion-aux' }).createSpan({ cls: 'suggestion-hotkey', text: entry.hint });
       row.addEventListener('mouseenter', () => this.select(i, false));

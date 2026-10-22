@@ -74,6 +74,16 @@ This relies on Obsidian's undocumented canvas internals, collected in `src/canva
 
 ---
 
+### Discourse Graphs
+
+With the Discourse Graphs plugin enabled (and nothing to set up), Canvas Plus adds:
+
+- **Create discourse node** (`D`, the toolbar button, the Actions panel or a command): type a title, pick the node type, and the new node's card lands on the canvas, made with that type's folder, name format and template.
+- **Discourse context panel** (Actions panel or a command): opens Discourse Graphs' panel as a widget and keeps it on the selected card's node.
+- **Convert to discourse node…** in the selection toolbar and the Actions panel, and the node types in the Convert picker.
+
+Nothing is added while Discourse Graphs is off.
+
 ## Installation
 
 1. Copy `main.js`, `manifest.json`, and `styles.css` into `<Vault>/.obsidian/plugins/canvas-plus/`.

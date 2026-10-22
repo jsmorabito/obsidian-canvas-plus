@@ -49,3 +49,15 @@ export function injectIssueButtons(plugin: CanvasPlusPlugin, canvas: CanvasLike,
     if (url) window.open(url);
   });
 }
+
+/** Keep the service buttons last in the menu, after the convert buttons, whatever order they were added in. */
+export function moveIssueButtonsLast(canvas: CanvasLike): void {
+  const menuEl = canvas.menu?.menuEl;
+  if (!menuEl) return;
+  const classes = [...PROVIDER_IDS.map((id) => `ffc-${id}-create-btn`), OPEN_CLASS];
+  const buttons = classes.map((cls) => menuEl.querySelector<HTMLElement>(`:scope > .${cls}`)).filter((b): b is HTMLElement => !!b);
+  // Already the last children, in order: leave the menu alone, since changing it runs this again.
+  const tail = Array.from(menuEl.children).slice(menuEl.children.length - buttons.length);
+  if (buttons.every((b, i) => tail[i] === b)) return;
+  menuEl.append(...buttons);
+}

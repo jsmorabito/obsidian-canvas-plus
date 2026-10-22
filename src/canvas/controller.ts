@@ -16,8 +16,10 @@ import { actionEntries } from './actions-entries.ts';
 import { clearIssueCards, decorateIssueCards } from './issue-card.ts';
 import { IssuePicker } from './issue-picker.ts';
 import { injectConvertButton } from './convert-card.ts';
-import { injectIssueButtons } from './issue-menu.ts';
+import { injectIssueButtons, moveIssueButtonsLast } from './issue-menu.ts';
 import { injectViewToggleButton } from './view-toggle.ts';
+import { DgNodePicker } from './dg-create.ts';
+import { DgContext } from './dg-context.ts';
 import { NotePicker } from './note-picker.ts';
 import { RelationFlow } from './relation-flow.ts';
 import { imageFromDrop, injectKeyImageButton, setKeyImage } from './key-image.ts';
@@ -60,6 +62,7 @@ export class CanvasController {
   private toolbar: CardMenu | null;
   private ghost: HTMLElement | null = null;
   private cleanups: Array<() => void> = [];
+  private dgContext: DgContext;
   private cancelDraw: (() => void) | null = null;
   private relations: RelationFlow;
   private panel: ContextPanel;
@@ -85,6 +88,7 @@ export class CanvasController {
     this.layers = new LayersPanel(plugin, view);
     this.minimap = new Minimap(plugin, view);
     this.tabPanels = new CanvasPanels(plugin, view, panelStore);
+    this.dgContext = new DgContext(plugin, () => this.view.canvas, this.tabPanels);
     // The layers panel covers the left edge. The minimap covers the lower-left corner, which matters only where it reaches past the panel.
     setInsets(view.canvas!, () => {
       const left = this.layers.insetPx;
@@ -110,12 +114,14 @@ export class CanvasController {
       ? new CardMenu(view.canvas!, menuEl, {
         onPick: (tool) => this.setTool(tool),
         onNoteClick: () => this.runAction('picker'),
+        onNodeClick: () => this.runAction('dgnode'),
         onPenColor: (color) => this.setPenColor(color),
         onNoteDrop: (pos) => this.dropNoteFromMenu(pos),
       })
       : null;
     this.toolbar?.setActive(this.tool);
     this.toolbar?.setNoteButtonVisible(plugin.hasNoteTypes);
+    this.toolbar?.setNodeButtonVisible(plugin.hasDiscourseGraphs);
     this.toolbar?.setPenColor(this.ink.penColor);
 
     const wrapper = view.canvas!.wrapperEl;
@@ -155,9 +161,11 @@ export class CanvasController {
     // After the tray, so its button goes after the tray's.
     const actionsButton = this.toolbar?.addActionsItem(() => this.runAction('actions'));
     this.actions = menuEl && actionsButton
-      ? new ActionsPanel(menuEl, actionsButton, () => actionEntries(plugin, view.canvas!, {
+      ? new ActionsPanel(menuEl, view.contentEl, actionsButton, () => actionEntries(plugin, view.canvas!, {
         openIssuePicker: (provider) => { this.openIssuePicker(provider); },
-        openIssuePanel: (provider) => this.tabPanels.openView(PROVIDERS[provider].viewType),
+        openIssuePanel: (provider) => { this.tabPanels.openView(PROVIDERS[provider].viewType); },
+        createDiscourseNode: () => { this.createDiscourseNode(); },
+        openDiscoursePanel: () => { this.openDiscoursePanel(); },
         onChanged: () => this.sweep(),
       }))
       : null;
@@ -188,6 +196,7 @@ export class CanvasController {
     // Off by default (beta): the key is left alone, with no notice. The actions panel explains how to turn it on.
     if (action === 'linear') return this.plugin.hasLinear && this.openIssuePicker('linear');
     if (action === 'taskapp') return this.plugin.hasTaskApp && this.openIssuePicker('taskapp');
+    if (action === 'dgnode') return this.plugin.hasDiscourseGraphs && this.createDiscourseNode();
     if (action === 'actions') {
       this.actions?.toggle();
       return !!this.actions;
@@ -209,6 +218,23 @@ export class CanvasController {
       window.requestAnimationFrame(() => this.sweep());
     }).open();
     return true;
+  }
+
+  /** Ask for a title and a node type, then add the new discourse node's card. */
+  createDiscourseNode(): boolean {
+    const canvas = this.view.canvas;
+    if (!canvas) return false;
+    if (!this.plugin.hasDiscourseGraphs) {
+      new Notice('Enable the Discourse Graphs plugin to create discourse nodes.');
+      return false;
+    }
+    new DgNodePicker(this.plugin, canvas, () => this.sweep()).open();
+    return true;
+  }
+
+  /** Open Discourse Graphs' context panel on the selected card's node. */
+  openDiscoursePanel(): boolean {
+    return this.dgContext.open();
   }
 
   /** The note picker lists typed notes, so it needs Note Types. */
@@ -258,6 +284,8 @@ export class CanvasController {
     const nodes = canvas?.nodes;
     if (!canvas || !nodes) return;
     this.toolbar?.setNoteButtonVisible(this.plugin.hasNoteTypes);
+    this.toolbar?.setNodeButtonVisible(this.plugin.hasDiscourseGraphs);
+    this.dgContext.sync();
     decorateNoteCards(this.plugin, canvas);
     decorateIssueCards(this.plugin, canvas);
     this.relations.sweep();
@@ -284,6 +312,7 @@ export class CanvasController {
   }
 
   destroy(): void {
+    this.dgContext.destroy();
     this.presenter.destroy();
     this.focuser.destroy();
     this.tray.destroy();
@@ -338,6 +367,7 @@ export class CanvasController {
     injectKeyImageButton(this.plugin, canvas, selected);
     injectConvertButton(this.plugin, canvas, selected, () => this.sweep());
     injectIssueButtons(this.plugin, canvas, selected, () => this.sweep());
+    moveIssueButtonsLast(canvas);
   }
 
   /** The note card under a drag event, if any. */

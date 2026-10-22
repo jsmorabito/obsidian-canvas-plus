@@ -6,6 +6,8 @@ export const NOTE_TYPES_ICON = 'ffc-note-types';
 export const LINEAR_ICON = 'ffc-linear';
 /** Icon id for Task App: its own logo (apps/web/public/logo.svg in Task-App-1.0), in colour like Linear's. */
 export const TASKAPP_ICON = 'ffc-taskapp';
+/** Icon id for a discourse node: four ringed nodes on a rounded square, after Discourse Graphs' own. */
+export const DG_NODE_ICON = 'ffc-dg-node';
 /** Icon for the actions panel button: Lucide's command (⌘), after the shortcut that opens it. Obsidian bundles it. */
 export const ACTIONS_ICON = 'command';
 /** Icon id for adding a tab panel: Lucide's file-plus-corner with the dog-ear rounded off like the other corners. */
@@ -19,6 +21,13 @@ const ICONS: Record<string, string[]> = {
     'M6 22C5.46957 22 4.96086 21.7893 4.58579 21.4142C4.21071 21.0391 4 20.5304 4 20V4C4 3.46957 4.21071 2.96086 4.58579 2.58579C4.96086 2.21071 5.46957 2 6 2H14C14.3166 1.99949 14.6301 2.0616 14.9225 2.18277C15.215 2.30393 15.4806 2.48176 15.704 2.706L19.292 6.294C19.5168 6.51751 19.6952 6.78334 19.8167 7.07616C19.9382 7.36898 20.0005 7.68297 20 8V20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H6Z',
     'M14 2V7C14 7.26522 14.1054 7.51957 14.2929 7.70711C14.4804 7.89464 14.7348 8 15 8H20',
     'M9 13H8', 'M9 17H8', 'M12.5 13H11.5', 'M12.5 17H11.5', 'M16 13H15', 'M16 17H15',
+  ],
+  // Rings of radius 2 on the middle of each side of a square, with the square's sides running between them.
+  [DG_NODE_ICON]: [
+    'M10 5a2 2 0 1 0 4 0a2 2 0 1 0-4 0', 'M17 12a2 2 0 1 0 4 0a2 2 0 1 0-4 0',
+    'M10 19a2 2 0 1 0 4 0a2 2 0 1 0-4 0', 'M3 12a2 2 0 1 0 4 0a2 2 0 1 0-4 0',
+    'M14 5h2a3 3 0 0 1 3 3v2', 'M19 14v2a3 3 0 0 1-3 3h-2',
+    'M10 19H8a3 3 0 0 1-3-3v-2', 'M5 10V8a3 3 0 0 1 3-3h2',
   ],
   [PANEL_ICON]: [
     'M11.35 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9.35',

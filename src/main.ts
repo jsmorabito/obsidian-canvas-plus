@@ -9,6 +9,7 @@ import { LinearClient } from './linear/api.ts';
 import { LinearAuth, PROTOCOL_ACTION } from './linear/oauth.ts';
 import { TaskAppClient } from './taskapp/client.ts';
 import { TASKAPP_PROTOCOL_ACTION, handleConnect } from './taskapp/connect.ts';
+import { hasDiscourseGraphs } from './discourse-graphs.ts';
 import { NO_NOTE_TYPES, NoteTypesApi, findNoteTypesApi } from './note-types.ts';
 import { PluginData } from './plugin-data.ts';
 import { CanvasPlusSettingTab, CanvasPlusSettings, DEFAULT_SETTINGS } from './settings.ts';
@@ -30,6 +31,11 @@ export class CanvasPlusPlugin extends Plugin {
   /** Whether Note Types is enabled, so note cards, relations and key images are available. */
   get hasNoteTypes(): boolean {
     return findNoteTypesApi(this.app) !== null;
+  }
+
+  /** Whether Discourse Graphs is enabled, so discourse nodes can be made and explored. */
+  get hasDiscourseGraphs(): boolean {
+    return hasDiscourseGraphs(this.app);
   }
 
   get config(): CanvasPlusSettings {

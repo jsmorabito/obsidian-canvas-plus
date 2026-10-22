@@ -1,4 +1,4 @@
-import { EventRef, TFile, ViewState, debounce, setIcon } from 'obsidian';
+import { EventRef, TFile, ViewState, WorkspaceLeaf, debounce, setIcon } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasViewLike, newId, shieldFromCanvas } from './adapter.ts';
 import { PANEL_ICON } from './icons.ts';
@@ -119,19 +119,24 @@ export class CanvasPanels {
     this.onHeldChange();
   }
 
-  /** Open a view (a widget) in a panel, or raise the one already open for it. */
-  openView(type: string): void {
+  /** The leaf of the panel showing a view of `type`, if one is open. */
+  viewLeaf(type: string): WorkspaceLeaf | undefined {
+    return this.panels.find((p) => p.viewState()?.type === type)?.leaf;
+  }
+
+  /** Open a view (a widget) in a panel, or raise the one already open for it. Returns its leaf. */
+  openView(type: string): WorkspaceLeaf | undefined {
     const open = this.panels.find((p) => p.viewState()?.type === type);
     if (open) {
       open.setLayer(++this.layer);
       this.plugin.app.workspace.setActiveLeaf(open.leaf, { focus: true });
-      return;
+      return open.leaf;
     }
-    this.add({ type, state: {} });
+    return this.add({ type, state: {} });
   }
 
-  add(state?: ViewState): void {
-    if (!this.file) return;
+  add(state?: ViewState): WorkspaceLeaf | undefined {
+    if (!this.file) return undefined;
     const pane = this.layerEl;
     const width = Math.min(DEFAULT_WIDTH, Math.max(240, pane.clientWidth - 2 * CASCADE_PX));
     const height = Math.min(DEFAULT_HEIGHT, Math.max(160, pane.clientHeight - 2 * CASCADE_PX));
@@ -145,6 +150,7 @@ export class CanvasPanels {
     this.store.add(this.file.path, record);
     const panel = this.mount(record);
     this.plugin.app.workspace.setActiveLeaf(panel.leaf, { focus: true });
+    return panel.leaf;
   }
 
   private injectButton(): void {

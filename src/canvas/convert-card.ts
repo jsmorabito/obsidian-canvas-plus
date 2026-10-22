@@ -1,6 +1,6 @@
 import { Notice, SuggestModal, TFile } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
-import type { NoteType } from '../note-types.ts';
+import { createDgNode, dgNodeTypes } from '../discourse-graphs.ts';
 import {
   CanvasEdgeLike, CanvasLike, CanvasNodeLike, canvasFilePath, createFileNode, nodeBox, putEdge, removeNode, selectedNodes,
 } from './adapter.ts';
@@ -8,7 +8,7 @@ import { SIZE_NOTE_CARD } from './constants.ts';
 import { createdNoteEffect } from './created-note.ts';
 import { draftFrom, isConvertibleCard } from './issue-create.ts';
 import { button } from './issue-menu.ts';
-import { NOTE_TYPES_ICON } from './icons.ts';
+import { DG_NODE_ICON, NOTE_TYPES_ICON } from './icons.ts';
 import { fitNodeToCard } from './note-card.ts';
 import { SideEffect, batchWithEffect } from './undo-journal.ts';
 
@@ -30,23 +30,55 @@ function noteDraft(node: CanvasNodeLike): { title: string; description: string }
   return { title, description: MARKUP.test(first) || line.length > title.length ? text : description };
 }
 
-class TypePicker extends SuggestModal<NoteType> {
-  constructor(private plugin: CanvasPlusPlugin, private onPick: (type: NoteType) => void) {
+/** Something a card can become: a Note Types type or a Discourse Graphs node type. */
+interface Target {
+  name: string;
+  /** Where the type comes from, shown beside its name when more than one plugin supplies types. */
+  source: string;
+  /** Make the note; `created` is false when a note by that name already existed and was used as it is. */
+  make(title: string, description: string): Promise<{ file: TFile; created: boolean } | null>;
+}
+
+/** Which plugin's types a picker lists: both, or just one. */
+export type TypeSource = 'all' | 'notes' | 'discourse';
+
+function targetsOf(plugin: CanvasPlusPlugin, source: TypeSource): Target[] {
+  const targets: Target[] = (source === 'discourse' ? [] : plugin.types.getNoteTypes()).map((type) => ({
+    name: type.name,
+    source: 'Note Types',
+    make: async (title, description) => {
+      const file = await plugin.types.createNote(type, title, undefined, description);
+      return file ? { file, created: true } : null;
+    },
+  }));
+  for (const type of source === 'notes' ? [] : dgNodeTypes(plugin.app)) {
+    targets.push({ name: type.name, source: 'Discourse Graphs', make: (title, description) => createDgNode(plugin.app, type, title, description) });
+  }
+  return targets;
+}
+
+class TypePicker extends SuggestModal<Target> {
+  private targets: Target[];
+
+  constructor(plugin: CanvasPlusPlugin, source: TypeSource, private onPick: (target: Target) => void) {
     super(plugin.app);
-    this.setPlaceholder('Convert to…');
+    this.targets = targetsOf(plugin, source);
+    this.setPlaceholder(source === 'discourse' ? 'Convert to discourse node…' : 'Convert to…');
   }
 
-  getSuggestions(query: string): NoteType[] {
+  getSuggestions(query: string): Target[] {
     const q = query.trim().toLowerCase();
-    return this.plugin.types.getNoteTypes().filter((t) => t.name.toLowerCase().includes(q));
+    return this.targets.filter((t) => t.name.toLowerCase().includes(q) || t.source.toLowerCase().includes(q));
   }
 
-  renderSuggestion(type: NoteType, el: HTMLElement): void {
-    el.createSpan({ text: type.name, cls: 'suggestion-title' });
+  renderSuggestion(target: Target, el: HTMLElement): void {
+    el.addClass('ffc-picker-row');
+    el.createSpan({ text: target.name, cls: 'suggestion-title' });
+    if (new Set(this.targets.map((t) => t.source)).size > 1) el.createSpan({ text: target.source, cls: 'ffc-note-chip' });
   }
 
-  onChooseSuggestion(type: NoteType): void {
-    this.onPick(type);
+  onChooseSuggestion(target: Target): void {
+    this.onPick(target);
   }
 }
 
@@ -63,7 +95,7 @@ function combined(effects: SideEffect[]): SideEffect {
  * Make a note of `type` from each card's text, then swap the cards for the notes' cards in one undo step,
  * each in its card's place and with its arrows.
  */
-async function convertCards(plugin: CanvasPlusPlugin, canvas: CanvasLike, nodes: CanvasNodeLike[], type: NoteType, onDone: () => void): Promise<void> {
+async function convertCards(plugin: CanvasPlusPlugin, canvas: CanvasLike, nodes: CanvasNodeLike[], type: Target, onDone: () => void): Promise<void> {
   const made: Array<{ node: CanvasNodeLike; file: TFile }> = [];
   const effects: SideEffect[] = [];
   const canvasPath = canvasFilePath(plugin.app, canvas);
@@ -71,11 +103,14 @@ async function convertCards(plugin: CanvasPlusPlugin, canvas: CanvasLike, nodes:
   try {
     for (const node of nodes) {
       const draft = noteDraft(node);
-      const file = draft ? await plugin.types.createNote(type, draft.title, undefined, draft.description) : null;
-      if (!file) { skipped++; continue; }
-      // What the note holds right now, so undo can take it away only if nobody has touched it.
-      const baseline = await plugin.app.vault.read(file);
-      effects.push(createdNoteEffect(plugin, canvas, file, baseline, canvasPath));
+      const result = draft ? await type.make(draft.title, draft.description) : null;
+      if (!result) { skipped++; continue; }
+      const { file } = result;
+      if (result.created) {
+        // What the note holds right now, so undo can take it away only if nobody has touched it.
+        const baseline = await plugin.app.vault.read(file);
+        effects.push(createdNoteEffect(plugin, canvas, file, baseline, canvasPath));
+      }
       made.push({ node, file });
     }
   } catch (err) {
@@ -111,21 +146,31 @@ async function convertCards(plugin: CanvasPlusPlugin, canvas: CanvasLike, nodes:
 let picking = false;
 
 /** Ask for a note type, then convert `nodes` to it. One picker at a time. */
-export function convertWithPicker(plugin: CanvasPlusPlugin, canvas: CanvasLike, nodes: CanvasNodeLike[], onDone: () => void): void {
+export function convertWithPicker(plugin: CanvasPlusPlugin, canvas: CanvasLike, nodes: CanvasNodeLike[], onDone: () => void, source: TypeSource = 'all'): void {
   const cards = nodes.filter(isConvertibleCard);
   if (picking || cards.length === 0) return;
   picking = true;
-  const picker = new TypePicker(plugin, (type) => { void convertCards(plugin, canvas, cards, type, onDone); });
+  const picker = new TypePicker(plugin, source, (target) => { void convertCards(plugin, canvas, cards, target, onDone); });
   const close = picker.onClose.bind(picker);
   picker.onClose = (): void => { close(); picking = false; };
   picker.open();
 }
 
-/** A "Convert to…" button in the selection menu: pick a note type, and the selected text cards become notes of it. */
+/**
+ * Buttons in the selection menu that turn the selected text cards into notes: "Convert to…" for a note type,
+ * and, with Discourse Graphs enabled, "Convert to discourse node…" for a node type.
+ */
 export function injectConvertButton(plugin: CanvasPlusPlugin, canvas: CanvasLike, selected: CanvasNodeLike[], onDone: () => void): void {
   const menuEl = canvas.menu?.menuEl;
-  if (!menuEl || selected.length === 0 || !plugin.hasNoteTypes || !selected.every(isConvertibleCard)) return;
-  button(menuEl, 'ffc-convert-btn', 'Convert to…', NOTE_TYPES_ICON, () => {
-    convertWithPicker(plugin, canvas, selectedNodes(canvas), onDone);
-  });
+  if (!menuEl || selected.length === 0 || !selected.every(isConvertibleCard)) return;
+  if (plugin.hasNoteTypes) {
+    button(menuEl, 'ffc-convert-btn', 'Convert to…', NOTE_TYPES_ICON, () => {
+      convertWithPicker(plugin, canvas, selectedNodes(canvas), onDone, 'notes');
+    });
+  }
+  if (plugin.hasDiscourseGraphs) {
+    button(menuEl, 'ffc-convert-dg-btn', 'Convert to discourse node…', DG_NODE_ICON, () => {
+      convertWithPicker(plugin, canvas, selectedNodes(canvas), onDone, 'discourse');
+    });
+  }
 }

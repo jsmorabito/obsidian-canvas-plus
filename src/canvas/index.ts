@@ -66,6 +66,26 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
     });
   }
   plugin.addCommand({
+    id: 'create-discourse-node-on-canvas',
+    name: 'Create discourse node on canvas',
+    checkCallback: (checking) => {
+      const controller = activeController();
+      if (!controller || !plugin.hasDiscourseGraphs) return false;
+      if (!checking) controller.createDiscourseNode();
+      return true;
+    },
+  });
+  plugin.addCommand({
+    id: 'open-discourse-context-on-canvas',
+    name: 'Open discourse context panel on canvas',
+    checkCallback: (checking) => {
+      const controller = activeController();
+      if (!controller || !plugin.hasDiscourseGraphs) return false;
+      if (!checking) controller.openDiscoursePanel();
+      return true;
+    },
+  });
+  plugin.addCommand({
     id: 'toggle-canvas-presentation',
     name: 'Toggle presentation',
     checkCallback: (checking) => {

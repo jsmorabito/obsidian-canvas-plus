@@ -1,4 +1,5 @@
 /** Widgets: registered views that don't show a file. Reads Obsidian's internal view registry. */
+import { DG_CONTEXT_VIEW, DG_LOGO_ICON } from '../discourse-graphs.ts';
 import { App, FuzzyMatch, FuzzySuggestModal, View, WorkspaceLeaf, renderResults, setIcon } from 'obsidian';
 
 interface ViewRegistryInternals {
@@ -53,7 +54,8 @@ function describe(create: (leaf: WorkspaceLeaf) => View, leaf: WorkspaceLeaf, ty
   try {
     const view = create(leaf);
     const name = view.getDisplayText();
-    const icon = view.getIcon();
+    // Discourse Graphs' logo, in place of the telescope its panel uses.
+    const icon = type === DG_CONTEXT_VIEW ? DG_LOGO_ICON : view.getIcon();
     for (const off of (view as unknown as ComponentInternals)._events?.splice(0) ?? []) off();
     return name ? { type, name, icon } : null;
   } catch {

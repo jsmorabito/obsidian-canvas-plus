@@ -1,4 +1,5 @@
 import { ItemView, Notice, SearchComponent, WorkspaceLeaf, setIcon } from 'obsidian';
+import { showHeaderIcon } from './header-icon.ts';
 import { IssueService, PROVIDERS } from '../issues/providers.ts';
 import type { Issue, ProviderId } from '../issues/types.ts';
 import type { CanvasPlusPlugin } from '../main.ts';
@@ -85,21 +86,9 @@ export abstract class IssueView extends ItemView {
     return Promise.resolve();
   }
 
-  /** Put the service's icon in the view's header, before its title, whether or not core drew an icon slot there. */
+  /** Put the service's icon in the view's header, before its title. */
   private showHeaderIcon(): boolean {
-    const header = this.containerEl.querySelector<HTMLElement>(':scope > .view-header');
-    if (!header) return false;
-    let icon = header.querySelector<HTMLElement>('.view-header-icon');
-    if (!icon) {
-      icon = createDiv({ cls: 'view-header-icon' });
-      const title = header.querySelector('.view-header-title-container');
-      if (title) title.before(icon);
-      else header.prepend(icon);
-    }
-    icon.addClass('ffc-linear-header-icon');
-    icon.empty();
-    setIcon(icon, PROVIDERS[this.provider].icon);
-    return true;
+    return showHeaderIcon(this.containerEl, PROVIDERS[this.provider].icon);
   }
 
   onClose(): Promise<void> {

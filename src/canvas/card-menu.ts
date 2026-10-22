@@ -1,13 +1,15 @@
 import { setIcon } from 'obsidian';
 import { CanvasLike } from './adapter.ts';
 import { SIZE_NOTE_CARD } from './constants.ts';
-import { ACTIONS_ICON, NOTE_TYPES_ICON } from './icons.ts';
+import { ACTIONS_ICON, DG_NODE_ICON, NOTE_TYPES_ICON } from './icons.ts';
 import { ACTIONS, TOOLS, ToolId, isPenTool } from './tools.ts';
 
 export interface CardMenuHooks {
   onPick: (tool: ToolId) => void;
   /** The note button was clicked, not dragged. */
   onNoteClick: () => void;
+  /** The discourse node button was clicked. */
+  onNodeClick: () => void;
   /** The note button was dragged onto the canvas and dropped. `pos` is the top-left of the card. */
   onNoteDrop: (pos: { x: number; y: number }) => void;
   onPenColor: (color: string) => void;
@@ -39,6 +41,7 @@ export class CardMenu {
   private penRow: HTMLElement;
   private swatches = new Map<string, HTMLElement>();
   private noteButton: HTMLElement | null = null;
+  private nodeButton: HTMLElement | null = null;
 
   constructor(private canvas: CanvasLike, private menuEl: HTMLElement, hooks: CardMenuHooks) {
     // Anything left by an earlier load, or an earlier version, has dead handlers: replace it.
@@ -53,6 +56,7 @@ export class CardMenu {
 
     // After them: our draggable button, then a divider and the other tools.
     this.addNoteButton(hooks);
+    this.addNodeButton(hooks);
     menuEl.createDiv({ cls: `canvas-card-menu-divider ${ITEM_CLASS}` });
     this.toolGroup(TRAILING, hooks);
 
@@ -88,6 +92,23 @@ export class CardMenu {
       this.toolItems.set(id, item);
     }
     return group;
+  }
+
+  /** Create a discourse node: a plain button beside Add note, shown only while Discourse Graphs is enabled. */
+  private addNodeButton(hooks: CardMenuHooks): void {
+    const key = shortcut(ACTIONS.find((a) => a.id === 'dgnode')?.key ?? 'd');
+    const btn = this.menuEl.createDiv({
+      cls: `canvas-card-menu-button ${ITEM_CLASS}`,
+      attr: { 'aria-label': `Create discourse node (${key})`, 'data-tooltip-position': 'top' },
+    });
+    this.nodeButton = btn;
+    btn.hide();
+    setIcon(btn, DG_NODE_ICON);
+    btn.addEventListener('click', () => hooks.onNodeClick());
+  }
+
+  setNodeButtonVisible(visible: boolean): void {
+    this.nodeButton?.toggle(visible);
   }
 
   private addNoteButton(hooks: CardMenuHooks): void {

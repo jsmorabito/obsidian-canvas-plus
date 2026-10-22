@@ -521,13 +521,15 @@ svg.ffc-ink path.ffc-ink-auto {
 
 /* ── Actions panel ───────────────────────────────────────────────────────── */
 
-/* Core's `.prompt` supplies the look; this only places it, just above the bottom toolbar and centred on it. */
+/*
+ * Core's `.prompt` supplies the look; this only places it. It sits in the view, over the tab panels, and the
+ * script sets `left` (the toolbar's middle) and `bottom` (just above the toolbar) when it opens.
+ */
 .ffc-actions.prompt {
   position: absolute;
+  z-index: calc(var(--layer-cover) + 2);
   top: auto;
   right: auto;
-  bottom: calc(100% + var(--size-4-2));
-  left: 50%;
   transform: translateX(-50%);
   display: none;
   flex-direction: column;
@@ -537,13 +539,14 @@ svg.ffc-ink path.ffc-ink-auto {
   margin: 0;
 }
 
-/* Above the pen colours while those show. */
-.canvas-card-menu:has(> .ffc-pen-colors:not([style*="display: none"])) > .ffc-actions {
-  bottom: calc(100% + var(--size-4-2) * 2 + 40px);
-}
-
 .ffc-actions.prompt.is-shown {
   display: flex;
+}
+
+/* Discourse Graphs' logo is drawn in the text colour, as in its own panel, not the muted icon colour. */
+.ffc-actions .suggestion-flair.ffc-dg-logo {
+  color: var(--text-normal);
+  opacity: 1;
 }
 
 .ffc-actions .prompt-results {
@@ -569,15 +572,15 @@ svg.ffc-ink path.ffc-ink-auto {
   gap: var(--size-4-1);
 }
 
-/* The Linear icon at the left of the widget's header, shown even where core leaves its icon slot hidden. Core's own padding and margin on the slot are dropped so it sits close to the title. */
-.ffc-tab-panel .ffc-linear-header-icon {
+/* The service's icon at the left of the widget's header, shown even where core leaves its icon slot hidden. Core's own padding and margin on the slot are dropped so it sits close to the title. */
+.ffc-tab-panel .ffc-header-icon {
   display: flex;
   align-items: center;
   padding: 0;
   margin: 0 var(--size-2-1) 0 0;
 }
 
-.ffc-linear-header-icon .svg-icon {
+.ffc-header-icon .svg-icon {
   width: var(--icon-s);
   height: var(--icon-s);
 }
@@ -1644,7 +1647,13 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  z-index: var(--layer-cover);
+  /* Under the tab panels, which share the cover layer and come first in the document. */
+  z-index: calc(var(--layer-cover) - 1);
+}
+
+/* An open thread rises above the panels so it can be read and typed into. */
+.ffc-comments:has(.is-open) {
+  z-index: calc(var(--layer-cover) + 1);
 }
 
 .ffc-comment {
