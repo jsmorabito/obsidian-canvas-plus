@@ -15,6 +15,7 @@ import { ActionsPanel } from './actions-panel.ts';
 import { actionEntries } from './actions-entries.ts';
 import { clearIssueCards, decorateIssueCards } from './issue-card.ts';
 import { IssuePicker } from './issue-picker.ts';
+import { injectConvertButton } from './convert-card.ts';
 import { injectIssueButtons } from './issue-menu.ts';
 import { injectViewToggleButton } from './view-toggle.ts';
 import { NotePicker } from './note-picker.ts';
@@ -335,6 +336,7 @@ export class CanvasController {
     const selected = selectedNodes(canvas);
     injectViewToggleButton(canvas, selected, () => this.sweep());
     injectKeyImageButton(this.plugin, canvas, selected);
+    injectConvertButton(this.plugin, canvas, selected, () => this.sweep());
     injectIssueButtons(this.plugin, canvas, selected, () => this.sweep());
   }
 

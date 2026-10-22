@@ -7,7 +7,8 @@ import { readIssueRef } from './issue-ref.ts';
 
 const OPEN_CLASS = 'ffc-linear-open-btn';
 
-function button(menuEl: HTMLElement, cls: string, label: string, icon: string, onClick: () => void): void {
+/** Add a button to the selection menu once, relabelling it if its label changes. */
+export function button(menuEl: HTMLElement, cls: string, label: string, icon: string, onClick: () => void): void {
   let btn = menuEl.querySelector<HTMLElement>(`.${cls}`);
   if (!btn) {
     btn = menuEl.createEl('button', { cls: `clickable-icon ${cls}`, attr: { 'data-tooltip-position': 'top' } });

@@ -22,14 +22,14 @@ export function isConvertibleCard(node: CanvasNodeLike): boolean {
   return !readInk(node, data) && !isAnchor(node, data) && data[FIELD_KIND] !== KIND_TEXT && !readIssueRef(node, data);
 }
 
-interface Draft {
+export interface Draft {
   node: CanvasNodeLike;
   title: string;
   description: string;
 }
 
 /** The first line of a card is the issue's title, and the rest its description. */
-function draftFrom(node: CanvasNodeLike): Draft {
+export function draftFrom(node: CanvasNodeLike): Draft {
   const text = (node.getData?.().text as string | undefined) ?? '';
   const lines = text.trim().split('\n');
   const title = firstLine(text);
