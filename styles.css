@@ -64,7 +64,16 @@
   --ffc-icon-fill: var(--background-secondary);
 }
 
-.ffc-tool-placing .canvas-wrapper {
+/* Core's grab hand on cards, group selections and while dragging sits on more specific selectors, so match them. */
+.ffc-tool-placing .canvas-wrapper:not(.mod-readonly) .canvas-node:not(.is-editing) .canvas-node-container,
+.ffc-tool-placing .canvas-wrapper:not(.mod-readonly) .canvas-node:not(.is-editing) .canvas-node-container:active,
+.ffc-tool-placing .canvas-wrapper:not(.mod-readonly) .canvas-selection.mod-group-selection,
+.ffc-tool-placing .canvas-wrapper:not(.mod-readonly) .canvas-selection.mod-group-selection:active,
+.ffc-tool-placing .canvas-wrapper.is-dragging,
+.ffc-tool-placing .canvas-wrapper,
+.ffc-tool-placing .canvas-wrapper .canvas-node,
+.ffc-tool-placing .canvas-wrapper .canvas-node-content,
+.ffc-tool-placing .canvas-wrapper .canvas-node-label {
   cursor: crosshair;
 }
 
