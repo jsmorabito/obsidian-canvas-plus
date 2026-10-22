@@ -14,9 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   more.
 - Actions panel: an **Actions** button in the bottom bar, and `Cmd`/`Ctrl` + `K`,
   open a searchable list of actions, with a way into the plugin's settings.
+- Layers panel: a collapsible Favorites section.
 
 ### Changed
 
+- Every canvas now opens with its tray closed. Whether the tray is open is
+  kept for each canvas view, not as one saved preference shared by all
+  canvases.
 - Linear shows its own app icon, in the actions panel, the selection toolbar
   and the widget's header.
 - The layers panel is wider (241px, as Figma's left panel is) and can be
