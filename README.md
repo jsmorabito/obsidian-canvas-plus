@@ -58,7 +58,7 @@ These need the [Note Types](https://github.com/jsmorabito/obsidian-note-types) p
 ![Typed notes as cards, a relation on the edge between them and the relations panel](docs/mockups/notetypes.svg)
 
 **Actions panel (`⌘K`)**  
-The **Actions** button in the bottom bar (or `Cmd`/`Ctrl` + `K`) opens a searchable list of actions: the Linear ones, and a shortcut to this plugin's settings. The ⌘ button sits beside the tray's button. Arrow keys move, `Enter` runs, `Esc` closes.
+The **Actions** button in the bottom bar (or `Cmd`/`Ctrl` + `K`) opens a searchable list of actions: the Linear and Task App ones, and a shortcut to this plugin's settings. The ⌘ button sits beside the tray's button. Arrow keys move, `Enter` runs, `Esc` closes.
 
 **With Linear**  
 These are in beta and off by default: turn on **Enable Linear integration (beta)** under **Settings → Canvas Plus**, then sign in. Create an OAuth app in Linear (**Settings → API**), give it the callback URL shown there (`obsidian://canvas-plus-linear`), and enter its client ID. Sign-in uses PKCE, so there is no client secret, and the tokens are kept in Obsidian's secret storage. A personal API key works instead.
@@ -66,7 +66,7 @@ These are in beta and off by default: turn on **Enable Linear integration (beta)
 - **Add Linear issue (`I`).** Search Linear, or enter an identifier like `ENG-123` or an issue's URL, to add the issue to the canvas. Find it in the **Actions** panel too. An issue already on the canvas is selected instead of added twice.
 - **Create issues from cards.** Select one or more cards and choose **Create Linear issue** in the selection toolbar. A card's first line becomes the title and the rest its description; pick the team and the card turns into the issue. Undo puts the card back, but the issue stays in Linear.
 - **Linear widget.** **Open Linear panel** in the actions panel (or **Open widget** in a new tab panel) opens Linear in a tab panel over the canvas. **On canvas** lists the issues already on this canvas (select one to zoom to it), and **Explore** searches Linear or lists recently updated issues, and adds one with a click.
-- **Card, embed or link.** Issues switch between views the same way note cards do (the toolbar button, or the **Cycle selected canvas note cards and Linear issues between card, embed and link** command): a card with the status, assignee and labels, the full issue with its properties and description, or a one-line link. **Open in Linear** is in the toolbar too.
+- **Card, embed or link.** Issues switch between views the same way note cards do (the toolbar button, or the **Cycle selected canvas note cards and issues between card, embed and link** command): a card with the status, assignee and labels, the full issue with its properties and description, or a one-line link. **Open in Linear** is in the toolbar too.
 
 Canvas files stay standard JSON Canvas, with extra fields kept alongside, so stock Obsidian still opens them.
 
@@ -82,9 +82,14 @@ This relies on Obsidian's undocumented canvas internals, collected in `src/canva
 
 ---
 
+**With Task App**  
+Task App is the self-hosted task app in `Task-App-1.0`. Its integration is in beta and off by default, and does the same as Linear's: turn on **Enable Task App integration (beta)** under **Settings → Canvas Plus**, enter the **Server address** (such as `https://tasks.example.com`, or `http://localhost:4100`), and set the **API token**, which is the server's `API_TOKEN` and is kept in Obsidian's secret storage. A local server with sign-in off needs no token. If the web app runs somewhere else than the API (`http://localhost:3100` while developing), enter it as the **Web app address** so issue links open there. The server must be a version that accepts its API token on `/trpc`.
+
+- **Add Task App issue (`J`)**, **Create Task App issue** in the selection toolbar, the **Task App widget**, and the card, embed and link views all work as they do for Linear. Both can be on at once, and a canvas can hold issues from each. Task App has a single owner, so its cards never show an assignee.
+
 ## Network use
 
-The plugin has no telemetry and collects no data. It makes no requests unless you sign in to Linear or set an API key. With one, it sends requests to Linear (`api.linear.app`) to search issues, load the issues shown on your canvases (their title, status, assignee, labels and description), and create issues from cards. What is sent for a new issue is the title and description you confirm in the dialog. Nothing else from your vault leaves your device. Issue cards load again from Linear a few minutes apart while a canvas is open.
+The plugin has no telemetry and collects no data. It makes no requests unless you sign in to Linear, set a Linear API key, or turn on Task App. With a Linear sign-in or key, it sends requests to Linear (`api.linear.app`) to search issues, load the issues shown on your canvases (their title, status, assignee, labels and description), and create issues from cards. What is sent for a new issue is the title and description you confirm in the dialog. Nothing else from your vault leaves your device. Issue cards load again from Linear a few minutes apart while a canvas is open. With Task App turned on, the same things (searching, loading the issues shown on your canvases, and creating issues from cards) go to the server address you set, with your API token, and nowhere else.
 
 If a note's key image is a web address, Obsidian loads it from that address whenever a note card shows it. That is a request from your device to the image's host, the same as for any image embedded from the web. Dropping an image link onto a note card only writes the link into the note, and downloads nothing. Dropping an image file saves a copy in your vault's attachment folder, as Obsidian does for any attachment.
 

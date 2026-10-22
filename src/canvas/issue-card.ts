@@ -1,8 +1,9 @@
 import { MarkdownRenderer } from 'obsidian';
-import type { LinearIssue } from '../linear/api.ts';
+import { PROVIDERS } from '../issues/providers.ts';
+import type { Issue } from '../issues/types.ts';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasNodeLike } from './adapter.ts';
-import { LinearRef, readLinearRef } from './linear-ref.ts';
+import { IssueRef, readIssueRef } from './issue-ref.ts';
 import { cardOwner, fitToPill, viewOf } from './note-card.ts';
 
 const CARD_CLASS  = 'ffc-issue-card';
@@ -16,28 +17,28 @@ const drawn = new WeakMap<CanvasNodeLike, { key: string; stamp: string }>();
 const locked = new WeakSet<CanvasNodeLike>();
 
 /**
- * Dress text nodes that show a Linear issue: a card, the full issue or a link, in place of the node's own text
+ * Dress text nodes that show an issue (Linear's or Task App's): a card, the full issue or a link, in place of the node's own text
  * (changed from the selection toolbar, like a note card). Idempotent, so safe to run on a timer.
  */
-export function decorateLinearCards(plugin: CanvasPlusPlugin, canvas: CanvasLike): void {
-  const { store } = plugin.linear;
+export function decorateIssueCards(plugin: CanvasPlusPlugin, canvas: CanvasLike): void {
   for (const node of canvas.nodes?.values() ?? []) {
     const el = node.nodeEl;
     if (!el) continue;
-    const ref = readLinearRef(node);
+    const ref = readIssueRef(node);
     const container = el.querySelector<HTMLElement>('.canvas-node-container');
     if (!ref || !container) {
-      clearLinear(node);
+      clearIssue(node);
       continue;
     }
 
     const mode = viewOf(node);
-    el.setAttribute('data-ffc-linear', ref.id);
+    el.setAttribute('data-ffc-issue', ref.id);
     el.setAttribute('data-ffc-view', mode);
     lockEditing(node);
+    const { store } = plugin.issues[ref.provider];
     store.request(ref.id);
     const issue = store.get(ref.id);
-    const key = `${mode}|${ref.id}|${ref.identifier}|${ref.title}`;
+    const key = `${mode}|${ref.provider}|${ref.id}|${ref.identifier}|${ref.title}`;
     // By when it last changed, not by the fetched object: a refetch of an unchanged issue must not rebuild the card,
     // which would send a scrolled embed back to the top.
     const stamp = issue?.updatedAt ?? '';
@@ -71,24 +72,24 @@ function lockEditing(node: CanvasNodeLike): void {
   node.startEditing = () => { /* an issue isn't edited as text */ };
 }
 
-function clearLinear(node: CanvasNodeLike): void {
+function clearIssue(node: CanvasNodeLike): void {
   if (locked.delete(node)) Reflect.deleteProperty(node, 'startEditing');
   const el = node.nodeEl;
-  if (!el?.hasAttribute('data-ffc-linear')) return;
+  if (!el?.hasAttribute('data-ffc-issue')) return;
   el.querySelector(`.${CARD_CLASS}`)?.remove();
   el.querySelector(`.${EMBED_CLASS}`)?.remove();
   el.querySelector('.ffc-issue-pill')?.remove();
-  el.removeAttribute('data-ffc-linear');
+  el.removeAttribute('data-ffc-issue');
   el.removeAttribute('data-ffc-view');
   drawn.delete(node);
 }
 
-export function clearLinearCards(canvas: CanvasLike): void {
-  for (const node of canvas.nodes?.values() ?? []) clearLinear(node);
+export function clearIssueCards(canvas: CanvasLike): void {
+  for (const node of canvas.nodes?.values() ?? []) clearIssue(node);
 }
 
 /** The status marker: a ring for not started, half full for started, full for done, in the status's own colour. */
-export function stateDot(parent: HTMLElement, state: LinearIssue['state']): void {
+export function stateDot(parent: HTMLElement, state: Issue['state']): void {
   const dot = parent.createSpan({ cls: 'ffc-issue-state', attr: { 'data-state-type': state?.type ?? 'backlog' } });
   if (state?.color) dot.setCssProps({ '--ffc-issue-color': state.color });
 }
@@ -99,7 +100,7 @@ function labelChip(parent: HTMLElement, label: { name: string; color: string }):
   chip.createSpan({ text: label.name });
 }
 
-function renderCard(card: HTMLElement, ref: LinearRef, issue: LinearIssue | undefined): void {
+function renderCard(card: HTMLElement, ref: IssueRef, issue: Issue | undefined): void {
   card.empty();
   const head = card.createDiv({ cls: 'ffc-issue-head' });
   stateDot(head, issue?.state ?? null);
@@ -113,7 +114,7 @@ function renderCard(card: HTMLElement, ref: LinearRef, issue: LinearIssue | unde
   for (const label of issue.labels) labelChip(meta, label);
 }
 
-function renderPill(pill: HTMLElement, ref: LinearRef, issue: LinearIssue | undefined): void {
+function renderPill(pill: HTMLElement, ref: IssueRef, issue: Issue | undefined): void {
   pill.empty();
   const chip = pill.createDiv({ cls: 'ffc-issue-pill-body' });
   stateDot(chip, issue?.state ?? null);
@@ -121,8 +122,9 @@ function renderPill(pill: HTMLElement, ref: LinearRef, issue: LinearIssue | unde
   chip.createSpan({ cls: 'ffc-issue-pill-title', text: issue?.title ?? ref.title });
 }
 
-function renderEmbed(plugin: CanvasPlusPlugin, canvas: CanvasLike, embed: HTMLElement, ref: LinearRef, issue: LinearIssue | undefined): void {
+function renderEmbed(plugin: CanvasPlusPlugin, canvas: CanvasLike, embed: HTMLElement, ref: IssueRef, issue: Issue | undefined): void {
   embed.empty();
+  const name = PROVIDERS[ref.provider].name;
   const head = embed.createDiv({ cls: 'ffc-issue-head' });
   stateDot(head, issue?.state ?? null);
   head.createEl('a', { cls: 'ffc-issue-id external-link', text: ref.identifier, href: ref.url });
@@ -130,7 +132,7 @@ function renderEmbed(plugin: CanvasPlusPlugin, canvas: CanvasLike, embed: HTMLEl
   if (!issue) {
     embed.createDiv({
       cls: 'ffc-issue-note',
-      text: plugin.hasLinear ? 'Loading from Linear…' : 'Sign in to Linear in the Canvas Plus settings to show the issue.',
+      text: plugin.hasIssues(ref.provider) ? `Loading from ${name}…` : `Set up ${name} in the Canvas Plus settings to show the issue.`,
     });
     return;
   }

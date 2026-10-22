@@ -1,15 +1,16 @@
 import { ButtonComponent, Modal, Notice, Setting } from 'obsidian';
-import type { LinearIssue } from '../linear/api.ts';
+import { PROVIDERS } from '../issues/providers.ts';
+import type { Issue, ProviderId } from '../issues/types.ts';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasNodeLike, batch, patchData } from './adapter.ts';
-import { FIELD_KIND, FIELD_LINEAR, KIND_TEXT } from './constants.ts';
+import { FIELD_KIND, KIND_TEXT } from './constants.ts';
 import { readInk } from './ink-nodes.ts';
 import { isAnchor } from './anchor.ts';
 import { firstLine } from './layers-tree.ts';
-import { linearNodeText, readLinearRef } from './linear-ref.ts';
-import { issueRef } from './linear-picker.ts';
+import { issueNodeText, readIssueRef } from './issue-ref.ts';
+import { issueRef } from './issue-picker.ts';
 
-/** Linear's limit on an issue's title. */
+/** Linear's limit on an issue's title, kept for Task App's too. */
 const MAX_TITLE = 255;
 
 /** A card that can become an issue: a text card with something in it, not free text, a drawing, an anchor or an issue already. */
@@ -18,7 +19,7 @@ export function isConvertibleCard(node: CanvasNodeLike): boolean {
   if (!data || data.type !== 'text') return false;
   const text = typeof data.text === 'string' ? data.text.trim() : '';
   if (!text || /^!\[[^\]]*\]\(/.test(text)) return false;
-  return !readInk(node, data) && !isAnchor(node, data) && data[FIELD_KIND] !== KIND_TEXT && !readLinearRef(node, data);
+  return !readInk(node, data) && !isAnchor(node, data) && data[FIELD_KIND] !== KIND_TEXT && !readIssueRef(node, data);
 }
 
 interface Draft {
@@ -39,18 +40,22 @@ function draftFrom(node: CanvasNodeLike): Draft {
 }
 
 /** Ask where to create issues for the cards, create them, and turn the cards into issue cards. */
-export function createIssuesFromCards(plugin: CanvasPlusPlugin, canvas: CanvasLike, nodes: CanvasNodeLike[], onDone: () => void): void {
+export function createIssuesFromCards(plugin: CanvasPlusPlugin, provider: ProviderId, canvas: CanvasLike, nodes: CanvasNodeLike[], onDone: () => void): void {
   const drafts = nodes.filter(isConvertibleCard).map(draftFrom);
   if (drafts.length === 0) return;
-  new CreateIssuesModal(plugin, canvas, drafts, onDone).open();
+  new CreateIssuesModal(plugin, provider, canvas, drafts, onDone).open();
 }
 
 class CreateIssuesModal extends Modal {
   private teamId = '';
+  private get teamKey(): 'linearTeamId' | 'taskAppTeamId' {
+    return this.provider === 'linear' ? 'linearTeamId' : 'taskAppTeamId';
+  }
   private busy = false;
 
   constructor(
     private plugin: CanvasPlusPlugin,
+    private provider: ProviderId,
     private canvas: CanvasLike,
     private drafts: Draft[],
     private onDone: () => void,
@@ -60,7 +65,8 @@ class CreateIssuesModal extends Modal {
 
   onOpen(): void {
     const many = this.drafts.length > 1;
-    this.setTitle(many ? `Create ${this.drafts.length} Linear issues` : 'Create Linear issue');
+    const name = PROVIDERS[this.provider].name;
+    this.setTitle(many ? `Create ${this.drafts.length} ${name} issues` : `Create ${name} issue`);
     const { contentEl } = this;
     contentEl.empty();
 
@@ -89,16 +95,16 @@ class CreateIssuesModal extends Modal {
       .addButton((b) => { create.button = b.setButtonText('Create').setCta().setDisabled(true).onClick(() => { void this.submit(); }); })
       .addButton((b) => b.setButtonText('Cancel').onClick(() => this.close()));
 
-    this.plugin.linear.client.teams()
+    this.plugin.issues[this.provider].client.teams()
       .then((teams) => {
-        const wanted = this.plugin.config.linearTeamId;
+        const wanted = this.plugin.config[this.teamKey];
         this.teamId = teams.some((t) => t.id === wanted) ? wanted : teams[0]?.id ?? '';
         teamSetting.clear();
         teamSetting.setName('Team').addDropdown((d) => {
           for (const team of teams) d.addOption(team.id, `${team.name} (${team.key})`);
           d.setValue(this.teamId).onChange((v) => { this.teamId = v; });
         });
-        if (teams.length === 0) teamSetting.setDesc('Linear has no teams for this API key.');
+        if (teams.length === 0) teamSetting.setDesc(`${name} has no teams to create issues in.`);
         else create.button?.setDisabled(false);
       })
       .catch((err: Error) => {
@@ -115,8 +121,8 @@ class CreateIssuesModal extends Modal {
     }
     this.busy = true;
     this.contentEl.addClass('is-busy');
-    const { client, store } = this.plugin.linear;
-    const created: Array<{ draft: Draft; issue: LinearIssue }> = [];
+    const { client, store } = this.plugin.issues[this.provider];
+    const created: Array<{ draft: Draft; issue: Issue }> = [];
     let failure: Error | null = null;
     try {
       for (const draft of drafts) {
@@ -128,18 +134,18 @@ class CreateIssuesModal extends Modal {
       failure = err as Error;
     }
     if (created.length > 0) {
-      this.plugin.updateConfig({ linearTeamId: this.teamId });
+      this.plugin.updateConfig({ [this.teamKey]: this.teamId });
       // A card removed while waiting stays removed.
       const live = created.filter(({ draft }) => draft.node.id && this.canvas.nodes?.get(draft.node.id) === draft.node);
       batch(this.canvas, () => {
         for (const { draft, issue } of live) {
-          const ref = issueRef(issue);
-          patchData(draft.node, { text: linearNodeText(ref), [FIELD_LINEAR]: ref });
+          const ref = issueRef(this.provider, issue);
+          patchData(draft.node, { text: issueNodeText(ref), [PROVIDERS[this.provider].field]: ref });
         }
       });
-      new Notice(`Created ${created.map((c) => c.issue.identifier).join(', ')} in Linear.`);
+      new Notice(`Created ${created.map((c) => c.issue.identifier).join(', ')} in ${PROVIDERS[this.provider].name}.`);
     }
-    if (failure) new Notice(`Linear: ${failure.message}`);
+    if (failure) new Notice(`${PROVIDERS[this.provider].name}: ${failure.message}`);
     this.busy = false;
     this.close();
     this.onDone();

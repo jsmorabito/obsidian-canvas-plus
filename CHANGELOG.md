@@ -5,6 +5,23 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0]
+
+### Added
+
+- Task App integration (beta), the same as Linear's for the self-hosted Task App
+  server: add issues to a canvas (`J`), create issues from cards, a Task App
+  widget, and card, embed and link views. Set the server address and API token
+  under **Settings → Canvas Plus**. Needs a Task App server that accepts its API
+  token on `/trpc`.
+- **Connect Obsidian** in Task App's settings sets the plugin up in one click:
+  Obsidian asks you to confirm, then saves the server address and API token.
+
+### Changed
+
+- Linear and Task App share the same issue code, so the two work alike. The
+  selection toolbar and actions panel list each one that is set up.
+
 ## [1.9.0]
 
 ### Added

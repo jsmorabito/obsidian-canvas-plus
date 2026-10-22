@@ -1,8 +1,9 @@
+import { PROVIDERS, PROVIDER_IDS } from '../issues/providers.ts';
+import type { ProviderId } from '../issues/types.ts';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, selectedNodes } from './adapter.ts';
 import type { ActionEntry } from './actions-panel.ts';
-import { LINEAR_ICON } from './icons.ts';
-import { createIssuesFromCards, isConvertibleCard } from './linear-create.ts';
+import { createIssuesFromCards, isConvertibleCard } from './issue-create.ts';
 
 /** Open Obsidian's settings on this plugin's tab. The settings window has no public API, so this is best effort. */
 export function openPluginSettings(plugin: CanvasPlusPlugin): void {
@@ -11,46 +12,52 @@ export function openPluginSettings(plugin: CanvasPlusPlugin): void {
   setting?.openTabById?.(plugin.manifest.id);
 }
 
-/** What the actions panel lists now: the Linear actions that apply, and the way to the settings. */
+/** What the actions panel lists now: the issue actions that apply, and the way to the settings. */
 export interface ActionHooks {
-  openLinearPicker: () => void;
-  openLinearPanel: () => void;
+  openIssuePicker: (provider: ProviderId) => void;
+  openIssuePanel: (provider: ProviderId) => void;
   onChanged: () => void;
 }
 
+/** The key that adds an issue from a service, as the action list shows it. */
+const PICKER_HINTS: Record<ProviderId, string> = { linear: 'I', taskapp: 'J' };
+
 export function actionEntries(plugin: CanvasPlusPlugin, canvas: CanvasLike, hooks: ActionHooks): ActionEntry[] {
-  const { openLinearPicker, openLinearPanel, onChanged } = hooks;
+  const { openIssuePicker, openIssuePanel, onChanged } = hooks;
   const entries: ActionEntry[] = [];
   const settings = (): void => openPluginSettings(plugin);
 
-  if (plugin.hasLinear) {
-    entries.push({
-      section: 'Linear',
-      label: 'Open Linear panel',
-      icon: 'panel-right',
-      keywords: 'issues tickets list explore widget',
-      run: openLinearPanel,
-    });
-    entries.push({ section: 'Linear', label: 'Add Linear issue…', icon: LINEAR_ICON, hint: 'I', keywords: 'issue ticket', run: openLinearPicker });
-    const selected = selectedNodes(canvas);
-    if (selected.length > 0 && selected.every(isConvertibleCard)) {
+  for (const id of PROVIDER_IDS) {
+    const { name, icon } = PROVIDERS[id];
+    const enabled = id === 'linear' ? plugin.config.linearEnabled : plugin.config.taskAppEnabled;
+    if (plugin.hasIssues(id)) {
       entries.push({
-        section: 'Linear',
-        label: selected.length > 1 ? 'Create Linear issues from selected cards' : 'Create Linear issue from selected card',
-        icon: 'square-arrow-out-up-right',
-        keywords: 'convert issue ticket',
-        run: () => createIssuesFromCards(plugin, canvas, selected, onChanged),
+        section: name,
+        label: `Open ${name} panel`,
+        icon: 'panel-right',
+        keywords: 'issues tickets tasks list explore widget',
+        run: () => openIssuePanel(id),
+      });
+      entries.push({ section: name, label: `Add ${name} issue…`, icon, hint: PICKER_HINTS[id], keywords: 'issue ticket task', run: () => openIssuePicker(id) });
+      const selected = selectedNodes(canvas);
+      if (selected.length > 0 && selected.every(isConvertibleCard)) {
+        entries.push({
+          section: name,
+          label: selected.length > 1 ? `Create ${name} issues from selected cards` : `Create ${name} issue from selected card`,
+          icon: 'square-arrow-out-up-right',
+          keywords: 'convert issue ticket task',
+          run: () => createIssuesFromCards(plugin, id, canvas, selected, onChanged),
+        });
+      }
+    } else {
+      entries.push({
+        section: name,
+        label: enabled ? `Finish setting up ${name}…` : `Set up ${name} (beta)…`,
+        icon,
+        keywords: 'issue ticket task enable connect sign in',
+        run: settings,
       });
     }
-  } else {
-    const enabled = plugin.config.linearEnabled;
-    entries.push({
-      section: 'Linear',
-      label: enabled ? 'Sign in to Linear…' : 'Set up Linear (beta)…',
-      icon: LINEAR_ICON,
-      keywords: 'issue ticket enable connect',
-      run: settings,
-    });
   }
   entries.push({ section: 'Canvas Plus', label: 'Open Canvas Plus settings', icon: 'settings', keywords: 'preferences options', run: settings });
   return entries;

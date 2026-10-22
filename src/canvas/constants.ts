@@ -66,6 +66,12 @@ export const FIELD_COMMENTS = 'ffcComments';
  */
 export const FIELD_LINEAR = 'ffcLinear';
 
+/**
+ * Extra field on a `text` node showing a Task App issue, the same shape as `ffcLinear`. Stored in canvas files, so the
+ * name must not change.
+ */
+export const FIELD_TASKAPP = 'ffcTaskApp';
+
 /** Linear issue card, the default size of a node showing one. */
 export const SIZE_ISSUE_CARD = { width: 280, height: 110 };
 

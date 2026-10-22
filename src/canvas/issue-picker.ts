@@ -1,32 +1,34 @@
 import { Notice, SuggestModal } from 'obsidian';
-import { LinearIssue, parseIssueRef } from '../linear/api.ts';
+import { PROVIDERS } from '../issues/providers.ts';
+import type { Issue, ProviderId } from '../issues/types.ts';
 import type { CanvasPlusPlugin } from '../main.ts';
 import {
   CanvasLike, CanvasNodeLike, batch, createTextNode, focusNode, setExtra, viewportCenter,
 } from './adapter.ts';
-import { FIELD_LINEAR, SIZE_ISSUE_CARD } from './constants.ts';
+import { SIZE_ISSUE_CARD } from './constants.ts';
 import { findFreeSpot } from './free-spot.ts';
-import { stateDot } from './linear-card.ts';
-import { LinearRef, linearNodeText, readLinearRef } from './linear-ref.ts';
+import { stateDot } from './issue-card.ts';
+import { IssueRef, issueNodeText, readIssueRef } from './issue-ref.ts';
 
-/** How long typing pauses before Linear is asked, so a request isn't made for every key. */
+/** How long typing pauses before the service is asked, so a request isn't made for every key. */
 const TYPING_PAUSE_MS = 250;
 
-export function issueRef(issue: LinearIssue): LinearRef {
-  return { id: issue.id, identifier: issue.identifier, title: issue.title, url: issue.url };
+export function issueRef(provider: ProviderId, issue: Issue): IssueRef {
+  return { provider, id: issue.id, identifier: issue.identifier, title: issue.title, url: issue.url };
 }
 
 /**
- * Add a Linear issue to the canvas. Search by words, or give an identifier (`ENG-123`) or an issue's URL. With
- * nothing typed it lists the issues updated most recently. An issue already on the canvas is selected and zoomed
+ * Add an issue (Linear's or Task App's) to the canvas. Search by words, or give an identifier (`ENG-123`) or an issue's
+ * URL. With nothing typed it lists the issues updated most recently. An issue already on the canvas is selected and zoomed
  * to instead of being added twice.
  */
-export class LinearPicker extends SuggestModal<LinearIssue> {
+export class IssuePicker extends SuggestModal<Issue> {
   private seq = 0;
-  private last: LinearIssue[] = [];
+  private last: Issue[] = [];
 
   constructor(
     private plugin: CanvasPlusPlugin,
+    private provider: ProviderId,
     private canvas: CanvasLike,
     /** Drop point (canvas coordinates, card centred on it). Omit to find a free spot near the view centre. */
     private at: { x: number; y: number } | null,
@@ -34,7 +36,7 @@ export class LinearPicker extends SuggestModal<LinearIssue> {
     private onAdded: () => void,
   ) {
     super(plugin.app);
-    this.setPlaceholder('Search Linear, or enter an issue identifier or URL…');
+    this.setPlaceholder(`Search ${PROVIDERS[provider].name}, or enter an issue identifier or URL…`);
     this.setInstructions([
       { command: '↑↓', purpose: 'navigate' },
       { command: '↵', purpose: 'add to canvas' },
@@ -42,15 +44,15 @@ export class LinearPicker extends SuggestModal<LinearIssue> {
     ]);
   }
 
-  async getSuggestions(query: string): Promise<LinearIssue[]> {
+  async getSuggestions(query: string): Promise<Issue[]> {
     const mine = ++this.seq;
     const q = query.trim();
     if (q) await new Promise((resolve) => window.setTimeout(resolve, TYPING_PAUSE_MS));
     // Typed on since: the newer call will answer, so leave what is shown alone.
     if (mine !== this.seq) return this.last;
-    const { client } = this.plugin.linear;
+    const { client } = this.plugin.issues[this.provider];
     try {
-      const identifier = parseIssueRef(q);
+      const identifier = client.parseRef(q);
       const exact = identifier ? await client.byIdentifier(identifier) : null;
       const found = exact ? [exact] : q ? await client.search(q) : await client.recent();
       if (mine !== this.seq) return this.last;
@@ -66,7 +68,7 @@ export class LinearPicker extends SuggestModal<LinearIssue> {
     }
   }
 
-  renderSuggestion(issue: LinearIssue, el: HTMLElement): void {
+  renderSuggestion(issue: Issue, el: HTMLElement): void {
     el.addClass('ffc-picker-row');
     const main = el.createDiv({ cls: 'ffc-issue-suggestion' });
     stateDot(main, issue.state);
@@ -74,14 +76,14 @@ export class LinearPicker extends SuggestModal<LinearIssue> {
     main.createSpan({ cls: 'suggestion-title', text: issue.title });
   }
 
-  onChooseSuggestion(issue: LinearIssue): void {
-    const existing = findIssueNode(this.canvas, issue.id);
+  onChooseSuggestion(issue: Issue): void {
+    const existing = findIssueNode(this.canvas, this.provider, issue.id);
     if (existing) {
       focusNode(this.canvas, existing);
       return;
     }
     try {
-      const node = addIssueNode(this.plugin, this.canvas, issue, this.at);
+      const node = addIssueNode(this.plugin, this.provider, this.canvas, issue, this.at);
       if (!node) return;
       this.onAdded();
       if (this.at) {
@@ -97,8 +99,8 @@ export class LinearPicker extends SuggestModal<LinearIssue> {
 }
 
 /** The node already showing this issue, if any. */
-export function findIssueNode(canvas: CanvasLike, id: string): CanvasNodeLike | undefined {
-  return [...canvas.nodes?.values() ?? []].find((n: CanvasNodeLike) => readLinearRef(n)?.id === id);
+export function findIssueNode(canvas: CanvasLike, provider: ProviderId, id: string): CanvasNodeLike | undefined {
+  return [...canvas.nodes?.values() ?? []].find((n: CanvasNodeLike) => ((r) => r?.provider === provider && r.id === id)(readIssueRef(n)));
 }
 
 /**
@@ -106,18 +108,18 @@ export function findIssueNode(canvas: CanvasLike, id: string): CanvasNodeLike | 
  * spot to the middle of the view.
  */
 export function addIssueNode(
-  plugin: CanvasPlusPlugin, canvas: CanvasLike, issue: LinearIssue, at: { x: number; y: number } | null,
+  plugin: CanvasPlusPlugin, provider: ProviderId, canvas: CanvasLike, issue: Issue, at: { x: number; y: number } | null,
 ): CanvasNodeLike | undefined {
   const size = SIZE_ISSUE_CARD;
   const pos = at
     ? { x: Math.round(at.x - size.width / 2), y: Math.round(at.y - size.height / 2) }
     : findFreeSpot(canvas, viewportCenter(canvas), size);
-  const ref = issueRef(issue);
+  const ref = issueRef(provider, issue);
   // Known before the card is drawn, so it shows the issue at once.
-  plugin.linear.store.put(issue);
+  plugin.issues[provider].store.put(issue);
   return batch(canvas, () => {
-    const added = createTextNode(canvas, { pos, size, text: linearNodeText(ref), focus: false });
-    if (added) setExtra(added, FIELD_LINEAR, ref);
+    const added = createTextNode(canvas, { pos, size, text: issueNodeText(ref), focus: false });
+    if (added) setExtra(added, PROVIDERS[provider].field, ref);
     return added;
   });
 }

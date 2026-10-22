@@ -1,5 +1,7 @@
 import { Notice, PluginSettingTab, SecretComponent, Setting } from 'obsidian';
 import { REDIRECT_URI } from './linear/oauth.ts';
+import { PROVIDERS } from './issues/providers.ts';
+import type { ProviderId } from './issues/types.ts';
 import type { CanvasPlusPlugin } from './main.ts';
 
 export interface CanvasPlusSettings {
@@ -13,6 +15,16 @@ export interface CanvasPlusSettings {
   linearExpiresAt: number;
   /** The team new issues are created in, or empty to ask each time. */
   linearTeamId: string;
+  /** Beta: the Task App features are off until this is turned on. */
+  taskAppEnabled: boolean;
+  /** Where the Task App API runs. */
+  taskAppUrl: string;
+  /** Where the Task App web app runs, when that isn't the same place as the API. Issue links use it. */
+  taskAppWebUrl: string;
+  /** The name of the secret holding the Task App API token, in Obsidian's secret storage. */
+  taskAppTokenSecret: string;
+  /** The team new Task App issues are created in, or empty to ask each time. */
+  taskAppTeamId: string;
 }
 
 export const DEFAULT_SETTINGS: CanvasPlusSettings = {
@@ -21,6 +33,11 @@ export const DEFAULT_SETTINGS: CanvasPlusSettings = {
   linearClientId: '',
   linearExpiresAt: 0,
   linearTeamId: '',
+  taskAppEnabled: false,
+  taskAppUrl: '',
+  taskAppWebUrl: '',
+  taskAppTokenSecret: '',
+  taskAppTeamId: '',
 };
 
 export class CanvasPlusSettingTab extends PluginSettingTab {
@@ -40,9 +57,14 @@ export class CanvasPlusSettingTab extends PluginSettingTab {
   }
 
   display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
+    this.containerEl.empty();
+    this.stopWatching();
+    this.displayLinear();
+    this.displayTaskApp();
+  }
 
+  private displayLinear(): void {
+    const { containerEl } = this;
     new Setting(containerEl).setName('Linear').setHeading();
 
     new Setting(containerEl)
@@ -55,7 +77,6 @@ export class CanvasPlusSettingTab extends PluginSettingTab {
           this.display();
         }));
 
-    this.stopWatching();
     if (!this.plugin.config.linearEnabled) return;
 
     const { auth } = this.plugin.linear;
@@ -86,24 +107,71 @@ export class CanvasPlusSettingTab extends PluginSettingTab {
           this.display();
         }));
 
-    if (!this.plugin.hasLinear) return;
+    if (this.plugin.hasLinear) this.teamSetting('linear');
+  }
 
-    const teamSetting = new Setting(containerEl)
+  /** The default team for a provider's new issues, once its team list has loaded. */
+  private teamSetting(id: ProviderId): void {
+    const key = id === 'linear' ? 'linearTeamId' : 'taskAppTeamId';
+    const setting = new Setting(this.containerEl)
       .setName('Default team')
       .setDesc('The team new issues are created in.');
-    teamSetting.addDropdown((dropdown) => {
+    setting.addDropdown((dropdown) => {
       dropdown.addOption('', 'Ask each time');
       dropdown.setValue('');
-      dropdown.onChange((value) => this.plugin.updateConfig({ linearTeamId: value }));
-      this.plugin.linear.client.teams()
+      dropdown.onChange((value) => this.plugin.updateConfig({ [key]: value }));
+      this.plugin.issues[id].client.teams()
         .then((teams) => {
           for (const team of teams) dropdown.addOption(team.id, `${team.name} (${team.key})`);
-          dropdown.setValue(this.plugin.config.linearTeamId);
+          dropdown.setValue(this.plugin.config[key]);
         })
         .catch((err: Error) => {
-          teamSetting.setDesc(`Could not load teams: ${err.message}`);
-          new Notice(`Linear: ${err.message}`);
+          setting.setDesc(`Could not load teams: ${err.message}`);
+          new Notice(`${PROVIDERS[id].name}: ${err.message}`);
         });
     });
+  }
+
+  private displayTaskApp(): void {
+    const { containerEl } = this;
+    new Setting(containerEl).setName('Task App').setHeading();
+
+    new Setting(containerEl)
+      .setName('Enable Task App integration (beta)')
+      .setDesc('Beta: this may change or break between versions. Adds Task App issues to a canvas, creates issues from cards, and shows issues as a card, embed or link. Nothing is sent to your Task App server until you turn this on and set its address.')
+      .addToggle((t) => t
+        .setValue(this.plugin.config.taskAppEnabled)
+        .onChange((on) => {
+          this.plugin.updateConfig({ taskAppEnabled: on });
+          this.display();
+        }));
+    if (!this.plugin.config.taskAppEnabled) return;
+
+    new Setting(containerEl)
+      .setName('Server address')
+      .setDesc('Where the Task App API runs, such as https://tasks.example.com, or http://localhost:4100 on this computer.')
+      .addText((t) => t
+        .setPlaceholder('https://tasks.example.com')
+        .setValue(this.plugin.config.taskAppUrl)
+        .onChange((v) => this.plugin.updateConfig({ taskAppUrl: v.trim() })));
+
+    new Setting(containerEl)
+      .setName('Web app address')
+      .setDesc('Only if the web app is somewhere other than the server, such as http://localhost:3100 while developing. Issue links use it.')
+      .addText((t) => t
+        .setValue(this.plugin.config.taskAppWebUrl)
+        .onChange((v) => this.plugin.updateConfig({ taskAppWebUrl: v.trim() })));
+
+    new Setting(containerEl)
+      .setName('API token')
+      .setDesc('The server\'s API_TOKEN, which a hosted server needs; leave it empty for a local server with sign-in off. It is kept in Obsidian secret storage. Requests go only to the server address above, when you add, create or show Task App issues on a canvas.')
+      .addComponent((el) => new SecretComponent(this.app, el)
+        .setValue(this.plugin.config.taskAppTokenSecret)
+        .onChange((name) => {
+          this.plugin.updateConfig({ taskAppTokenSecret: name ?? '' });
+          this.display();
+        }));
+
+    if (this.plugin.hasTaskApp) this.teamSetting('taskapp');
   }
 }

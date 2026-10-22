@@ -11,12 +11,11 @@ import { CanvasPanels } from './canvas-panels.ts';
 import { PanelStore } from './panel-store.ts';
 import { CLICK_SLOP_PX, FIELD_KIND, INK_FALLBACK_HEX, SIZE_NOTE_CARD } from './constants.ts';
 import { canToggleView, clearNoteCards, decorateNoteCards, fitNodeToCard, noteOfNode, setCardOwner, toggleViews } from './note-card.ts';
-import { LINEAR_VIEW_TYPE } from './linear-view.ts';
 import { ActionsPanel } from './actions-panel.ts';
 import { actionEntries } from './actions-entries.ts';
-import { clearLinearCards, decorateLinearCards } from './linear-card.ts';
-import { LinearPicker } from './linear-picker.ts';
-import { injectLinearButtons } from './linear-menu.ts';
+import { clearIssueCards, decorateIssueCards } from './issue-card.ts';
+import { IssuePicker } from './issue-picker.ts';
+import { injectIssueButtons } from './issue-menu.ts';
 import { injectViewToggleButton } from './view-toggle.ts';
 import { NotePicker } from './note-picker.ts';
 import { RelationFlow } from './relation-flow.ts';
@@ -35,6 +34,8 @@ import { CommentLayer } from './comment-layer.ts';
 import { registerToolShortcuts } from './shortcuts.ts';
 import { trackPointer } from './pointer-session.ts';
 import { eachFrameUntil } from '../utils/helpers.ts';
+import { PROVIDERS } from '../issues/providers.ts';
+import type { ProviderId } from '../issues/types.ts';
 import { ActionId, isInkTool, isPlacementTool, PlaceTool, ToolId } from './tools.ts';
 
 /** Obsidian's own controls and menus live inside the canvas wrapper; a tool must never treat clicks on them as drawing. */
@@ -154,8 +155,8 @@ export class CanvasController {
     const actionsButton = this.toolbar?.addActionsItem(() => this.runAction('actions'));
     this.actions = menuEl && actionsButton
       ? new ActionsPanel(menuEl, actionsButton, () => actionEntries(plugin, view.canvas!, {
-        openLinearPicker: () => { this.openLinearPicker(); },
-        openLinearPanel: () => this.tabPanels.openView(LINEAR_VIEW_TYPE),
+        openIssuePicker: (provider) => { this.openIssuePicker(provider); },
+        openIssuePanel: (provider) => this.tabPanels.openView(PROVIDERS[provider].viewType),
         onChanged: () => this.sweep(),
       }))
       : null;
@@ -184,7 +185,8 @@ export class CanvasController {
   runAction(action: ActionId): boolean {
     if (action === 'picker' && this.view.canvas) this.openPicker(this.view.canvas);
     // Off by default (beta): the key is left alone, with no notice. The actions panel explains how to turn it on.
-    if (action === 'linear') return this.plugin.hasLinear && this.openLinearPicker();
+    if (action === 'linear') return this.plugin.hasLinear && this.openIssuePicker('linear');
+    if (action === 'taskapp') return this.plugin.hasTaskApp && this.openIssuePicker('taskapp');
     if (action === 'actions') {
       this.actions?.toggle();
       return !!this.actions;
@@ -192,15 +194,16 @@ export class CanvasController {
     return true;
   }
 
-  /** The Linear picker lists issues from Linear, so it needs an API key. */
-  openLinearPicker(at?: { x: number; y: number }): boolean {
+  /** The issue picker lists issues from the service, so it needs to be set up. */
+  openIssuePicker(provider: ProviderId, at?: { x: number; y: number }): boolean {
     const canvas = this.view.canvas;
     if (!canvas) return false;
-    if (!this.plugin.hasLinear) {
-      new Notice('Sign in to Linear in the Canvas Plus settings to add Linear issues.');
+    if (!this.plugin.hasIssues(provider)) {
+      const name = PROVIDERS[provider].name;
+      new Notice(`Set up ${name} in the Canvas Plus settings to add ${name} issues.`);
       return false;
     }
-    new LinearPicker(this.plugin, canvas, at ?? null, () => {
+    new IssuePicker(this.plugin, provider, canvas, at ?? null, () => {
       this.sweep();
       window.requestAnimationFrame(() => this.sweep());
     }).open();
@@ -216,7 +219,7 @@ export class CanvasController {
     new NotePicker(this.plugin, canvas, at).open();
   }
 
-  /** Move the selected note cards and Linear issues to their next view. Returns false when none are selected. */
+  /** Move the selected note cards and issues to their next view. Returns false when none are selected. */
   toggleSelectedCards(): boolean {
     const canvas = this.view.canvas;
     if (!canvas) return false;
@@ -255,7 +258,7 @@ export class CanvasController {
     if (!canvas || !nodes) return;
     this.toolbar?.setNoteButtonVisible(this.plugin.hasNoteTypes);
     decorateNoteCards(this.plugin, canvas);
-    decorateLinearCards(this.plugin, canvas);
+    decorateIssueCards(this.plugin, canvas);
     this.relations.sweep();
     this.panel.update();
     this.layers.update();
@@ -303,7 +306,7 @@ export class CanvasController {
     if (this.view.canvas) {
       setInsets(this.view.canvas, null);
       clearNoteCards(this.view.canvas);
-      clearLinearCards(this.view.canvas);
+      clearIssueCards(this.view.canvas);
       setCardOwner(this.view.canvas, null);
     }
     this.component.unload();
@@ -332,7 +335,7 @@ export class CanvasController {
     const selected = selectedNodes(canvas);
     injectViewToggleButton(canvas, selected, () => this.sweep());
     injectKeyImageButton(this.plugin, canvas, selected);
-    injectLinearButtons(this.plugin, canvas, selected, () => this.sweep());
+    injectIssueButtons(this.plugin, canvas, selected, () => this.sweep());
   }
 
   /** The note card under a drag event, if any. */

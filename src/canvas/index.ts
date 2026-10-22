@@ -1,3 +1,4 @@
+import { PROVIDERS, PROVIDER_IDS } from '../issues/providers.ts';
 import { ItemView, WorkspaceLeaf, debounce } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { asCanvasView } from './adapter.ts';
@@ -44,7 +45,7 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
   };
   plugin.addCommand({
     id: 'toggle-canvas-note-card',
-    name: 'Cycle selected canvas note cards and Linear issues between card, embed and link',
+    name: 'Cycle selected canvas note cards and issues between card, embed and link',
     checkCallback: (checking) => {
       const controller = activeController();
       if (!controller) return false;
@@ -52,16 +53,18 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
       return true;
     },
   });
-  plugin.addCommand({
-    id: 'add-linear-issue-to-canvas',
-    name: 'Add Linear issue to canvas',
-    checkCallback: (checking) => {
-      const controller = activeController();
-      if (!controller || !plugin.hasLinear) return false;
-      if (!checking) controller.openLinearPicker();
-      return true;
-    },
-  });
+  for (const [id, commandId] of [['linear', 'add-linear-issue-to-canvas'], ['taskapp', 'add-task-app-issue-to-canvas']] as const) {
+    plugin.addCommand({
+      id: commandId,
+      name: `Add ${PROVIDERS[id].name} issue to canvas`,
+      checkCallback: (checking) => {
+        const controller = activeController();
+        if (!controller || !plugin.hasIssues(id)) return false;
+        if (!checking) controller.openIssuePicker(id);
+        return true;
+      },
+    });
+  }
   plugin.addCommand({
     id: 'toggle-canvas-presentation',
     name: 'Toggle presentation',
@@ -115,8 +118,8 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
   plugin.registerEvent(plugin.app.metadataCache.on('changed', debounce(sweepVisible, 300, true)));
   plugin.sweepCanvases = sweepVisible;
   plugin.registerInterval(window.setInterval(sweepVisible, 1000));
-  // Issues arrive from Linear a moment after their cards are drawn.
-  plugin.register(plugin.linear.store.onUpdate(sweepVisible));
+  // Issues arrive from their service a moment after their cards are drawn.
+  for (const id of PROVIDER_IDS) plugin.register(plugin.issues[id].store.onUpdate(sweepVisible));
 
   plugin.register(() => {
     for (const controller of controllers.values()) controller.destroy();

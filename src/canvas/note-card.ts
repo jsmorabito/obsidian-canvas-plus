@@ -3,7 +3,7 @@ import type { CanvasPlusPlugin } from '../main.ts';
 import type { NoteType } from '../note-types.ts';
 import { CanvasLike, CanvasNodeLike, batch, getExtra, nodeBox, patchData } from './adapter.ts';
 import { FIELD_CARD_SIZE, FIELD_EMBED_SIZE, SIZE_ISSUE_CARD, SIZE_ISSUE_EMBED, SIZE_NOTE_CARD } from './constants.ts';
-import { readLinearRef } from './linear-ref.ts';
+import { readIssueRef } from './issue-ref.ts';
 import { readCardContent, renderCard, renderLinkPill, typeLinkColor } from './note-card-content.ts';
 
 /** The label an earlier version added in place of Obsidian's own; removed if one is left over. */
@@ -32,9 +32,9 @@ export function cardOwner(canvas: CanvasLike): Component | undefined {
   return owners.get(canvas);
 }
 
-/** Whether a node, as drawn now, is a card that can be shown as a card, an embed or a link: a typed note or a Linear issue. */
+/** Whether a node, as drawn now, is a card that can be shown as a card, an embed or a link: a typed note or an issue. */
 export function canToggleView(node: CanvasNodeLike): boolean {
-  return !!node.nodeEl && (node.nodeEl.hasAttribute('data-ffc-note-type') || node.nodeEl.hasAttribute('data-ffc-linear'));
+  return !!node.nodeEl && (node.nodeEl.hasAttribute('data-ffc-note-type') || node.nodeEl.hasAttribute('data-ffc-issue'));
 }
 
 /** File node → its note, when it points at a markdown note. */
@@ -78,7 +78,7 @@ function readSize(node: CanvasNodeLike, key: string): { width: number; height: n
  * view remembers the node's size, because the node then shrinks to fit the link;
  * leaving it gives that size back.
  *
- * A Linear issue keeps a size for each of its views instead: the card and the full issue are different shapes,
+ * An issue keeps a size for each of its views instead: the card and the full issue are different shapes,
  * so resizing one must not change the other. Leaving a view saves its size, and entering one restores its own.
  */
 export function toggleViews(canvas: CanvasLike, nodes: CanvasNodeLike[]): void {
@@ -89,7 +89,7 @@ export function toggleViews(canvas: CanvasLike, nodes: CanvasNodeLike[]): void {
       const next = NEXT[mode];
       const box = nodeBox(node);
       const patch: Record<string, unknown> = { [FIELD_VIEW]: next === 'card' ? undefined : next };
-      if (readLinearRef(node)) {
+      if (readIssueRef(node)) {
         if (box && mode === 'card') patch[FIELD_CARD_SIZE] = { width: box.width, height: box.height };
         if (box && mode === 'embed') patch[FIELD_EMBED_SIZE] = { width: box.width, height: box.height };
         // The link sizes itself to fit; the other two go back to their own.
@@ -119,8 +119,8 @@ export function decorateNoteCards(
 ): void {
   for (const node of canvas.nodes?.values() ?? []) {
     const el = node.nodeEl;
-    // A Linear issue is drawn by decorateLinearCards.
-    if (!el || readLinearRef(node)) continue;
+    // An issue is drawn by decorateIssueCards.
+    if (!el || readIssueRef(node)) continue;
     const file = noteOfNode(node);
     const type = file ? plugin.types.getNoteTypeForFile(file) : undefined;
     const container = el.querySelector<HTMLElement>('.canvas-node-container');

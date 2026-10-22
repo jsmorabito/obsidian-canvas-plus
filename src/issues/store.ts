@@ -1,4 +1,4 @@
-import type { LinearClient, LinearIssue } from './api.ts';
+import type { Issue, IssueClient } from './types.ts';
 
 /** How long a fetched issue is shown before it is fetched again. */
 const TTL_MS = 5 * 60_000;
@@ -13,22 +13,22 @@ const BATCH_SIZE = 50;
  * Issues on canvases, kept in memory. A node saves only the issue's identity; what its card shows (status,
  * assignee, description…) is fetched, and fetched again once it is older than a few minutes.
  */
-export class LinearStore {
-  private cache = new Map<string, { issue: LinearIssue; at: number }>();
+export class IssueStore {
+  private cache = new Map<string, { issue: Issue; at: number }>();
   private queued = new Set<string>();
   private inflight = new Set<string>();
   private retryAt = new Map<string, number>();
   private listeners = new Set<() => void>();
   private timer: number | null = null;
 
-  constructor(private client: LinearClient) {}
+  constructor(private client: IssueClient) {}
 
-  get(id: string): LinearIssue | undefined {
+  get(id: string): Issue | undefined {
     return this.cache.get(id)?.issue;
   }
 
   /** Remember an issue just fetched or created. */
-  put(issue: LinearIssue): void {
+  put(issue: Issue): void {
     this.cache.set(issue.id, { issue, at: Date.now() });
     this.retryAt.delete(issue.id);
     this.notify();
@@ -56,7 +56,7 @@ export class LinearStore {
     const all = [...this.queued];
     this.queued.clear();
     for (const id of all) this.inflight.add(id);
-    // A page of Linear's results is at most 250, so ask in smaller batches, each failing or loading on its own.
+    // A page of results is at most 250 for Linear, so ask in smaller batches, each failing or loading on its own.
     for (let i = 0; i < all.length; i += BATCH_SIZE) await this.fetch(all.slice(i, i + BATCH_SIZE));
   }
 

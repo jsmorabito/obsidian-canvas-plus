@@ -1,4 +1,4 @@
-import { LINEAR_ICON, NOTE_TYPES_ICON } from './icons.ts';
+import { LINEAR_ICON, NOTE_TYPES_ICON, TASKAPP_ICON } from './icons.ts';
 
 export type ToolId = 'select' | 'text' | 'card' | 'group' | 'anchor' | 'comment' | 'marker' | 'highlighter' | 'eraser';
 
@@ -46,7 +46,7 @@ export function isPenTool(tool: ToolId): tool is 'marker' | 'highlighter' {
   return tool === 'marker' || tool === 'highlighter';
 }
 
-export type ActionId = 'picker' | 'linear' | 'actions';
+export type ActionId = 'picker' | 'linear' | 'taskapp' | 'actions';
 
 export interface ActionDef {
   id: ActionId;
@@ -59,6 +59,7 @@ export interface ActionDef {
 export const ACTIONS: readonly ActionDef[] = [
   { id: 'picker', label: 'Add note', icon: NOTE_TYPES_ICON, key: 'n' },
   { id: 'linear', label: 'Add Linear issue', icon: LINEAR_ICON, key: 'i' },
+  { id: 'taskapp', label: 'Add Task App issue', icon: TASKAPP_ICON, key: 'j' },
 ];
 
 export function actionForKey(key: string): ActionDef | undefined {

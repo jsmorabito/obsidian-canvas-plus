@@ -4,7 +4,7 @@ import { CanvasViewLike, newId, shieldFromCanvas } from './adapter.ts';
 import { PANEL_ICON } from './icons.ts';
 import { PanelRecord, PanelStore } from './panel-store.ts';
 import { TabPanel } from './tab-panel.ts';
-import { LINEAR_VIEW_TYPE } from './linear-view.ts';
+import { PROVIDERS, PROVIDER_IDS } from '../issues/providers.ts';
 
 /** Portrait (4:5), like the button's icon. */
 const DEFAULT_WIDTH = 384;
@@ -28,7 +28,8 @@ export function describePanel(record: PanelRecord): string {
   const file = state?.state?.file;
   if (typeof file === 'string' && file) return (file.split('/').pop() ?? file).replace(/\.md$/, '');
   if (!state || state.type === 'empty') return 'New tab';
-  if (state.type === LINEAR_VIEW_TYPE) return 'Linear';
+  const provider = PROVIDER_IDS.find((id) => PROVIDERS[id].viewType === state.type);
+  if (provider) return PROVIDERS[provider].name;
   return state.type.replace(/[-_]/g, ' ').replace(/^./, (c) => c.toUpperCase());
 }
 

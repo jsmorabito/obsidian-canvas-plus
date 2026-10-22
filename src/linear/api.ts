@@ -1,4 +1,5 @@
 import { requestUrl } from 'obsidian';
+import { IDENTIFIER_RE, Issue, IssueClient, IssueError, IssueInput, IssueTeam } from '../issues/types.ts';
 import type { LinearAuth } from './oauth.ts';
 
 // ─── Linear GraphQL client ───────────────────────────────────────────────────
@@ -8,34 +9,7 @@ import type { LinearAuth } from './oauth.ts';
 
 const ENDPOINT = 'https://api.linear.app/graphql';
 
-export interface LinearTeam {
-  id: string;
-  key: string;
-  name: string;
-}
-
-export type StateType = 'triage' | 'backlog' | 'unstarted' | 'started' | 'completed' | 'canceled';
-
-export interface LinearIssue {
-  id: string;
-  identifier: string;
-  title: string;
-  url: string;
-  description: string;
-  /** 0 is no priority, then 1 urgent to 4 low. */
-  priority: number;
-  priorityLabel: string;
-  dueDate: string | null;
-  estimate: number | null;
-  updatedAt: string;
-  state: { name: string; type: StateType; color: string } | null;
-  assignee: { name: string; avatarUrl: string | null } | null;
-  team: { id: string; key: string; name: string } | null;
-  project: { name: string } | null;
-  labels: Array<{ name: string; color: string }>;
-}
-
-interface RawIssue extends Omit<LinearIssue, 'description' | 'labels'> {
+interface RawIssue extends Omit<Issue, 'description' | 'labels'> {
   description: string | null;
   labels?: { nodes: Array<{ name: string; color: string }> };
 }
@@ -49,17 +23,8 @@ const ISSUE_FIELDS = `fragment IssueFields on Issue {
   labels { nodes { name color } }
 }`;
 
-function toIssue(raw: RawIssue): LinearIssue {
+function toIssue(raw: RawIssue): Issue {
   return { ...raw, description: raw.description ?? '', labels: raw.labels?.nodes ?? [] };
-}
-
-/** An error to show the user as it is: Linear's own message, or a note on what went wrong. */
-export class LinearError extends Error {}
-
-export interface IssueInput {
-  teamId: string;
-  title: string;
-  description?: string;
 }
 
 interface Body<T> {
@@ -71,7 +36,7 @@ function parseBody<T>(res: { json: unknown }): Body<T> | null {
   try { return res.json as Body<T>; } catch { return null; }
 }
 
-export class LinearClient {
+export class LinearClient implements IssueClient {
   constructor(private readonly auth: LinearAuth) {}
 
   get configured(): boolean {
@@ -80,7 +45,7 @@ export class LinearClient {
 
   private async request<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
     const authorization = await this.auth.header();
-    if (!authorization) throw new LinearError('Sign in to Linear in the Canvas Plus settings.');
+    if (!authorization) throw new IssueError('Sign in to Linear in the Canvas Plus settings.');
     const res = await requestUrl({
       url: ENDPOINT,
       method: 'POST',
@@ -91,26 +56,26 @@ export class LinearClient {
     });
     const body = parseBody<T>(res);
     const message = body?.errors?.[0]?.message;
-    if (message) throw new LinearError(message);
-    if (res.status === 401 || res.status === 403) throw new LinearError('Linear did not accept the sign-in. Sign in again in the Canvas Plus settings.');
-    if (res.status >= 400 || !body?.data) throw new LinearError(`Linear returned an error (HTTP ${res.status}).`);
+    if (message) throw new IssueError(message);
+    if (res.status === 401 || res.status === 403) throw new IssueError('Linear did not accept the sign-in. Sign in again in the Canvas Plus settings.');
+    if (res.status >= 400 || !body?.data) throw new IssueError(`Linear returned an error (HTTP ${res.status}).`);
     return body.data;
   }
 
-  async teams(): Promise<LinearTeam[]> {
-    const data = await this.request<{ teams: { nodes: LinearTeam[] } }>('query { teams(first: 100) { nodes { id key name } } }');
+  async teams(): Promise<IssueTeam[]> {
+    const data = await this.request<{ teams: { nodes: IssueTeam[] } }>('query { teams(first: 100) { nodes { id key name } } }');
     return data.teams.nodes;
   }
 
   /** The issues touched most recently, for when nothing has been searched for yet. */
-  async recent(): Promise<LinearIssue[]> {
+  async recent(): Promise<Issue[]> {
     const data = await this.request<{ issues: { nodes: RawIssue[] } }>(
       `query { issues(first: 25, orderBy: updatedAt) { nodes { ...IssueFields } } } ${ISSUE_FIELDS}`,
     );
     return data.issues.nodes.map(toIssue);
   }
 
-  async search(term: string): Promise<LinearIssue[]> {
+  async search(term: string): Promise<Issue[]> {
     const data = await this.request<{ searchIssues: { nodes: RawIssue[] } }>(
       `query($term: String!) { searchIssues(term: $term, first: 25) { nodes { ...IssueFields } } } ${ISSUE_FIELDS}`,
       { term },
@@ -119,7 +84,7 @@ export class LinearClient {
   }
 
   /** One issue by its identifier (`ENG-123`), or null if there is none. */
-  async byIdentifier(identifier: string): Promise<LinearIssue | null> {
+  async byIdentifier(identifier: string): Promise<Issue | null> {
     try {
       const data = await this.request<{ issue: RawIssue | null }>(
         `query($id: String!) { issue(id: $id) { ...IssueFields } } ${ISSUE_FIELDS}`,
@@ -127,12 +92,12 @@ export class LinearClient {
       );
       return data.issue ? toIssue(data.issue) : null;
     } catch (err) {
-      if (err instanceof LinearError && /not found/i.test(err.message)) return null;
+      if (err instanceof IssueError && /not found/i.test(err.message)) return null;
       throw err;
     }
   }
 
-  async byIds(ids: string[]): Promise<LinearIssue[]> {
+  async byIds(ids: string[]): Promise<Issue[]> {
     if (ids.length === 0) return [];
     const data = await this.request<{ issues: { nodes: RawIssue[] } }>(
       `query($ids: [ID!]) { issues(first: ${ids.length}, filter: { id: { in: $ids } }) { nodes { ...IssueFields } } } ${ISSUE_FIELDS}`,
@@ -141,22 +106,20 @@ export class LinearClient {
     return data.issues.nodes.map(toIssue);
   }
 
-  async create(input: IssueInput): Promise<LinearIssue> {
+  async create(input: IssueInput): Promise<Issue> {
     const data = await this.request<{ issueCreate: { success: boolean; issue: RawIssue | null } }>(
       `mutation($input: IssueCreateInput!) { issueCreate(input: $input) { success issue { ...IssueFields } } } ${ISSUE_FIELDS}`,
       { input },
     );
-    if (!data.issueCreate.success || !data.issueCreate.issue) throw new LinearError('Linear did not create the issue.');
+    if (!data.issueCreate.success || !data.issueCreate.issue) throw new IssueError('Linear did not create the issue.');
     return toIssue(data.issueCreate.issue);
+  }
+
+  parseRef(text: string): string | null {
+    const t = text.trim();
+    const id = IDENTIFIER_RE.test(t) ? t : ISSUE_URL_RE.exec(t)?.[1];
+    return id ? id.toUpperCase() : null;
   }
 }
 
-const IDENTIFIER_RE = /^[A-Za-z][A-Za-z0-9]*-\d+$/;
 const ISSUE_URL_RE = /^https:\/\/linear\.app\/[^/]+\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)(?:[/?#]|$)/;
-
-/** The identifier in `ENG-123` or an issue's URL, upper-cased; null when the text is neither. */
-export function parseIssueRef(text: string): string | null {
-  const t = text.trim();
-  const id = IDENTIFIER_RE.test(t) ? t : ISSUE_URL_RE.exec(t)?.[1];
-  return id ? id.toUpperCase() : null;
-}
