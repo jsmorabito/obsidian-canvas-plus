@@ -14,6 +14,7 @@ import { isReordering, makeReorderable } from './reorder-rows.ts';
 import { byStopOrder, renumberStops } from './stop-order.ts';
 
 const OPEN_KEY = 'ffc-canvas-layers-open';
+const FAVORITES_KEY = 'ffc-canvas-layers-favorites';
 const HOVER_CLASS = 'ffc-layer-hover';
 /** Makes label ids unique across every open canvas. */
 let nextLabelId = 0;
@@ -73,6 +74,15 @@ export class LayersPanel {
   private visible: Layer[] = [];
   /** Ids of the groups collapsed in the list. Lasts as long as the view. */
   private collapsed = new Set<string>();
+  /** Ids of the favourited layers, kept per canvas file as a per-viewer preference. */
+  private favorites = new Set<string>();
+  private favoritesLoadedFor: string | undefined;
+  /** Whether the favourites section is collapsed. Lasts as long as the view. */
+  private favoritesCollapsed = false;
+  /** Whether the Layers section, shown under Favorites, is collapsed. */
+  private layersCollapsed = false;
+  /** The favourited layers present on the canvas at the last update, flat and in canvas order. */
+  private favoriteLayers: Layer[] = [];
   /** Whether the canvas had no layers at the last update, for the empty message. */
   private emptyCanvas = false;
   /** Whether a link's name is being edited in the list, so a redraw doesn't throw the input away. */
@@ -208,6 +218,7 @@ export class LayersPanel {
     this.syncFilterOptions(roots);
     this.pruneCollapsed(roots);
     this.emptyCanvas = roots.length === 0;
+    this.syncFavorites(roots);
     this.visible = this.ordering ? this.stopList(roots) : this.filtering ? filterLayers(roots, this.keeper()) : roots;
     this.render(canvas);
   }
@@ -218,7 +229,7 @@ export class LayersPanel {
     const selection = canvas.selection ?? new Set<object>();
     // Locking the canvas changes whether the order can be dragged, so it redraws the list too.
     const signature = JSON.stringify([
-      this.query, this.filter, [...this.collapsed], this.ordering && isReadonly(canvas), this.flatten(visible, selection),
+      this.query, this.filter, [...this.collapsed], this.showFavorites, this.favoritesCollapsed, this.layersCollapsed, [...this.favorites], this.ordering && isReadonly(canvas), this.flatten(visible, selection),
     ]);
     // Not while a row is renamed or dragged: rebuilding the list would throw that away.
     if (signature === this.shown || this.renaming || isReordering(this.bodyEl)) return;
@@ -229,7 +240,13 @@ export class LayersPanel {
       this.bodyEl.createDiv({ cls: 'ffc-layers-empty', text: this.emptyCanvas ? 'Nothing on the canvas yet.' : 'No matching layers.' });
       return;
     }
-    this.renderList(canvas, this.bodyEl, visible, selection);
+    if (this.showFavorites) {
+      this.renderFavorites(canvas, selection);
+      const content = this.renderSection(canvas, 'Layers', undefined, this.layersCollapsed, () => { this.layersCollapsed = !this.layersCollapsed; });
+      if (content) this.renderList(canvas, content, visible, selection);
+    } else {
+      this.renderList(canvas, this.bodyEl, visible, selection);
+    }
     // Core's lock means no edits, the order included: the list still shows it, but it can't be dragged.
     if (this.ordering && !isReadonly(canvas)) {
       // The anchors as they were drawn, so a redraw while the drop is handled can't shift which one moves.
@@ -237,6 +254,65 @@ export class LayersPanel {
       const rows = Array.from(this.bodyEl.querySelectorAll<HTMLElement>('.ffc-layer-row'));
       makeReorderable(this.bodyEl, rows, (from, to) => this.moveStop(canvas, nodes, from, to));
     }
+  }
+
+  private get favoritesKey(): string {
+    return `${FAVORITES_KEY}:${this.view.file?.path ?? ''}`;
+  }
+
+  /** The favourites section sits above the tree, but only on the plain tree: filtering and ordering are their own lists. */
+  private get showFavorites(): boolean {
+    return this.favoriteLayers.length > 0 && !this.filtering;
+  }
+
+  /** Load this canvas's favourites (again if the view now shows another file) and find them among the layers. */
+  private syncFavorites(roots: Layer[]): void {
+    const path = this.view.file?.path ?? '';
+    if (this.favoritesLoadedFor !== path) {
+      this.favoritesLoadedFor = path;
+      let ids: unknown = [];
+      try { ids = JSON.parse((this.plugin.app.loadLocalStorage(this.favoritesKey) as string | null) ?? '[]'); } catch { /* start empty */ }
+      this.favorites = new Set(Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : []);
+    }
+    const found: Layer[] = [];
+    walk(roots, (l) => { if (l.node.id && this.favorites.has(l.node.id)) found.push({ ...l, children: [] }); });
+    this.favoriteLayers = found;
+  }
+
+  private toggleFavorite(id: string): void {
+    if (this.favorites.has(id)) this.favorites.delete(id);
+    else this.favorites.add(id);
+    this.plugin.app.saveLocalStorage(this.favoritesKey, JSON.stringify([...this.favorites]));
+    this.update();
+  }
+
+  /** The starred layers as a flat list, without stars of their own. */
+  private renderFavorites(canvas: CanvasLike, selection: Set<object>): void {
+    const content = this.renderSection(
+      canvas, 'Favorites', this.favoriteLayers.length, this.favoritesCollapsed, () => { this.favoritesCollapsed = !this.favoritesCollapsed; },
+    );
+    if (content) this.renderList(canvas, content, this.favoriteLayers, selection, false);
+  }
+
+  /** A collapsible section header. Returns where its rows go, or null while it is collapsed. */
+  private renderSection(canvas: CanvasLike, title: string, count: number | undefined, collapsed: boolean, flip: () => void): HTMLElement | null {
+    const section = this.bodyEl.createDiv({ cls: 'tree-item ffc-layers-section' });
+    const header = section.createDiv({ cls: 'tree-item-self is-clickable mod-collapsible ffc-layers-section-header' });
+    header.toggleClass('is-collapsed', collapsed);
+    const icon = header.createDiv({ cls: 'tree-item-icon collapse-icon' });
+    setIcon(icon, 'right-triangle');
+    icon.toggleClass('is-collapsed', collapsed);
+    header.createDiv({ cls: 'tree-item-inner', text: title });
+    if (count !== undefined) header.createDiv({ cls: 'tree-item-flair-outer' }).createSpan({ cls: 'tree-item-flair', text: String(count) });
+    header.setAttrs({ role: 'button', tabindex: '0', 'aria-expanded': String(!collapsed) });
+    const toggle = (): void => { flip(); this.render(canvas); };
+    header.addEventListener('click', toggle);
+    header.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      toggle();
+    });
+    return collapsed ? null : section.createDiv({ cls: 'tree-item-children' });
   }
 
   private flatten(layers: Layer[], selection: Set<object>): unknown[] {
@@ -252,7 +328,7 @@ export class LayersPanel {
   }
 
   /** Core's tree markup and classes, as in the file explorer and outline, so themes style the list like those. */
-  private renderList(canvas: CanvasLike, parent: HTMLElement, layers: Layer[], selection: Set<object>): void {
+  private renderList(canvas: CanvasLike, parent: HTMLElement, layers: Layer[], selection: Set<object>, stars = true): void {
     for (const [i, layer] of layers.entries()) {
       const item = parent.createDiv({ cls: 'tree-item' });
       const row = item.createDiv({ cls: 'tree-item-self is-clickable ffc-layer-row' });
@@ -271,11 +347,13 @@ export class LayersPanel {
       const rename = RENAMES[layer.kind];
       // In presentation order, each anchor's stop number, in core's flair (where the file explorer puts counts).
       const stop = this.ordering ? i + 1 : undefined;
-      if (layer.type || rename || stop) {
+      const nodeId = layer.node.id;
+      if (layer.type || rename || stop || (stars && nodeId)) {
         const flair = row.createDiv({ cls: 'tree-item-flair-outer' });
         if (stop) flair.createSpan({ cls: 'tree-item-flair', text: String(stop) });
         if (layer.type) flair.createSpan({ cls: 'ffc-note-chip', text: layer.type });
         if (rename) this.makeRename(canvas, flair, row, label, layer.node, rename);
+        if (stars && nodeId) this.makeStar(flair, nodeId);
       }
       if (toggle && id) this.makeToggle(toggle, label, id, collapsed);
 
@@ -293,7 +371,7 @@ export class LayersPanel {
       row.addEventListener('mouseenter', () => layer.node.nodeEl?.addClass(HOVER_CLASS));
       row.addEventListener('mouseleave', () => layer.node.nodeEl?.removeClass(HOVER_CLASS));
       if (!collapsed && layer.children.length > 0) {
-        this.renderList(canvas, item.createDiv({ cls: 'tree-item-children' }), layer.children, selection);
+        this.renderList(canvas, item.createDiv({ cls: 'tree-item-children' }), layer.children, selection, stars);
       }
     }
   }
@@ -321,6 +399,22 @@ export class LayersPanel {
       this.bodyEl.querySelector<HTMLElement>(`[data-group-id="${CSS.escape(id)}"]`)?.focus();
     });
     toggle.dataset.groupId = id;
+  }
+
+  /** A star that adds the layer to the favourites section, or takes it out. Shown on hover, and always once starred. */
+  private makeStar(flair: HTMLElement, id: string): void {
+    const starred = this.favorites.has(id);
+    const btn = flair.createEl('button', {
+      cls: 'clickable-icon ffc-layer-star',
+      attr: { 'aria-label': starred ? 'Remove from favorites' : 'Add to favorites', 'data-tooltip-position': 'right' },
+    });
+    btn.toggleClass('is-starred', starred);
+    setIcon(btn, 'star');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleFavorite(id);
+    });
+    btn.addEventListener('dblclick', (e) => e.stopPropagation());
   }
 
   /** A pencil, shown on hover, that turns a layer's label into a field to name it. */

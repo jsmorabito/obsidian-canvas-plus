@@ -1036,6 +1036,43 @@ svg.ffc-ink path.ffc-ink-auto {
   display: none;
 }
 
+/* Star on every row: hidden until hover or focus like the pencil, but always shown once the layer is a favourite. */
+.ffc-layer-star {
+  --icon-size: var(--icon-xs);
+  width: 0;
+  padding: var(--size-2-1) 0;
+  margin: calc(-1 * var(--size-2-1)) 0;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.ffc-layer-row:hover .ffc-layer-star,
+.ffc-layer-star:focus-visible,
+.ffc-layer-star.is-starred,
+.is-mobile .ffc-layer-star {
+  width: auto;
+  padding-inline: var(--size-2-1);
+  opacity: 1;
+}
+
+.ffc-layer-star.is-starred {
+  color: var(--text-accent);
+}
+
+.ffc-layer-star.is-starred svg {
+  fill: currentColor;
+}
+
+.ffc-layer-row.is-being-renamed .ffc-layer-star {
+  display: none;
+}
+
+.ffc-layers-section:not(:last-child) {
+  margin-bottom: var(--size-2-2);
+  padding-bottom: var(--size-2-2);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
 .canvas-node.ffc-layer-hover .canvas-node-container {
   outline: 2px solid var(--interactive-accent);
 }
