@@ -519,6 +519,227 @@ svg.ffc-ink path.ffc-ink-auto {
   display: none;
 }
 
+/* ── Linear issues (text nodes that show an issue) ───────────────────────── */
+
+/* The issue is drawn in place of the node's own text, in every view. */
+.canvas-node[data-ffc-linear] .canvas-node-content {
+  display: none;
+}
+
+.canvas-node[data-ffc-linear] .canvas-node-container {
+  position: relative;
+}
+
+.ffc-issue-card,
+.ffc-issue-embed {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  padding: var(--size-4-3);
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--background-primary);
+  pointer-events: none;
+}
+
+/* Centre the content when it fits; auto margins never clip the top when it doesn't. */
+.ffc-issue-card > :first-child {
+  margin-top: auto;
+}
+
+.ffc-issue-card > :last-child {
+  margin-bottom: auto;
+}
+
+/* The full issue scrolls, but only once selected, so an unselected one doesn't catch the canvas's drag and zoom. */
+.ffc-issue-embed {
+  overflow-y: auto;
+}
+
+.canvas-node.is-selected .ffc-issue-embed,
+.canvas-node.is-focused .ffc-issue-embed {
+  pointer-events: auto;
+  user-select: text;
+}
+
+.ffc-issue-head {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: var(--size-4-2);
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+
+.ffc-issue-id {
+  font-weight: var(--font-semibold);
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.ffc-issue-priority {
+  margin-left: auto;
+  font-size: var(--font-ui-smaller);
+}
+
+.ffc-issue-title {
+  flex: none;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text-normal);
+}
+
+.ffc-issue-embed .ffc-issue-title {
+  display: block;
+  font-size: var(--font-ui-large);
+}
+
+.ffc-issue-meta {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: var(--size-2-2);
+  overflow: hidden;
+  max-height: 3.4em;
+}
+
+.ffc-issue-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-3);
+  padding: 0 var(--size-4-2);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.6;
+  white-space: nowrap;
+  color: var(--text-muted);
+  background: var(--background-modifier-hover);
+}
+
+.ffc-issue-label-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ffc-issue-color, var(--text-faint));
+}
+
+/* Status marker: a ring for not started (dashed in the backlog), half full once started, full when done. */
+.ffc-issue-state {
+  flex: none;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--ffc-issue-color, var(--text-faint));
+}
+
+.ffc-issue-state[data-state-type="backlog"],
+.ffc-issue-state[data-state-type="triage"] {
+  border-style: dashed;
+}
+
+.ffc-issue-state[data-state-type="started"] {
+  background: conic-gradient(var(--ffc-issue-color, var(--text-faint)) 0 50%, transparent 0);
+}
+
+.ffc-issue-state[data-state-type="completed"],
+.ffc-issue-state[data-state-type="canceled"] {
+  background: var(--ffc-issue-color, var(--text-faint));
+}
+
+.ffc-issue-note {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.ffc-issue-props {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--size-2-2) var(--size-4-3);
+  align-items: center;
+  font-size: var(--font-ui-small);
+}
+
+.ffc-issue-prop-label {
+  color: var(--text-muted);
+}
+
+.ffc-issue-prop-value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-2);
+}
+
+.ffc-issue-body {
+  flex: none;
+  padding-top: var(--size-4-2);
+  border-top: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-small);
+}
+
+/* Styled link view: the status, identifier and title in a pill, sized by the node like a note's link. */
+.ffc-issue-pill-body {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  box-sizing: border-box;
+  max-width: 32em;
+  padding: var(--size-2-2) var(--size-4-2);
+  border-radius: var(--radius-s);
+  line-height: var(--line-height-tight);
+  white-space: nowrap;
+  color: var(--tag-color, var(--text-normal));
+  background: var(--tag-background, var(--background-modifier-hover));
+}
+
+.ffc-issue-pill-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The Linear picker's rows. */
+.ffc-issue-suggestion {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: var(--size-4-2);
+}
+
+.ffc-issue-suggestion .suggestion-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Create-issue dialog. */
+.ffc-issue-field {
+  flex: 1 1 70%;
+}
+
+.ffc-issue-field input,
+.ffc-issue-field textarea {
+  width: 100%;
+}
+
+.ffc-issue-drafts {
+  margin: 0 0 var(--size-4-4);
+  color: var(--text-muted);
+}
+
+.modal-content.is-busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 /* ── Relations ───────────────────────────────────────────────────────────── */
 
 .ffc-relation-menu {

@@ -1,4 +1,4 @@
-import { NOTE_TYPES_ICON } from './icons.ts';
+import { LINEAR_ICON, NOTE_TYPES_ICON } from './icons.ts';
 
 export type ToolId = 'select' | 'text' | 'card' | 'group' | 'anchor' | 'comment' | 'marker' | 'highlighter' | 'eraser';
 
@@ -46,7 +46,7 @@ export function isPenTool(tool: ToolId): tool is 'marker' | 'highlighter' {
   return tool === 'marker' || tool === 'highlighter';
 }
 
-export type ActionId = 'picker';
+export type ActionId = 'picker' | 'linear';
 
 export interface ActionDef {
   id: ActionId;
@@ -58,6 +58,7 @@ export interface ActionDef {
 /** One-shot actions (they don't change the active tool). */
 export const ACTIONS: readonly ActionDef[] = [
   { id: 'picker', label: 'Add note', icon: NOTE_TYPES_ICON, key: 'n' },
+  { id: 'linear', label: 'Add Linear issue', icon: LINEAR_ICON, key: 'i' },
 ];
 
 export function actionForKey(key: string): ActionDef | undefined {

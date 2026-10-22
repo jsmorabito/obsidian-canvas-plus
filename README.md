@@ -57,6 +57,13 @@ These need the [Note Types](https://github.com/jsmorabito/obsidian-note-types) p
 
 ![Typed notes as cards, a relation on the edge between them and the relations panel](docs/mockups/notetypes.svg)
 
+**With Linear**  
+These are in beta and off by default: turn on **Enable Linear integration (beta)** under **Settings → Canvas Plus**, then sign in. Create an OAuth app in Linear (**Settings → API**), give it the callback URL shown there (`obsidian://canvas-plus-linear`), and enter its client ID. Sign-in uses PKCE, so there is no client secret, and the tokens are kept in Obsidian's secret storage. A personal API key works instead.
+
+- **Add Linear issue (`I`).** Search Linear, or enter an identifier like `ENG-123` or an issue's URL, to add the issue to the canvas. The button next to **Add note** in the bottom bar can also be dragged onto the canvas. An issue already on the canvas is selected instead of added twice.
+- **Create issues from cards.** Select one or more cards and choose **Create Linear issue** in the selection toolbar. A card's first line becomes the title and the rest its description; pick the team and the card turns into the issue. Undo puts the card back, but the issue stays in Linear.
+- **Card, embed or link.** Issues switch between views the same way note cards do (the toolbar button, or the **Cycle selected canvas note cards and Linear issues between card, embed and link** command): a card with the status, assignee and labels, the full issue with its properties and description, or a one-line link. **Open in Linear** is in the toolbar too.
+
 Canvas files stay standard JSON Canvas, with extra fields kept alongside, so stock Obsidian still opens them.
 
 This relies on Obsidian's undocumented canvas internals, collected in `src/canvas/adapter.ts` (and, for tab panels, workspace internals in `src/canvas/hosted-leaf.ts`), and last checked against Obsidian 1.14.4, and may need a patch after an Obsidian update.
@@ -73,7 +80,7 @@ This relies on Obsidian's undocumented canvas internals, collected in `src/canva
 
 ## Network use
 
-The plugin has no telemetry, collects no data, and makes no requests of its own.
+The plugin has no telemetry and collects no data. It makes no requests unless you sign in to Linear or set an API key. With one, it sends requests to Linear (`api.linear.app`) to search issues, load the issues shown on your canvases (their title, status, assignee, labels and description), and create issues from cards. What is sent for a new issue is the title and description you confirm in the dialog. Nothing else from your vault leaves your device. Issue cards load again from Linear a few minutes apart while a canvas is open.
 
 If a note's key image is a web address, Obsidian loads it from that address whenever a note card shows it. That is a request from your device to the image's host, the same as for any image embedded from the web. Dropping an image link onto a note card only writes the link into the note, and downloads nothing. Dropping an image file saves a copy in your vault's attachment folder, as Obsidian does for any attachment.
 

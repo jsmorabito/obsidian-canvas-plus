@@ -1,4 +1,5 @@
-import { Plugin, TAbstractFile, ViewState, debounce } from 'obsidian';
+import { Plugin, TAbstractFile, ViewState } from 'obsidian';
+import type { PluginData } from '../plugin-data.ts';
 
 /** A tab panel's position in pixels over its canvas pane, and what it shows. */
 export interface PanelRecord {
@@ -24,19 +25,14 @@ const NONE: PanelRecord[] = [];
 
 /** Tab panels, and those put in a tray, persisted in the plugin's data. Writes are debounced; `flush` writes them now. */
 export class PanelStore {
-  private data: StoredData = {};
+  private data: StoredData;
   readonly ready: Promise<void>;
-  private save = debounce(() => { void this.plugin.saveData(this.data); }, 500, true);
 
-  constructor(private plugin: Plugin) {
-    this.ready = this.load();
+  constructor(plugin: Plugin, private store: PluginData) {
+    this.data = store.root;
+    this.ready = store.ready;
     plugin.registerEvent(plugin.app.vault.on('rename', (file, oldPath) => this.onRename(file, oldPath)));
     plugin.registerEvent(plugin.app.vault.on('delete', (file) => this.onDelete(file)));
-  }
-
-  private async load(): Promise<void> {
-    const loaded = (await this.plugin.loadData()) as StoredData | null;
-    this.data = { ...loaded, panels: { ...loaded?.panels, ...this.data.panels }, held: { ...loaded?.held, ...this.data.held } };
   }
 
   get(path: string): PanelRecord[] {
@@ -73,14 +69,14 @@ export class PanelStore {
   }
 
   flush(): void {
-    this.save.run();
+    this.store.flush();
   }
 
   private write(path: string, list: PanelRecord[], key: ListKey = 'panels'): void {
     const lists = this.data[key] ??= {};
     if (list.length > 0) lists[path] = list;
     else delete lists[path];
-    this.save();
+    this.store.save();
   }
 
   private onRename(file: TAbstractFile, oldPath: string): void {
@@ -96,7 +92,7 @@ export class PanelStore {
         changed = true;
       }
     }
-    if (changed) this.save();
+    if (changed) this.store.save();
   }
 
   private onDelete(file: TAbstractFile): void {

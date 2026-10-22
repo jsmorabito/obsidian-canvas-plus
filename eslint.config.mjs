@@ -25,7 +25,7 @@ export default defineConfig(
   ...obsidianmd.configs.recommended,
   {
     rules: {
-      'obsidianmd/ui/sentence-case': ['warn', { brands: ['Obsidian', 'Note Types', 'Canvas Plus'] }],
+      'obsidianmd/ui/sentence-case': ['warn', { brands: ['Obsidian', 'Note Types', 'Canvas Plus', 'Linear', 'OAuth'] }],
     },
   },
 );

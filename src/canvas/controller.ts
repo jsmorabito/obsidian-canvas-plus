@@ -9,8 +9,11 @@ import { LayersPanel } from './layers-panel.ts';
 import { Minimap } from './minimap.ts';
 import { CanvasPanels } from './canvas-panels.ts';
 import { PanelStore } from './panel-store.ts';
-import { CLICK_SLOP_PX, FIELD_KIND, INK_FALLBACK_HEX, SIZE_NOTE_CARD } from './constants.ts';
-import { clearNoteCards, decorateNoteCards, fitNodeToCard, noteOfNode, setCardOwner, toggleViews } from './note-card.ts';
+import { CLICK_SLOP_PX, FIELD_KIND, INK_FALLBACK_HEX, SIZE_ISSUE_CARD, SIZE_NOTE_CARD } from './constants.ts';
+import { canToggleView, clearNoteCards, decorateNoteCards, fitNodeToCard, noteOfNode, setCardOwner, toggleViews } from './note-card.ts';
+import { clearLinearCards, decorateLinearCards } from './linear-card.ts';
+import { LinearPicker } from './linear-picker.ts';
+import { injectLinearButtons } from './linear-menu.ts';
 import { injectViewToggleButton } from './view-toggle.ts';
 import { NotePicker } from './note-picker.ts';
 import { RelationFlow } from './relation-flow.ts';
@@ -103,10 +106,13 @@ export class CanvasController {
         onNoteClick: () => this.runAction('picker'),
         onPenColor: (color) => this.setPenColor(color),
         onNoteDrop: (pos) => this.dropNoteFromMenu(pos),
+        onLinearClick: () => this.runAction('linear'),
+        onLinearDrop: (pos) => this.openLinearPicker({ x: pos.x + SIZE_ISSUE_CARD.width / 2, y: pos.y + SIZE_ISSUE_CARD.height / 2 }),
       })
       : null;
     this.toolbar?.setActive(this.tool);
     this.toolbar?.setNoteButtonVisible(plugin.hasNoteTypes);
+    this.toolbar?.setLinearButtonVisible(plugin.hasLinear);
     this.toolbar?.setPenColor(this.ink.penColor);
 
     const wrapper = view.canvas!.wrapperEl;
@@ -164,8 +170,26 @@ export class CanvasController {
     this.openPicker(canvas, { x: pos.x + SIZE_NOTE_CARD.width / 2, y: pos.y + SIZE_NOTE_CARD.height / 2 });
   }
 
-  runAction(action: ActionId): void {
+  /** Returns false when the action isn't available, which lets its shortcut key through to whatever else uses it. */
+  runAction(action: ActionId): boolean {
     if (action === 'picker' && this.view.canvas) this.openPicker(this.view.canvas);
+    if (action === 'linear') return this.openLinearPicker();
+    return true;
+  }
+
+  /** The Linear picker lists issues from Linear, so it needs an API key. */
+  openLinearPicker(at?: { x: number; y: number }): boolean {
+    const canvas = this.view.canvas;
+    if (!canvas) return false;
+    if (!this.plugin.hasLinear) {
+      new Notice('Sign in to Linear in the Canvas Plus settings to add Linear issues.');
+      return false;
+    }
+    new LinearPicker(this.plugin, canvas, at ?? null, () => {
+      this.sweep();
+      window.requestAnimationFrame(() => this.sweep());
+    }).open();
+    return true;
   }
 
   /** The note picker lists typed notes, so it needs Note Types. */
@@ -177,11 +201,11 @@ export class CanvasController {
     new NotePicker(this.plugin, canvas, at).open();
   }
 
-  /** Flip the selected note cards between card and embed. Returns false when none are selected. */
+  /** Move the selected note cards and Linear issues to their next view. Returns false when none are selected. */
   toggleSelectedCards(): boolean {
     const canvas = this.view.canvas;
     if (!canvas) return false;
-    const nodes = selectedNodes(canvas).filter((n) => noteOfNode(n) && n.nodeEl?.hasAttribute('data-ffc-note-type'));
+    const nodes = selectedNodes(canvas).filter(canToggleView);
     if (nodes.length === 0) return false;
     toggleViews(canvas, nodes);
     this.sweep();
@@ -212,6 +236,7 @@ export class CanvasController {
     if (!canvas || !nodes) return;
     this.toolbar?.setNoteButtonVisible(this.plugin.hasNoteTypes);
     decorateNoteCards(this.plugin, canvas);
+    decorateLinearCards(this.plugin, canvas);
     this.relations.sweep();
     this.panel.update();
     this.layers.update();
@@ -258,6 +283,7 @@ export class CanvasController {
     if (this.view.canvas) {
       setInsets(this.view.canvas, null);
       clearNoteCards(this.view.canvas);
+      clearLinearCards(this.view.canvas);
       setCardOwner(this.view.canvas, null);
     }
     this.component.unload();
@@ -286,6 +312,7 @@ export class CanvasController {
     const selected = selectedNodes(canvas);
     injectViewToggleButton(canvas, selected, () => this.sweep());
     injectKeyImageButton(this.plugin, canvas, selected);
+    injectLinearButtons(this.plugin, canvas, selected, () => this.sweep());
   }
 
   /** The note card under a drag event, if any. */

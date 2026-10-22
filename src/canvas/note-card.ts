@@ -2,7 +2,8 @@ import { Component, TFile } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import type { NoteType } from '../note-types.ts';
 import { CanvasLike, CanvasNodeLike, batch, getExtra, nodeBox, patchData } from './adapter.ts';
-import { FIELD_CARD_SIZE, SIZE_NOTE_CARD } from './constants.ts';
+import { FIELD_CARD_SIZE, SIZE_ISSUE_CARD, SIZE_NOTE_CARD } from './constants.ts';
+import { readLinearRef } from './linear-ref.ts';
 import { readCardContent, renderCard, renderLinkPill, typeLinkColor } from './note-card-content.ts';
 
 /** The label an earlier version added in place of Obsidian's own; removed if one is left over. */
@@ -25,6 +26,15 @@ const owners = new WeakMap<CanvasLike, Component>();
 export function setCardOwner(canvas: CanvasLike, owner: Component | null): void {
   if (owner) owners.set(canvas, owner);
   else owners.delete(canvas);
+}
+
+export function cardOwner(canvas: CanvasLike): Component | undefined {
+  return owners.get(canvas);
+}
+
+/** Whether a node, as drawn now, is a card that can be shown as a card, an embed or a link: a typed note or a Linear issue. */
+export function canToggleView(node: CanvasNodeLike): boolean {
+  return !!node.nodeEl && (node.nodeEl.hasAttribute('data-ffc-note-type') || node.nodeEl.hasAttribute('data-ffc-linear'));
 }
 
 /** File node → its note, when it points at a markdown note. */
@@ -64,7 +74,7 @@ function readCardSize(node: CanvasNodeLike): { width: number; height: number } |
 }
 
 /**
- * Move note cards to their next view, as one undo step. Entering the styled link
+ * Move cards to their next view, as one undo step. Entering the styled link
  * view remembers the node's size, because the node then shrinks to fit the link;
  * leaving it gives that size back.
  */
@@ -79,7 +89,7 @@ export function toggleViews(canvas: CanvasLike, nodes: CanvasNodeLike[]): void {
       if (next === 'link' && box) patch[FIELD_CARD_SIZE] = { width: box.width, height: box.height };
       if (mode === 'link') {
         patch[FIELD_CARD_SIZE] = undefined;
-        if (box) node.moveAndResize?.({ ...box, ...(readCardSize(node) ?? SIZE_NOTE_CARD) });
+        if (box) node.moveAndResize?.({ ...box, ...(readCardSize(node) ?? (readLinearRef(node) ? SIZE_ISSUE_CARD : SIZE_NOTE_CARD)) });
       }
       patchData(node, patch);
     }
@@ -96,7 +106,8 @@ export function decorateNoteCards(
 ): void {
   for (const node of canvas.nodes?.values() ?? []) {
     const el = node.nodeEl;
-    if (!el) continue;
+    // A Linear issue is drawn by decorateLinearCards.
+    if (!el || readLinearRef(node)) continue;
     const file = noteOfNode(node);
     const type = file ? plugin.types.getNoteTypeForFile(file) : undefined;
     const container = el.querySelector<HTMLElement>('.canvas-node-container');
@@ -166,7 +177,7 @@ function decorateLink(
 }
 
 /** Size the node to the link: its fill is the whole box, plus the node's own border on every side. */
-function fitToPill(canvas: CanvasLike, node: CanvasNodeLike, pill: HTMLElement, container: HTMLElement): void {
+export function fitToPill(canvas: CanvasLike, node: CanvasNodeLike, pill: HTMLElement, container: HTMLElement): void {
   const box = nodeBox(node);
   const border = parseFloat(container.win.getComputedStyle(container).borderLeftWidth) || 0;
   const width = pill.offsetWidth + 2 * border;

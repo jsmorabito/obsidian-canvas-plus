@@ -4,7 +4,8 @@ import { ActionId, ToolId, actionForKey, toolForKey } from './tools.ts';
 
 export interface ShortcutTarget {
   setTool(tool: ToolId): void;
-  runAction(action: ActionId): void;
+  /** Returns false when the action isn't available, so the key goes on to whatever else wants it. */
+  runAction(action: ActionId): boolean;
   /** Abandon a draw and go back to Select. Returns whether it did anything. */
   escape(): boolean;
 }
@@ -41,10 +42,7 @@ function handle(e: KeyboardEvent, target: ShortcutTarget): false | undefined {
   if (e.metaKey || e.ctrlKey || e.altKey) return undefined;
   const key = e.key.toLowerCase();
   const action = e.shiftKey ? undefined : actionForKey(key);
-  if (action) {
-    target.runAction(action.id);
-    return false;
-  }
+  if (action && target.runAction(action.id)) return false;
   const tool = toolForKey(key, e.shiftKey);
   if (!tool) return undefined;
   target.setTool(tool.id);

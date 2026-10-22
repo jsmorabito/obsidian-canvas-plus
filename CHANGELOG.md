@@ -5,6 +5,19 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0]
+
+### Added
+
+- Linear integration (beta, off by default: turn it on under
+  **Settings → Canvas Plus**, then sign in with OAuth or use an API key):
+  - Add a Linear issue to the canvas with the new button in the bottom bar,
+    the `I` key, or the **Add Linear issue to canvas** command. Search, or
+    enter an identifier or issue URL.
+  - Turn cards into Linear issues from the selection toolbar.
+  - Show issues as a card, the full issue or a link, switched the same way
+    as note cards, and open an issue in Linear from the toolbar.
+
 ## [1.7.1]
 
 ### Fixed

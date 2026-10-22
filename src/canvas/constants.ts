@@ -59,3 +59,12 @@ export const FIELD_TRAY = 'ffcTray';
 
 /** Field on the canvas file itself: the comment pins and their threads. Stored in canvas files, so the name must not change. */
 export const FIELD_COMMENTS = 'ffcComments';
+
+/**
+ * Extra field on a `text` node showing a Linear issue: `{ id, identifier, title, url }`. What the card shows beyond
+ * that is fetched from Linear. Stored in canvas files, so the name must not change.
+ */
+export const FIELD_LINEAR = 'ffcLinear';
+
+/** Linear issue card, the default size of a node showing one. */
+export const SIZE_ISSUE_CARD = { width: 280, height: 110 };

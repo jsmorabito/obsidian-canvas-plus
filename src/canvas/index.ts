@@ -11,7 +11,7 @@ import { PanelStore } from './panel-store.ts';
  */
 export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
   plugin.register(registerIcons());
-  const panelStore = new PanelStore(plugin);
+  const panelStore = new PanelStore(plugin, plugin.pluginData);
   const controllers = new Map<ItemView, CanvasController>();
 
   const sync = (): void => {
@@ -42,11 +42,21 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
   };
   plugin.addCommand({
     id: 'toggle-canvas-note-card',
-    name: 'Cycle selected canvas note cards between card, embed and styled link',
+    name: 'Cycle selected canvas note cards and Linear issues between card, embed and link',
     checkCallback: (checking) => {
       const controller = activeController();
       if (!controller) return false;
       if (!checking) controller.toggleSelectedCards();
+      return true;
+    },
+  });
+  plugin.addCommand({
+    id: 'add-linear-issue-to-canvas',
+    name: 'Add Linear issue to canvas',
+    checkCallback: (checking) => {
+      const controller = activeController();
+      if (!controller || !plugin.hasLinear) return false;
+      if (!checking) controller.openLinearPicker();
       return true;
     },
   });
@@ -102,6 +112,8 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
   };
   plugin.registerEvent(plugin.app.metadataCache.on('changed', debounce(sweepVisible, 300, true)));
   plugin.registerInterval(window.setInterval(sweepVisible, 1000));
+  // Issues arrive from Linear a moment after their cards are drawn.
+  plugin.register(plugin.linear.store.onUpdate(sweepVisible));
 
   plugin.register(() => {
     for (const controller of controllers.values()) controller.destroy();
