@@ -44,7 +44,15 @@ jobs:
               run: |
                   tag="${GITHUB_REF#refs/tags/}"
 
+                  # The release notes are this version's section of the changelog, if it has one.
+                  awk -v tag="$tag" '
+                    $0 ~ "^## \\[" tag "\\]" { found = 1; next }
+                    found && /^## \[/ { exit }
+                    found { print }
+                  ' CHANGELOG.md > notes.md
+                  if [ -s notes.md ]; then notes="--notes-file=notes.md"; else notes="--generate-notes"; fi
+
                   gh release create "$tag" \
                     --title="$tag" \
-                    --draft \
+                    "$notes" \
                     main.js manifest.json ${{ steps.styles.outputs.exists == 'true' && 'styles.css' || '' }}
