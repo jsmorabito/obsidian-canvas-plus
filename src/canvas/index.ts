@@ -11,6 +11,8 @@ import { PanelStore } from './panel-store.ts';
  */
 export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
   plugin.register(registerIcons());
+  // The tray's open state used to be saved across canvases; it no longer is.
+  plugin.app.saveLocalStorage('ffc-canvas-tray-open', null);
   const panelStore = new PanelStore(plugin, plugin.pluginData);
   const controllers = new Map<ItemView, CanvasController>();
 

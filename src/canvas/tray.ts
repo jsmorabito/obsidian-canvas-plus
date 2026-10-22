@@ -5,7 +5,6 @@ import {
   removeNode, shieldFromCanvas,
 } from './adapter.ts';
 import { CLICK_SLOP_PX } from './constants.ts';
-import { loadOpen, saveOpen } from './floating-panel.ts';
 import { LAYER_ICONS } from './layers-tree.ts';
 import { trackPointer } from './pointer-session.ts';
 import { CanvasPanels, HEADER_GRAB_PX, PanelDropTarget, describePanel } from './canvas-panels.ts';
@@ -14,8 +13,13 @@ import { PRESENTING_CLASS } from './presentation.ts';
 import { TrayItem, commentItem, itemBox, readTray, restoreItem, trayItemsFrom, writeTray } from './tray-items.ts';
 import { CanvasComment, movedTo, readComments, writeComments } from './comments.ts';
 
-const OPEN_KEY = 'ffc-canvas-tray-open';
 /** The theme colours behind core's six canvas colours. */
+/**
+ * Whether each view's tray is open, and the file it was open for. Kept by view rather than by tray, so it survives
+ * the controller being rebuilt (a canvas moved to a popout), and gone with the view when the tab closes.
+ */
+const viewState = new WeakMap<object, { open: boolean; path: string | undefined }>();
+
 const PRESET_VARS: Record<string, string> = {
   '1': 'var(--color-red)', '2': 'var(--color-orange)', '3': 'var(--color-yellow)',
   '4': 'var(--color-green)', '5': 'var(--color-cyan)', '6': 'var(--color-purple)',
@@ -50,6 +54,8 @@ export class Tray implements PanelDropTarget {
   /** What the button adds to the toolbar: a divider and the button's group. */
   private toolbarEls: HTMLElement[] = [];
   private open: boolean;
+  /** The file this tray last saw its view show. */
+  private path: string | undefined;
   /** A drag of canvas nodes is under way, so the strip shows as somewhere to drop them. */
   private dragging = false;
   /** The items last drawn, to tell when they've changed (an undo, or the file reloading). */
@@ -73,7 +79,10 @@ export class Tray implements PanelDropTarget {
     private onChange: () => void,
   ) {
     const canvas = view.canvas!;
-    this.open = loadOpen(plugin.app, OPEN_KEY);
+    const kept = viewState.get(view);
+    // A view that has gone on to show another canvas starts with the tray closed.
+    this.path = view.file?.path;
+    this.open = !!kept && kept.open && kept.path === this.path;
     // Made in the canvas's own window, which may be a popout. Above the bottom toolbar, or without one, floating
     // where it would be with the button beside it.
     this.el = (menuEl ?? view.contentEl).createDiv({ cls: 'ffc-tray' });
@@ -107,6 +116,14 @@ export class Tray implements PanelDropTarget {
     this.cleanups.push(() => canvas.wrapperEl.removeEventListener('pointerdown', press, true));
     // Undo and redo change what the tray holds, and redraw the canvas when they do.
     this.cleanups.push(afterCanvasFrame(canvas, () => this.sync()));
+
+    // A view reused for another canvas (opened in the same tab) closes the tray, and a file not yet loaded isn't one.
+    const fileRef = plugin.app.workspace.on('file-open', () => {
+      const path = view.file?.path;
+      if (path && this.path && path !== this.path) this.setOpen(false);
+      if (path) this.path = path;
+    });
+    this.cleanups.push(() => plugin.app.workspace.offref(fileRef));
 
     panels.setTray(this, () => this.sync());
     this.sync();
@@ -158,7 +175,7 @@ export class Tray implements PanelDropTarget {
 
   private setOpen(open: boolean): void {
     this.open = open;
-    saveOpen(this.plugin.app, OPEN_KEY, open);
+    viewState.set(this.view, { open, path: this.path });
     this.layout();
   }
 
