@@ -974,7 +974,8 @@ svg.ffc-ink path.ffc-ink-auto {
   z-index: var(--layer-cover);
   display: flex;
   flex-direction: column;
-  width: 14em;
+  /* Dragged from its right edge; Figma's own left panel opens at the narrowest. */
+  width: var(--ffc-layers-width, 241px);
   /*
    * Stops above the minimap, or above its button while it's closed. On a pane too short for both, it keeps
    * a usable height and overlaps the corner instead of shrinking away.
@@ -987,6 +988,38 @@ svg.ffc-ink path.ffc-ink-auto {
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
   box-shadow: var(--shadow-s);
+}
+
+/* A strip on the panel's right edge to drag it wider or narrower. */
+.ffc-layers-resize {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.ffc-layers-resize::after {
+  content: "";
+  position: absolute;
+  top: var(--radius-m);
+  right: 3px;
+  bottom: var(--radius-m);
+  width: 2px;
+  border-radius: 1px;
+  background: var(--interactive-accent);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.ffc-layers-resize:hover::after,
+.ffc-layers-panel.is-resizing .ffc-layers-resize::after {
+  opacity: 1;
+}
+
+.ffc-layers-panel.is-resizing {
+  user-select: none;
 }
 
 /* The collapsed state is core's own control group, placed like the ones on the right. */

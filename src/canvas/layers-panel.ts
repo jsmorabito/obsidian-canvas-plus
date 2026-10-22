@@ -10,10 +10,15 @@ import {
   someLayer, walk,
 } from './layers-tree.ts';
 import { beginLabelEdit } from './placement.ts';
+import { trackPointer } from './pointer-session.ts';
 import { isReordering, makeReorderable } from './reorder-rows.ts';
 import { byStopOrder, renumberStops } from './stop-order.ts';
 
 const OPEN_KEY = 'ffc-canvas-layers-open';
+const WIDTH_KEY = 'ffc-canvas-layers-width';
+/** The narrowest and widest the panel can be dragged to, in pixels: Figma's left panel limits, the narrowest being its default. */
+const MIN_WIDTH = 241;
+const MAX_WIDTH = 450;
 const FAVORITES_KEY = 'ffc-canvas-layers-favorites';
 const HOVER_CLASS = 'ffc-layer-hover';
 /** Makes label ids unique across every open canvas. */
@@ -87,6 +92,8 @@ export class LayersPanel {
   private emptyCanvas = false;
   /** Whether a link's name is being edited in the list, so a redraw doesn't throw the input away. */
   private renaming = false;
+  /** Ends a width drag in progress. */
+  private stopResize: (() => void) | null = null;
 
   constructor(private plugin: CanvasPlusPlugin, private view: CanvasViewLike) {
     this.open = loadOpen(plugin.app, OPEN_KEY);
@@ -108,7 +115,12 @@ export class LayersPanel {
     this.search.inputEl.addEventListener('keydown', (e) => this.onSearchKey(e));
 
     this.bodyEl = this.el.createDiv({ cls: 'ffc-layers-body' });
+    const grip = this.el.createDiv({ cls: 'ffc-layers-resize', attr: { 'aria-label': 'Resize layers', 'data-tooltip-position': 'right' } });
+    grip.addEventListener('pointerdown', (e) => this.beginResize(e));
+    grip.addEventListener('dblclick', () => this.setWidth(MIN_WIDTH, true));
     shieldFromCanvas(this.el);
+    const saved = Number(plugin.app.loadLocalStorage(WIDTH_KEY));
+    if (Number.isFinite(saved) && saved > 0) this.setWidth(saved, false);
     this.applyOpen();
   }
 
@@ -120,7 +132,40 @@ export class LayersPanel {
     return shown.offsetLeft * 2 + shown.offsetWidth;
   }
 
+  /** Set the width within its limits, and keep it as a per-viewer preference when asked. A narrow pane holds it below the maximum. */
+  private setWidth(width: number, save: boolean): void {
+    const room = this.view.contentEl.clientWidth / 2;
+    const clamped = Math.round(Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, width, Math.max(room, MIN_WIDTH))));
+    this.el.setCssProps({ '--ffc-layers-width': `${clamped}px` });
+    if (save) this.plugin.app.saveLocalStorage(WIDTH_KEY, clamped === MIN_WIDTH ? null : String(clamped));
+  }
+
+  private beginResize(down: PointerEvent): void {
+    if (down.button !== 0) return;
+    down.preventDefault();
+    this.stopResize?.();
+    const startWidth = this.el.offsetWidth;
+    this.el.addClass('is-resizing');
+    let width = startWidth;
+    const end = (): void => {
+      stop();
+      this.stopResize = null;
+      this.el.removeClass('is-resizing');
+      this.setWidth(width, true);
+    };
+    const stop = trackPointer(this.el.doc, down.pointerId, {
+      move: (e) => {
+        width = startWidth + e.clientX - down.clientX;
+        this.setWidth(width, false);
+      },
+      up: end,
+      cancel: end,
+    });
+    this.stopResize = end;
+  }
+
   destroy(): void {
+    this.stopResize?.();
     this.clearHover();
     this.el.remove();
     this.showBtn.remove();

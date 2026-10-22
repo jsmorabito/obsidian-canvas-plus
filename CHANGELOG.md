@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The layers panel is wider (241px, as Figma's left panel is) and can be
+  resized by dragging its right edge, up to 450px. Double-click the edge to
+  reset it. The width is remembered.
 - The Linear button moved out of the bottom bar into the actions panel. The
   `I` key still adds an issue.
 
