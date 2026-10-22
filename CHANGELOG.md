@@ -5,14 +5,29 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.11.0]
 
 ### Added
 
-- Discourse Graphs integration, with no changes to that plugin and nothing to set up: enable it and these appear.
-  - **Create discourse node**: a toolbar button (D), an action and a command. Type a title, pick the node type, and the new node's card lands on the canvas, made the way Discourse Graphs makes it (its folder, name format and template).
-  - **Discourse context panel**: opens Discourse Graphs' panel as a widget and keeps it on the selected card's node.
-  - **Convert to…** lists the Discourse Graphs node types next to the note types.
+- **Convert to…** in the selection toolbar and the actions panel: pick a note
+  type, and the selected text cards become notes of that type. The first line of
+  a card is the note's title and the rest its description. Each card is swapped
+  for the note's card in the same place, keeping its arrows, and undo puts it
+  all back.
+- Discourse Graphs integration, with no changes to that plugin and nothing to
+  set up: enable it and these appear.
+  - **Create discourse node**: a toolbar button (`D`), an action and a command.
+    Type a title, pick the node type, and the new node's card lands on the
+    canvas, made the way Discourse Graphs makes it (its folder, name format and
+    template).
+  - **Discourse context panel**: opens Discourse Graphs' panel as a widget and
+    keeps it on the selected card's node.
+  - **Convert to discourse node…** in the selection toolbar and the actions
+    panel, listing the node types.
+
+### Changed
+
+- The actions panel opens above the tab panels, and comment pins sit under them.
 
 ## [1.10.0]
 

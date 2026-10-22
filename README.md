@@ -74,6 +74,10 @@ This relies on Obsidian's undocumented canvas internals, collected in `src/canva
 
 ---
 
+### Convert cards to notes
+
+With Note Types enabled, select text cards and choose **Convert to…** in the selection toolbar (or the Actions panel), then a note type. The first line of each card becomes the note's title and the rest its description; the card is swapped for the note's card, keeping its arrows, and undo reverses it.
+
 ### Discourse Graphs
 
 With the Discourse Graphs plugin enabled (and nothing to set up), Canvas Plus adds:
