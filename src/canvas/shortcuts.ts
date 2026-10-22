@@ -39,6 +39,10 @@ function handle(e: KeyboardEvent, target: ShortcutTarget): false | undefined {
   // A field being typed in, like a search box or a name being edited, keeps every key, Escape included.
   if (e.isComposing || isTypingTarget(e.target)) return undefined;
   if (e.key === 'Escape') return target.escape() ? false : undefined;
+  // Cmd or Ctrl+K opens the actions panel.
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') {
+    return target.runAction('actions') ? false : undefined;
+  }
   if (e.metaKey || e.ctrlKey || e.altKey) return undefined;
   const key = e.key.toLowerCase();
   const action = e.shiftKey ? undefined : actionForKey(key);

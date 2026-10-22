@@ -31,6 +31,9 @@ interface WorkspaceInternals {
 type SplitCtor = new (workspace: unknown, direction: 'vertical' | 'horizontal') => SplitInternals;
 type LeafCtor = new (app: App) => WorkspaceLeaf;
 
+/** The leaf a hosted leaf floats over, so a view in a panel can find its canvas. */
+export const hostLeaves = new WeakMap<WorkspaceLeaf, WorkspaceLeaf>();
+
 export interface HostedLeaf {
   leaf: WorkspaceLeaf;
   el: HTMLElement;
@@ -47,6 +50,7 @@ export function createHostedLeaf(app: App, host: WorkspaceLeaf, onGone: () => vo
   split.getContainer = () => hostInternals.getContainer();
 
   const leaf = new (WorkspaceLeaf as unknown as LeafCtor)(app);
+  hostLeaves.set(leaf, host);
   // A leaf finds its root by walking up its parents rather than asking them, so it needs telling too.
   const leafInternals = leaf as unknown as LeafInternals;
   leafInternals.getRoot = split.getRoot;

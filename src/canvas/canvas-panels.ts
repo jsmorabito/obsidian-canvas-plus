@@ -1,9 +1,10 @@
-import { EventRef, TFile, debounce, setIcon } from 'obsidian';
+import { EventRef, TFile, ViewState, debounce, setIcon } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasViewLike, newId, shieldFromCanvas } from './adapter.ts';
 import { PANEL_ICON } from './icons.ts';
 import { PanelRecord, PanelStore } from './panel-store.ts';
 import { TabPanel } from './tab-panel.ts';
+import { LINEAR_VIEW_TYPE } from './linear-view.ts';
 
 /** Portrait (4:5), like the button's icon. */
 const DEFAULT_WIDTH = 384;
@@ -27,6 +28,7 @@ export function describePanel(record: PanelRecord): string {
   const file = state?.state?.file;
   if (typeof file === 'string' && file) return (file.split('/').pop() ?? file).replace(/\.md$/, '');
   if (!state || state.type === 'empty') return 'New tab';
+  if (state.type === LINEAR_VIEW_TYPE) return 'Linear';
   return state.type.replace(/[-_]/g, ' ').replace(/^./, (c) => c.toUpperCase());
 }
 
@@ -116,7 +118,18 @@ export class CanvasPanels {
     this.onHeldChange();
   }
 
-  add(): void {
+  /** Open a view (a widget) in a panel, or raise the one already open for it. */
+  openView(type: string): void {
+    const open = this.panels.find((p) => p.viewState()?.type === type);
+    if (open) {
+      open.setLayer(++this.layer);
+      this.plugin.app.workspace.setActiveLeaf(open.leaf, { focus: true });
+      return;
+    }
+    this.add({ type, state: {} });
+  }
+
+  add(state?: ViewState): void {
     if (!this.file) return;
     const pane = this.layerEl;
     const width = Math.min(DEFAULT_WIDTH, Math.max(240, pane.clientWidth - 2 * CASCADE_PX));
@@ -127,7 +140,7 @@ export class CanvasPanels {
       x += CASCADE_PX;
       y += CASCADE_PX;
     }
-    const record: PanelRecord = { id: newId(), x, y, width, height };
+    const record: PanelRecord = { id: newId(), x, y, width, height, ...(state ? { state } : {}) };
     this.store.add(this.file.path, record);
     const panel = this.mount(record);
     this.plugin.app.workspace.setActiveLeaf(panel.leaf, { focus: true });

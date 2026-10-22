@@ -14,6 +14,9 @@ type LeafCtor = new (app: App) => WorkspaceLeaf;
 
 const NOT_WIDGETS = new Set(['empty', 'webviewer', 'release-notes']);
 
+/** View types left out of the list for now, such as a beta feature that is turned off. */
+export const hiddenWidgets = new Set<string>();
+
 export interface Widget {
   type: string;
   name: string;
@@ -30,7 +33,7 @@ export function listWidgets(app: App): Widget[] {
   const registry = (app as unknown as { viewRegistry?: ViewRegistryInternals }).viewRegistry;
   if (!registry) return [];
   const fileTypes = new Set(Object.values(registry.typeByExtension));
-  const types = Object.keys(registry.viewByType).filter((t) => !NOT_WIDGETS.has(t) && !fileTypes.has(t));
+  const types = Object.keys(registry.viewByType).filter((t) => !NOT_WIDGETS.has(t) && !hiddenWidgets.has(t) && !fileTypes.has(t));
   const unseen = types.filter((t) => !seen.has(t));
   if (unseen.length > 0) {
     const scratch = new (WorkspaceLeaf as unknown as LeafCtor)(app);

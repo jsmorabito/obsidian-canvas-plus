@@ -6,6 +6,7 @@ import {
 } from './adapter.ts';
 import { FIELD_LINEAR, SIZE_ISSUE_CARD } from './constants.ts';
 import { findFreeSpot } from './free-spot.ts';
+import { stateDot } from './linear-card.ts';
 import { LinearRef, linearNodeText, readLinearRef } from './linear-ref.ts';
 
 /** How long typing pauses before Linear is asked, so a request isn't made for every key. */
@@ -68,32 +69,19 @@ export class LinearPicker extends SuggestModal<LinearIssue> {
   renderSuggestion(issue: LinearIssue, el: HTMLElement): void {
     el.addClass('ffc-picker-row');
     const main = el.createDiv({ cls: 'ffc-issue-suggestion' });
-    const dot = main.createSpan({ cls: 'ffc-issue-state', attr: { 'data-state-type': issue.state?.type ?? 'backlog' } });
-    if (issue.state?.color) dot.setCssProps({ '--ffc-issue-color': issue.state.color });
+    stateDot(main, issue.state);
     main.createSpan({ cls: 'ffc-issue-id', text: issue.identifier });
     main.createSpan({ cls: 'suggestion-title', text: issue.title });
-    if (issue.state) el.createSpan({ cls: 'ffc-note-chip', text: issue.state.name });
   }
 
   onChooseSuggestion(issue: LinearIssue): void {
-    const existing = [...this.canvas.nodes?.values() ?? []].find((n: CanvasNodeLike) => readLinearRef(n)?.id === issue.id);
+    const existing = findIssueNode(this.canvas, issue.id);
     if (existing) {
       focusNode(this.canvas, existing);
       return;
     }
     try {
-      const size = SIZE_ISSUE_CARD;
-      const pos = this.at
-        ? { x: Math.round(this.at.x - size.width / 2), y: Math.round(this.at.y - size.height / 2) }
-        : findFreeSpot(this.canvas, viewportCenter(this.canvas), size);
-      const ref = issueRef(issue);
-      // Known before the card is drawn, so it shows the issue at once.
-      this.plugin.linear.store.put(issue);
-      const node = batch(this.canvas, () => {
-        const added = createTextNode(this.canvas, { pos, size, text: linearNodeText(ref), focus: false });
-        if (added) setExtra(added, FIELD_LINEAR, ref);
-        return added;
-      });
+      const node = addIssueNode(this.plugin, this.canvas, issue, this.at);
       if (!node) return;
       this.onAdded();
       if (this.at) {
@@ -106,4 +94,30 @@ export class LinearPicker extends SuggestModal<LinearIssue> {
       new Notice(`Could not add issue to canvas: ${(err as Error).message}`);
     }
   }
+}
+
+/** The node already showing this issue, if any. */
+export function findIssueNode(canvas: CanvasLike, id: string): CanvasNodeLike | undefined {
+  return [...canvas.nodes?.values() ?? []].find((n: CanvasNodeLike) => readLinearRef(n)?.id === id);
+}
+
+/**
+ * Add a card for an issue, as one undo step. `at` is where its centre goes; without it, the nearest free
+ * spot to the middle of the view.
+ */
+export function addIssueNode(
+  plugin: CanvasPlusPlugin, canvas: CanvasLike, issue: LinearIssue, at: { x: number; y: number } | null,
+): CanvasNodeLike | undefined {
+  const size = SIZE_ISSUE_CARD;
+  const pos = at
+    ? { x: Math.round(at.x - size.width / 2), y: Math.round(at.y - size.height / 2) }
+    : findFreeSpot(canvas, viewportCenter(canvas), size);
+  const ref = issueRef(issue);
+  // Known before the card is drawn, so it shows the issue at once.
+  plugin.linear.store.put(issue);
+  return batch(canvas, () => {
+    const added = createTextNode(canvas, { pos, size, text: linearNodeText(ref), focus: false });
+    if (added) setExtra(added, FIELD_LINEAR, ref);
+    return added;
+  });
 }

@@ -68,3 +68,9 @@ export const FIELD_LINEAR = 'ffcLinear';
 
 /** Linear issue card, the default size of a node showing one. */
 export const SIZE_ISSUE_CARD = { width: 280, height: 110 };
+
+/** Extension field on a Linear issue: the size of its full view, kept while it is shown as a card or link. */
+export const FIELD_EMBED_SIZE = 'ffcEmbedSize';
+
+/** The first size of an issue's full view, big enough for its properties and the start of its description. */
+export const SIZE_ISSUE_EMBED = { width: 360, height: 360 };

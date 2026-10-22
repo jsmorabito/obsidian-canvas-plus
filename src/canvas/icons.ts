@@ -4,6 +4,8 @@ import { addIcon, removeIcon } from 'obsidian';
 export const NOTE_TYPES_ICON = 'ffc-note-types';
 /** Icon id for Linear: a circle cut by two diagonal bars, after its mark. */
 export const LINEAR_ICON = 'ffc-linear';
+/** Icon for the actions panel button: Lucide's command (⌘), after the shortcut that opens it. Obsidian bundles it. */
+export const ACTIONS_ICON = 'command';
 /** Icon id for adding a tab panel: Lucide's file-plus-corner with the dog-ear rounded off like the other corners. */
 export const PANEL_ICON = 'ffc-panel-add';
 /** Icon id for presenting a canvas: Lucide's presentation, which Obsidian doesn't bundle. */

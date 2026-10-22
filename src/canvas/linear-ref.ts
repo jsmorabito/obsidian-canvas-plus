@@ -1,4 +1,4 @@
-import { CanvasNodeLike, getExtra } from './adapter.ts';
+import { CanvasNodeLike } from './adapter.ts';
 import { FIELD_LINEAR } from './constants.ts';
 
 /** What a node saves of the Linear issue it shows. The rest comes from Linear. */
@@ -9,9 +9,17 @@ export interface LinearRef {
   url: string;
 }
 
+/** A canvas file can come from anyone, so only a Linear address is ever opened or linked to. */
+const LINEAR_URL_RE = /^https:\/\/linear\.app\//;
+
+/**
+ * The issue a node shows, or null. `data` is the node's `getData()`, when the caller has already read it; without
+ * it only the node's bag of extra fields is read, which is what this plugin's fields live in and costs no copy,
+ * since this runs for every node on every sweep.
+ */
 export function readLinearRef(node: CanvasNodeLike, data?: Record<string, unknown>): LinearRef | null {
-  const v = getExtra(node, FIELD_LINEAR, data) as Partial<LinearRef> | undefined;
-  return v && typeof v.id === 'string' && typeof v.identifier === 'string' && typeof v.url === 'string'
+  const v = (data ? data[FIELD_LINEAR] : (node.unknownData ?? node.getData?.())?.[FIELD_LINEAR]) as Partial<LinearRef> | undefined;
+  return v && typeof v.id === 'string' && typeof v.identifier === 'string' && typeof v.url === 'string' && LINEAR_URL_RE.test(v.url)
     ? { id: v.id, identifier: v.identifier, url: v.url, title: typeof v.title === 'string' ? v.title : '' }
     : null;
 }

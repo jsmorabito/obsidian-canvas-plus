@@ -6,6 +6,8 @@ const TTL_MS = 5 * 60_000;
 const RETRY_MS = 60_000;
 /** Issues asked for in one go, collected over this long. */
 const BATCH_DELAY_MS = 50;
+/** Issues asked for in one request. */
+const BATCH_SIZE = 50;
 
 /**
  * Issues on canvases, kept in memory. A node saves only the issue's identity; what its card shows (status,
@@ -51,9 +53,14 @@ export class LinearStore {
 
   private async flush(): Promise<void> {
     this.timer = null;
-    const ids = [...this.queued];
+    const all = [...this.queued];
     this.queued.clear();
-    for (const id of ids) this.inflight.add(id);
+    for (const id of all) this.inflight.add(id);
+    // A page of Linear's results is at most 250, so ask in smaller batches, each failing or loading on its own.
+    for (let i = 0; i < all.length; i += BATCH_SIZE) await this.fetch(all.slice(i, i + BATCH_SIZE));
+  }
+
+  private async fetch(ids: string[]): Promise<void> {
     try {
       const found = await this.client.byIds(ids);
       const now = Date.now();

@@ -519,6 +519,85 @@ svg.ffc-ink path.ffc-ink-auto {
   display: none;
 }
 
+/* ── Actions panel ───────────────────────────────────────────────────────── */
+
+/* Core's `.prompt` supplies the look; this only places it, just above the bottom toolbar and centred on it. */
+.ffc-actions.prompt {
+  position: absolute;
+  top: auto;
+  right: auto;
+  bottom: calc(100% + var(--size-4-2));
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  width: min(26em, 90vw);
+  max-width: none;
+  max-height: min(30em, 60vh);
+  margin: 0;
+}
+
+/* Above the pen colours while those show. */
+.canvas-card-menu:has(> .ffc-pen-colors:not([style*="display: none"])) > .ffc-actions {
+  bottom: calc(100% + var(--size-4-2) * 2 + 40px);
+}
+
+.ffc-actions.prompt.is-shown {
+  display: flex;
+}
+
+.ffc-actions .prompt-results {
+  flex: 1;
+  min-height: 0;
+}
+
+.ffc-presenting .ffc-actions {
+  display: none;
+}
+
+/* ── Linear widget (a view in a tab panel) ───────────────────────────────── */
+
+/* Core's nav header, files list and tree rows do the styling; this is only the layout and what core has no class for. */
+.ffc-linear-view {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.ffc-linear-tabs {
+  display: flex;
+  gap: var(--size-4-1);
+}
+
+.ffc-linear-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ffc-linear-row .tree-item-self {
+  gap: var(--size-4-3);
+}
+
+.ffc-linear-row .tree-item-inner {
+  min-width: 0;
+}
+
+.ffc-linear-row-title,
+.ffc-linear-row-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ffc-linear-row-meta {
+  font-size: var(--font-ui-smaller);
+}
+
+.ffc-linear-row.is-placed .tree-item-flair-outer {
+  color: var(--color-green);
+}
+
 /* ── Linear issues (text nodes that show an issue) ───────────────────────── */
 
 /* The issue is drawn in place of the node's own text, in every view. */

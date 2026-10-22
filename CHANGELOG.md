@@ -5,6 +5,21 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Linear widget, a tab panel (**Open Linear panel** in the actions panel, or
+  **Open widget**): lists the issues on the canvas, and searches Linear to add
+  more.
+- Actions panel: an **Actions** button in the bottom bar, and `Cmd`/`Ctrl` + `K`,
+  open a searchable list of actions, with a way into the plugin's settings.
+
+### Changed
+
+- The Linear button moved out of the bottom bar into the actions panel. The
+  `I` key still adds an issue.
+
 ## [1.8.0]
 
 ### Added

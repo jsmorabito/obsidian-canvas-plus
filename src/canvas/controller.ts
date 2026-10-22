@@ -9,8 +9,11 @@ import { LayersPanel } from './layers-panel.ts';
 import { Minimap } from './minimap.ts';
 import { CanvasPanels } from './canvas-panels.ts';
 import { PanelStore } from './panel-store.ts';
-import { CLICK_SLOP_PX, FIELD_KIND, INK_FALLBACK_HEX, SIZE_ISSUE_CARD, SIZE_NOTE_CARD } from './constants.ts';
+import { CLICK_SLOP_PX, FIELD_KIND, INK_FALLBACK_HEX, SIZE_NOTE_CARD } from './constants.ts';
 import { canToggleView, clearNoteCards, decorateNoteCards, fitNodeToCard, noteOfNode, setCardOwner, toggleViews } from './note-card.ts';
+import { LINEAR_VIEW_TYPE } from './linear-view.ts';
+import { ActionsPanel } from './actions-panel.ts';
+import { actionEntries } from './actions-entries.ts';
 import { clearLinearCards, decorateLinearCards } from './linear-card.ts';
 import { LinearPicker } from './linear-picker.ts';
 import { injectLinearButtons } from './linear-menu.ts';
@@ -66,6 +69,7 @@ export class CanvasController {
   readonly focuser: Focuser;
   private tray: Tray;
   private comments: CommentLayer;
+  private actions: ActionsPanel | null = null;
   /** Owns the markdown renderers behind styled link nodes. */
   private component = new Component();
 
@@ -106,13 +110,10 @@ export class CanvasController {
         onNoteClick: () => this.runAction('picker'),
         onPenColor: (color) => this.setPenColor(color),
         onNoteDrop: (pos) => this.dropNoteFromMenu(pos),
-        onLinearClick: () => this.runAction('linear'),
-        onLinearDrop: (pos) => this.openLinearPicker({ x: pos.x + SIZE_ISSUE_CARD.width / 2, y: pos.y + SIZE_ISSUE_CARD.height / 2 }),
       })
       : null;
     this.toolbar?.setActive(this.tool);
     this.toolbar?.setNoteButtonVisible(plugin.hasNoteTypes);
-    this.toolbar?.setLinearButtonVisible(plugin.hasLinear);
     this.toolbar?.setPenColor(this.ink.penColor);
 
     const wrapper = view.canvas!.wrapperEl;
@@ -149,6 +150,15 @@ export class CanvasController {
     // Last: its button joins the toolbar after the drawing tools, and it leaves presses an armed tool took alone.
     this.tray = new Tray(plugin, view, this.tabPanels, menuEl, () => this.sweep());
     this.comments.setTray(this.tray);
+    // After the tray, so its button goes after the tray's.
+    const actionsButton = this.toolbar?.addActionsItem(() => this.runAction('actions'));
+    this.actions = menuEl && actionsButton
+      ? new ActionsPanel(menuEl, actionsButton, () => actionEntries(plugin, view.canvas!, {
+        openLinearPicker: () => { this.openLinearPicker(); },
+        openLinearPanel: () => this.tabPanels.openView(LINEAR_VIEW_TYPE),
+        onChanged: () => this.sweep(),
+      }))
+      : null;
   }
 
   setTool(tool: ToolId): void {
@@ -173,7 +183,12 @@ export class CanvasController {
   /** Returns false when the action isn't available, which lets its shortcut key through to whatever else uses it. */
   runAction(action: ActionId): boolean {
     if (action === 'picker' && this.view.canvas) this.openPicker(this.view.canvas);
-    if (action === 'linear') return this.openLinearPicker();
+    // Off by default (beta): the key is left alone, with no notice. The actions panel explains how to turn it on.
+    if (action === 'linear') return this.plugin.hasLinear && this.openLinearPicker();
+    if (action === 'actions') {
+      this.actions?.toggle();
+      return !!this.actions;
+    }
     return true;
   }
 
@@ -217,6 +232,10 @@ export class CanvasController {
    * bring Obsidian's panels back from focus. Returns whether it did anything.
    */
   escape(): boolean {
+    if (this.actions?.open) {
+      this.actions.hide();
+      return true;
+    }
     if (this.comments.dismiss()) return true;
     if (this.tool !== 'select' || this.cancelDraw) {
       this.setTool('select');
@@ -264,6 +283,7 @@ export class CanvasController {
     this.presenter.destroy();
     this.focuser.destroy();
     this.tray.destroy();
+    this.actions?.destroy();
     this.comments.destroy();
     this.cancelDraw?.();
     this.relations.destroy();

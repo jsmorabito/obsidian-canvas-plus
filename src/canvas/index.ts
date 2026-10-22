@@ -113,6 +113,7 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
     }
   };
   plugin.registerEvent(plugin.app.metadataCache.on('changed', debounce(sweepVisible, 300, true)));
+  plugin.sweepCanvases = sweepVisible;
   plugin.registerInterval(window.setInterval(sweepVisible, 1000));
   // Issues arrive from Linear a moment after their cards are drawn.
   plugin.register(plugin.linear.store.onUpdate(sweepVisible));

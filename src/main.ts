@@ -1,5 +1,7 @@
 import { Plugin } from 'obsidian';
 import { registerCanvasTools } from './canvas/index.ts';
+import { LINEAR_VIEW_TYPE, LinearView } from './canvas/linear-view.ts';
+import { hiddenWidgets } from './canvas/widgets.ts';
 import { LinearClient } from './linear/api.ts';
 import { LinearAuth, PROTOCOL_ACTION } from './linear/oauth.ts';
 import { LinearStore } from './linear/store.ts';
@@ -10,6 +12,8 @@ import { CanvasPlusSettingTab, CanvasPlusSettings, DEFAULT_SETTINGS } from './se
 export class CanvasPlusPlugin extends Plugin {
   pluginData!: PluginData;
   linear!: { auth: LinearAuth; client: LinearClient; store: LinearStore };
+  /** Restyle every open canvas now. Set by the canvas tools. */
+  sweepCanvases: () => void = () => { /* no canvas tools yet */ };
 
   /** Note Types, or a stand-in that turns the typed-note features off when it isn't enabled. */
   get types(): NoteTypesApi {
@@ -28,6 +32,13 @@ export class CanvasPlusPlugin extends Plugin {
   updateConfig(patch: Partial<CanvasPlusSettings>): void {
     this.pluginData.root.settings = { ...this.config, ...patch };
     this.pluginData.save();
+    this.syncLinearWidget();
+  }
+
+  /** The Linear widget is listed under Open widget only while the integration is turned on. */
+  private syncLinearWidget(): void {
+    if (this.config.linearEnabled) hiddenWidgets.delete(LINEAR_VIEW_TYPE);
+    else hiddenWidgets.add(LINEAR_VIEW_TYPE);
   }
 
   /** Whether signed in to Linear (or an API key is set), so Linear issues are available. */
@@ -54,6 +65,9 @@ export class CanvasPlusPlugin extends Plugin {
     this.linear = { auth, client, store: new LinearStore(client) };
     this.registerObsidianProtocolHandler(PROTOCOL_ACTION, (data) => { void auth.finish(data); });
     this.register(() => this.linear.store.destroy());
+    this.registerView(LINEAR_VIEW_TYPE, (leaf) => new LinearView(leaf, this));
+    this.syncLinearWidget();
+    this.register(() => hiddenWidgets.delete(LINEAR_VIEW_TYPE));
     this.addSettingTab(new CanvasPlusSettingTab(this));
     registerCanvasTools(this);
   }

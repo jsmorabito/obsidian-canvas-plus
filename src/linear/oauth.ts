@@ -161,13 +161,19 @@ export class LinearAuth {
       new Notice(`Linear sign-in failed: ${data.error_description ?? data.error ?? 'no code returned'}.`);
       return;
     }
-    const res = await this.post(TOKEN_URL, {
-      grant_type: 'authorization_code',
-      code: data.code,
-      redirect_uri: REDIRECT_URI,
-      client_id: this.store.clientId(),
-      code_verifier: pending.verifier,
-    });
+    let res: TokenResponse;
+    try {
+      res = await this.post(TOKEN_URL, {
+        grant_type: 'authorization_code',
+        code: data.code,
+        redirect_uri: REDIRECT_URI,
+        client_id: this.store.clientId(),
+        code_verifier: pending.verifier,
+      });
+    } catch (err) {
+      new Notice(`Linear sign-in failed: ${(err as Error).message}`);
+      return;
+    }
     if (!res.access_token) {
       new Notice(`Linear sign-in failed: ${res.error_description ?? res.error ?? 'no token returned'}.`);
       return;
@@ -177,9 +183,13 @@ export class LinearAuth {
   }
 
   async signOut(): Promise<void> {
-    const token = this.app.secretStorage.getSecret(ACCESS_SECRET);
+    const access = this.app.secretStorage.getSecret(ACCESS_SECRET);
+    const refresh = this.app.secretStorage.getSecret(REFRESH_SECRET);
     this.clear();
-    if (token) await this.post(REVOKE_URL, { token, token_type_hint: 'access_token' }).catch(() => undefined);
+    // Both tokens, so neither can be used again from a copy.
+    for (const [token, hint] of [[access, 'access_token'], [refresh, 'refresh_token']] as const) {
+      if (token) await this.post(REVOKE_URL, { token, token_type_hint: hint }).catch(() => undefined);
+    }
   }
 
   private save(res: TokenResponse): void {

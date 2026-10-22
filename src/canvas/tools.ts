@@ -46,7 +46,7 @@ export function isPenTool(tool: ToolId): tool is 'marker' | 'highlighter' {
   return tool === 'marker' || tool === 'highlighter';
 }
 
-export type ActionId = 'picker' | 'linear';
+export type ActionId = 'picker' | 'linear' | 'actions';
 
 export interface ActionDef {
   id: ActionId;

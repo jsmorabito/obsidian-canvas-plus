@@ -57,11 +57,15 @@ These need the [Note Types](https://github.com/jsmorabito/obsidian-note-types) p
 
 ![Typed notes as cards, a relation on the edge between them and the relations panel](docs/mockups/notetypes.svg)
 
+**Actions panel (`⌘K`)**  
+The **Actions** button in the bottom bar (or `Cmd`/`Ctrl` + `K`) opens a searchable list of actions: the Linear ones, and a shortcut to this plugin's settings. The ⌘ button sits beside the tray's button. Arrow keys move, `Enter` runs, `Esc` closes.
+
 **With Linear**  
 These are in beta and off by default: turn on **Enable Linear integration (beta)** under **Settings → Canvas Plus**, then sign in. Create an OAuth app in Linear (**Settings → API**), give it the callback URL shown there (`obsidian://canvas-plus-linear`), and enter its client ID. Sign-in uses PKCE, so there is no client secret, and the tokens are kept in Obsidian's secret storage. A personal API key works instead.
 
-- **Add Linear issue (`I`).** Search Linear, or enter an identifier like `ENG-123` or an issue's URL, to add the issue to the canvas. The button next to **Add note** in the bottom bar can also be dragged onto the canvas. An issue already on the canvas is selected instead of added twice.
+- **Add Linear issue (`I`).** Search Linear, or enter an identifier like `ENG-123` or an issue's URL, to add the issue to the canvas. Find it in the **Actions** panel too. An issue already on the canvas is selected instead of added twice.
 - **Create issues from cards.** Select one or more cards and choose **Create Linear issue** in the selection toolbar. A card's first line becomes the title and the rest its description; pick the team and the card turns into the issue. Undo puts the card back, but the issue stays in Linear.
+- **Linear widget.** **Open Linear panel** in the actions panel (or **Open widget** in a new tab panel) opens Linear in a tab panel over the canvas. **On canvas** lists the issues already on this canvas (select one to zoom to it), and **Explore** searches Linear or lists recently updated issues, and adds one with a click.
 - **Card, embed or link.** Issues switch between views the same way note cards do (the toolbar button, or the **Cycle selected canvas note cards and Linear issues between card, embed and link** command): a card with the status, assignee and labels, the full issue with its properties and description, or a one-line link. **Open in Linear** is in the toolbar too.
 
 Canvas files stay standard JSON Canvas, with extra fields kept alongside, so stock Obsidian still opens them.

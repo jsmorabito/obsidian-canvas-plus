@@ -10,7 +10,7 @@ const EMBED_CLASS = 'ffc-issue-embed';
 const PILL_CLASS  = 'ffc-link-pill';
 
 /** What was last drawn into a node, so an unchanged issue isn't redrawn every sweep. */
-const drawn = new WeakMap<CanvasNodeLike, { key: string; issue: LinearIssue | undefined }>();
+const drawn = new WeakMap<CanvasNodeLike, { key: string; stamp: string }>();
 
 /** Nodes whose text editing was turned off here: what they hold is the issue, not text to edit. */
 const locked = new WeakSet<CanvasNodeLike>();
@@ -38,8 +38,11 @@ export function decorateLinearCards(plugin: CanvasPlusPlugin, canvas: CanvasLike
     store.request(ref.id);
     const issue = store.get(ref.id);
     const key = `${mode}|${ref.id}|${ref.identifier}|${ref.title}`;
-    const fresh = drawn.get(node)?.key === key && drawn.get(node)?.issue === issue;
-    drawn.set(node, { key, issue });
+    // By when it last changed, not by the fetched object: a refetch of an unchanged issue must not rebuild the card,
+    // which would send a scrolled embed back to the top.
+    const stamp = issue?.updatedAt ?? '';
+    const fresh = drawn.get(node)?.key === key && drawn.get(node)?.stamp === stamp;
+    drawn.set(node, { key, stamp });
 
     const card = container.querySelector<HTMLElement>(`.${CARD_CLASS}`);
     const embed = container.querySelector<HTMLElement>(`.${EMBED_CLASS}`);
@@ -85,7 +88,7 @@ export function clearLinearCards(canvas: CanvasLike): void {
 }
 
 /** The status marker: a ring for not started, half full for started, full for done, in the status's own colour. */
-function stateDot(parent: HTMLElement, state: LinearIssue['state']): void {
+export function stateDot(parent: HTMLElement, state: LinearIssue['state']): void {
   const dot = parent.createSpan({ cls: 'ffc-issue-state', attr: { 'data-state-type': state?.type ?? 'backlog' } });
   if (state?.color) dot.setCssProps({ '--ffc-issue-color': state.color });
 }

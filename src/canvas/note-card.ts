@@ -2,7 +2,7 @@ import { Component, TFile } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import type { NoteType } from '../note-types.ts';
 import { CanvasLike, CanvasNodeLike, batch, getExtra, nodeBox, patchData } from './adapter.ts';
-import { FIELD_CARD_SIZE, SIZE_ISSUE_CARD, SIZE_NOTE_CARD } from './constants.ts';
+import { FIELD_CARD_SIZE, FIELD_EMBED_SIZE, SIZE_ISSUE_CARD, SIZE_ISSUE_EMBED, SIZE_NOTE_CARD } from './constants.ts';
 import { readLinearRef } from './linear-ref.ts';
 import { readCardContent, renderCard, renderLinkPill, typeLinkColor } from './note-card-content.ts';
 
@@ -66,8 +66,8 @@ export function toggleInfo(modes: ViewMode[]): { label: string; icon: string } {
     : { label: 'Change view', icon: 'repeat' };
 }
 
-function readCardSize(node: CanvasNodeLike): { width: number; height: number } | null {
-  const v = getExtra(node, FIELD_CARD_SIZE) as { width?: unknown; height?: unknown } | undefined;
+function readSize(node: CanvasNodeLike, key: string): { width: number; height: number } | null {
+  const v = getExtra(node, key) as { width?: unknown; height?: unknown } | undefined;
   return v && typeof v.width === 'number' && typeof v.height === 'number' && v.width > 0 && v.height > 0
     ? { width: v.width, height: v.height }
     : null;
@@ -77,6 +77,9 @@ function readCardSize(node: CanvasNodeLike): { width: number; height: number } |
  * Move cards to their next view, as one undo step. Entering the styled link
  * view remembers the node's size, because the node then shrinks to fit the link;
  * leaving it gives that size back.
+ *
+ * A Linear issue keeps a size for each of its views instead: the card and the full issue are different shapes,
+ * so resizing one must not change the other. Leaving a view saves its size, and entering one restores its own.
  */
 export function toggleViews(canvas: CanvasLike, nodes: CanvasNodeLike[]): void {
   if (nodes.length === 0) return;
@@ -86,10 +89,20 @@ export function toggleViews(canvas: CanvasLike, nodes: CanvasNodeLike[]): void {
       const next = NEXT[mode];
       const box = nodeBox(node);
       const patch: Record<string, unknown> = { [FIELD_VIEW]: next === 'card' ? undefined : next };
+      if (readLinearRef(node)) {
+        if (box && mode === 'card') patch[FIELD_CARD_SIZE] = { width: box.width, height: box.height };
+        if (box && mode === 'embed') patch[FIELD_EMBED_SIZE] = { width: box.width, height: box.height };
+        // The link sizes itself to fit; the other two go back to their own.
+        const size = next === 'card' ? readSize(node, FIELD_CARD_SIZE) ?? SIZE_ISSUE_CARD
+          : next === 'embed' ? readSize(node, FIELD_EMBED_SIZE) ?? SIZE_ISSUE_EMBED : null;
+        if (box && size) node.moveAndResize?.({ ...box, ...size });
+        patchData(node, patch);
+        continue;
+      }
       if (next === 'link' && box) patch[FIELD_CARD_SIZE] = { width: box.width, height: box.height };
       if (mode === 'link') {
         patch[FIELD_CARD_SIZE] = undefined;
-        if (box) node.moveAndResize?.({ ...box, ...(readCardSize(node) ?? (readLinearRef(node) ? SIZE_ISSUE_CARD : SIZE_NOTE_CARD)) });
+        if (box) node.moveAndResize?.({ ...box, ...(readSize(node, FIELD_CARD_SIZE) ?? SIZE_NOTE_CARD) });
       }
       patchData(node, patch);
     }
