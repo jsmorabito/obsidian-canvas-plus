@@ -2,6 +2,7 @@ import { ItemView, Notice, SearchComponent, WorkspaceLeaf, setIcon } from 'obsid
 import { LinearIssue, parseIssueRef } from '../linear/api.ts';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasViewLike, asCanvasView, focusNode } from './adapter.ts';
+import { eachFrameUntil } from '../utils/helpers.ts';
 import { openPluginSettings } from './actions-entries.ts';
 import { hostLeaves } from './hosted-leaf.ts';
 import { LINEAR_ICON } from './icons.ts';
@@ -72,7 +73,26 @@ export class LinearView extends ItemView {
     this.registerInterval(window.setInterval(() => this.update(), 1000));
     this.register(this.plugin.linear.store.onUpdate(() => this.update()));
     this.update();
+    // The header may be built a frame after the view opens.
+    eachFrameUntil(() => this.showHeaderIcon(), 10);
     return Promise.resolve();
+  }
+
+  /** Put the Linear icon in the view's header, before its title, whether or not core drew an icon slot there. */
+  private showHeaderIcon(): boolean {
+    const header = this.containerEl.querySelector<HTMLElement>(':scope > .view-header');
+    if (!header) return false;
+    let icon = header.querySelector<HTMLElement>('.view-header-icon');
+    if (!icon) {
+      icon = createDiv({ cls: 'view-header-icon' });
+      const title = header.querySelector('.view-header-title-container');
+      if (title) title.before(icon);
+      else header.prepend(icon);
+    }
+    icon.addClass('ffc-linear-header-icon');
+    icon.empty();
+    setIcon(icon, LINEAR_ICON);
+    return true;
   }
 
   onClose(): Promise<void> {

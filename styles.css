@@ -569,6 +569,19 @@ svg.ffc-ink path.ffc-ink-auto {
   gap: var(--size-4-1);
 }
 
+/* The Linear icon at the left of the widget's header, shown even where core leaves its icon slot hidden. Core's own padding and margin on the slot are dropped so it sits close to the title. */
+.ffc-tab-panel .ffc-linear-header-icon {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  margin: 0 var(--size-2-1) 0 0;
+}
+
+.ffc-linear-header-icon .svg-icon {
+  width: var(--icon-s);
+  height: var(--icon-s);
+}
+
 .ffc-linear-body {
   flex: 1;
   min-height: 0;

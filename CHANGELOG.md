@@ -5,7 +5,7 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.9.0]
 
 ### Added
 
@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Linear shows its own app icon, in the actions panel, the selection toolbar
+  and the widget's header.
 - The layers panel is wider (241px, as Figma's left panel is) and can be
   resized by dragging its right edge, up to 450px. Double-click the edge to
   reset it. The width is remembered.
