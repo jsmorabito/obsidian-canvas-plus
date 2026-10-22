@@ -25,6 +25,7 @@ import { CardMenu } from './card-menu.ts';
 import { Presenter } from './presentation.ts';
 import { Focuser } from './focus.ts';
 import { Tray } from './tray.ts';
+import { CommentLayer } from './comment-layer.ts';
 import { registerToolShortcuts } from './shortcuts.ts';
 import { trackPointer } from './pointer-session.ts';
 import { eachFrameUntil } from '../utils/helpers.ts';
@@ -61,6 +62,7 @@ export class CanvasController {
   readonly presenter: Presenter;
   readonly focuser: Focuser;
   private tray: Tray;
+  private comments: CommentLayer;
   /** Owns the markdown renderers behind styled link nodes. */
   private component = new Component();
 
@@ -81,6 +83,7 @@ export class CanvasController {
       return { left, bottom: corner.width > left ? corner.height : 0 };
     });
     this.ink = new InkTools(view);
+    this.comments = new CommentLayer(view);
     this.cleanups.push(registerToolShortcuts(plugin.app, view, this));
     this.presenter = new Presenter(plugin, view, () => this.setTool('select'));
     // Added after the present button, so it sits just before it in the header.
@@ -139,13 +142,14 @@ export class CanvasController {
     });
     // Last: its button joins the toolbar after the drawing tools, and it leaves presses an armed tool took alone.
     this.tray = new Tray(plugin, view, this.tabPanels, menuEl, () => this.sweep());
+    this.comments.setTray(this.tray);
   }
 
   setTool(tool: ToolId): void {
     this.cancelDraw?.();
     this.tool = tool;
     this.toolbar?.setActive(tool);
-    this.view.contentEl.toggleClass('ffc-tool-placing', isPlacementTool(tool) || isInkTool(tool));
+    this.view.contentEl.toggleClass('ffc-tool-placing', isPlacementTool(tool) || isInkTool(tool) || tool === 'comment');
   }
 
   private setPenColor(color: string): void {
@@ -189,6 +193,7 @@ export class CanvasController {
    * bring Obsidian's panels back from focus. Returns whether it did anything.
    */
   escape(): boolean {
+    if (this.comments.dismiss()) return true;
     if (this.tool !== 'select' || this.cancelDraw) {
       this.setTool('select');
       return true;
@@ -212,6 +217,7 @@ export class CanvasController {
     this.layers.update();
     this.presenter.refresh();
     this.tray.sync();
+    this.comments.sync();
     this.injectKeyImage();
     fitAllFreeText(canvas);
     for (const node of nodes.values()) {
@@ -233,6 +239,7 @@ export class CanvasController {
     this.presenter.destroy();
     this.focuser.destroy();
     this.tray.destroy();
+    this.comments.destroy();
     this.cancelDraw?.();
     this.relations.destroy();
     this.panel.destroy();
@@ -333,6 +340,16 @@ export class CanvasController {
         const end = (): void => { this.cancelDraw = null; };
         this.cancelDraw = tool === 'eraser' ? this.ink.beginErase(e, end) : this.ink.beginDraw(tool, e, end);
       }
+      return;
+    }
+    if (tool === 'comment') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (type !== 'pointerdown' || e.button !== 0) return;
+      const at = toCanvasPoint(this.view.canvas!, e);
+      if (!at) return;
+      this.setTool('select');
+      this.comments.beginDraft(at, e.timeStamp);
       return;
     }
     if (!isPlacementTool(tool)) return;

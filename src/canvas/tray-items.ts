@@ -1,6 +1,7 @@
 import type { CanvasPlusPlugin } from '../main.ts';
 import { Box, CanvasLike, CanvasNodeLike, getCanvasExtra, importNodes, nodeBox, setCanvasExtra } from './adapter.ts';
 import { FIELD_TRAY } from './constants.ts';
+import type { CanvasComment } from './comments.ts';
 import { LayerKind, describe, readingOrder } from './layers-tree.ts';
 
 /**
@@ -10,11 +11,28 @@ import { LayerKind, describe, readingOrder } from './layers-tree.ts';
 export interface TrayItem {
   /** The id of the node it was made from (the group, for a group). */
   id: string;
-  kind: LayerKind;
+  kind: LayerKind | 'comment';
   label: string;
   /** The node first, then what a group holds. */
   nodes: Record<string, unknown>[];
   edges: Record<string, unknown>[];
+  /** Several things taken together, not one node with what it holds: all come back selected. */
+  bundle?: boolean;
+  /** A comment pin held, with its thread: it has no nodes. */
+  comment?: CanvasComment;
+}
+
+/** A comment pin as a tray item. */
+export function commentItem(comment: CanvasComment): TrayItem {
+  const first = comment.thread[0]?.text.split('\n')[0] ?? '';
+  return {
+    id: comment.id,
+    kind: 'comment',
+    label: first.length > 40 ? `${first.slice(0, 40)}…` : first || 'Comment',
+    nodes: [],
+    edges: [],
+    comment,
+  };
 }
 
 const EMPTY: TrayItem[] = [];
@@ -58,8 +76,8 @@ const within = (outer: Box, inner: Box): boolean => outer.x <= inner.x && outer.
   && outer.x + outer.width >= inner.x + inner.width && outer.y + outer.height >= inner.y + inner.height;
 
 /**
- * Turn dragged nodes into tray items: one for each, except that what a dragged group holds goes in with the
- * group (the outermost one, when groups are nested).
+ * Turn dragged nodes into tray items. What a dragged group holds goes in with the group (the outermost one, when
+ * groups are nested). Several things dragged together make one item, so they come back out together.
  */
 export function trayItemsFrom(plugin: CanvasPlusPlugin, canvas: CanvasLike, nodes: CanvasNodeLike[]): TrayItem[] {
   const entries = nodes.flatMap((node) => {
@@ -78,8 +96,20 @@ export function trayItemsFrom(plugin: CanvasPlusPlugin, canvas: CanvasLike, node
     else members.set(owner, [...(members.get(owner) ?? []), entry]);
   }
   const edges = [...(canvas.edges?.values() ?? [])];
-  return [...members.entries()]
-    .sort(([a], [b]) => readingOrder(a, b))
+  const tops = [...members.entries()].sort(([a], [b]) => readingOrder(a, b));
+  if (tops.length > 1) {
+    const all = tops.flatMap(([top, inside]) => [top, ...inside.sort(readingOrder)]);
+    const ids = new Set(all.map((e) => e.node.id));
+    return [{
+      id: all[0].node.id!,
+      kind: 'group',
+      label: `${tops.length} objects`,
+      bundle: true,
+      nodes: all.map((e) => e.data),
+      edges: edges.filter((e) => ids.has(e.from.node.id) || ids.has(e.to.node.id)).map((e) => e.getData()),
+    }];
+  }
+  return tops
     .map(([top, inside]) => {
       const ids = new Set([top.node.id, ...inside.map((e) => e.node.id)]);
       const { kind, label } = describe(plugin, top.node);
@@ -95,9 +125,9 @@ export function trayItemsFrom(plugin: CanvasPlusPlugin, canvas: CanvasLike, node
 
 /**
  * Put an item's nodes back on the canvas with the top-left of their box at `at`, and the edges whose ends are
- * both there. Returns the item's own node. The caller saves and records it for undo.
+ * both there. Returns the nodes put back. The caller saves and records it for undo.
  */
-export function restoreItem(canvas: CanvasLike, item: TrayItem, at: { x: number; y: number }): CanvasNodeLike | undefined {
+export function restoreItem(canvas: CanvasLike, item: TrayItem, at: { x: number; y: number }): CanvasNodeLike[] {
   const box = itemBox(item);
   const dx = Math.round(at.x - box.x);
   const dy = Math.round(at.y - box.y);
@@ -105,5 +135,6 @@ export function restoreItem(canvas: CanvasLike, item: TrayItem, at: { x: number;
   const present = new Set<unknown>([...(canvas.nodes?.keys() ?? []), ...nodes.map((n) => n.id)]);
   const edges = item.edges.filter((e) => present.has(e.fromNode) && present.has(e.toNode));
   importNodes(canvas, nodes, edges);
-  return canvas.nodes?.get(item.id);
+  const ids = new Set(item.nodes.map((n) => n.id));
+  return [...(canvas.nodes?.values() ?? [])].filter((n) => n.id && ids.has(n.id));
 }

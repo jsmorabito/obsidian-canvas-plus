@@ -56,3 +56,6 @@ export const FIELD_LINK_NAME = 'ffcLinkName';
 
 /** Field on the canvas file itself: what's held in its tray, each with its nodes' data. Stored in canvas files, so the name must not change. */
 export const FIELD_TRAY = 'ffcTray';
+
+/** Field on the canvas file itself: the comment pins and their threads. Stored in canvas files, so the name must not change. */
+export const FIELD_COMMENTS = 'ffcComments';

@@ -5,6 +5,21 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0]
+
+### Added
+
+- Comment tool (`K`): click the canvas to drop a comment pin with a message.
+  A pin is a small bubble that previews its thread on hover and opens the full
+  thread on select, with replies, resolve and delete. Comments are saved in
+  the canvas file. Drag a pin to move it; a pin let go over a node attaches to
+  it and moves with it. A pin can be dragged into the tray and back out.
+
+### Changed
+
+- Several things dragged into the tray together are kept as one card, and
+  come back out together, selected.
+
 ## [1.6.2]
 
 ### Changed

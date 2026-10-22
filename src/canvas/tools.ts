@@ -1,6 +1,6 @@
 import { NOTE_TYPES_ICON } from './icons.ts';
 
-export type ToolId = 'select' | 'text' | 'card' | 'group' | 'anchor' | 'marker' | 'highlighter' | 'eraser';
+export type ToolId = 'select' | 'text' | 'card' | 'group' | 'anchor' | 'comment' | 'marker' | 'highlighter' | 'eraser';
 
 export type PlaceTool = 'text' | 'card' | 'group' | 'anchor';
 
@@ -21,6 +21,7 @@ export const TOOLS: readonly ToolDef[] = [
   { id: 'card',        label: 'Card',        icon: 'sticky-note',     key: 'c' },
   { id: 'group',       label: 'Group',       icon: 'frame',           key: 'g' },
   { id: 'anchor',      label: 'Anchor',      icon: 'anchor',          key: 'a' },
+  { id: 'comment',     label: 'Comment',     icon: 'message-circle',  key: 'k' },
   { id: 'marker',      label: 'Marker',      icon: 'pencil',          key: 'm' },
   { id: 'highlighter', label: 'Highlighter', icon: 'highlighter',     key: 'm', shift: true },
   { id: 'eraser',      label: 'Eraser',      icon: 'eraser',          key: 'e' },

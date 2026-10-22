@@ -11,9 +11,17 @@ import { trackPointer } from './pointer-session.ts';
 import { CanvasPanels, HEADER_GRAB_PX, PanelDropTarget, describePanel } from './canvas-panels.ts';
 import { PanelRecord } from './panel-store.ts';
 import { PRESENTING_CLASS } from './presentation.ts';
-import { TrayItem, itemBox, readTray, restoreItem, trayItemsFrom, writeTray } from './tray-items.ts';
+import { TrayItem, commentItem, itemBox, readTray, restoreItem, trayItemsFrom, writeTray } from './tray-items.ts';
+import { CanvasComment, movedTo, readComments, writeComments } from './comments.ts';
 
 const OPEN_KEY = 'ffc-canvas-tray-open';
+/** The theme colours behind core's six canvas colours. */
+const PRESET_VARS: Record<string, string> = {
+  '1': 'var(--color-red)', '2': 'var(--color-orange)', '3': 'var(--color-yellow)',
+  '4': 'var(--color-green)', '5': 'var(--color-cyan)', '6': 'var(--color-purple)',
+};
+/** Canvas units a comment pin's outline takes while it's dragged out of the tray. */
+const PIN_BOX = { width: 40, height: 40 };
 /** Core's menus and controls, and the toolbar the tray is in: a press there never starts a drag of nodes. */
 const CANVAS_UI = '.canvas-card-menu, .canvas-controls, .canvas-menu-container';
 
@@ -270,17 +278,45 @@ export class Tray implements PanelDropTarget {
     this.onChange();
   }
 
+  /** Take a comment pin off the canvas into the tray, as one undo step. */
+  takeComment(comment: CanvasComment): void {
+    const canvas = this.view.canvas;
+    if (!canvas) return;
+    batch(canvas, () => {
+      writeTray(canvas, [...readTray(canvas), commentItem(comment)]);
+      writeComments(canvas, readComments(canvas).filter((c) => c.id !== comment.id));
+    });
+    if (!this.open) this.setOpen(true);
+    this.sync();
+    this.onChange();
+  }
+
+  /** Put a held comment pin back on the canvas, with its tail where its outline was dropped, attached to the node under it. */
+  private restoreComment(canvas: CanvasLike, item: TrayItem, comment: CanvasComment, pos: { x: number; y: number }): void {
+    if (!readTray(canvas).includes(item)) return;
+    const at = { x: pos.x, y: pos.y + PIN_BOX.height };
+    batch(canvas, () => {
+      writeComments(canvas, [...readComments(canvas).filter((c) => c.id !== comment.id), movedTo(canvas, comment, at)]);
+      writeTray(canvas, readTray(canvas).filter((i) => i !== item));
+    });
+    this.sync();
+    this.onChange();
+  }
+
   /** Put an item back on the canvas where its card was dropped, selected. */
   private restore(canvas: CanvasLike, item: TrayItem, at: { x: number; y: number }): void {
     if (!readTray(canvas).includes(item)) return;
-    const node = batch(canvas, () => {
+    const nodes = batch(canvas, () => {
       const restored = restoreItem(canvas, item, at);
       writeTray(canvas, readTray(canvas).filter((i) => i !== item));
       return restored;
     });
-    if (node) {
+    // A single item selects its own node (the group, for a group); several together select them all.
+    const select = item.bundle ? nodes : nodes.filter((n) => n.id === item.id);
+    if (select.length > 0) {
       canvas.deselectAll?.();
-      canvas.selectOnly?.(node);
+      canvas.selectOnly?.(select[0]);
+      for (const n of select.slice(1)) canvas.toggleSelect?.(n);
     }
     this.sync();
     this.onChange();
@@ -292,12 +328,13 @@ export class Tray implements PanelDropTarget {
       cls: 'ffc-tray-card',
       attr: { 'aria-label': `${item.label}\nDrag onto the canvas to put it back`, 'data-tooltip-position': 'bottom' },
     });
-    const color = item.nodes[0]?.color;
+    // Several things together show a colour only if they all share it.
+    const color = item.bundle && item.nodes.some((n) => n.color !== item.nodes[0]?.color) ? undefined : item.nodes[0]?.color;
     if (typeof color === 'string' && color) {
       card.addClass('has-color');
-      card.setCssProps({ '--ffc-tray-color': /^[1-6]$/.test(color) ? `rgb(var(--canvas-color-${color}))` : color });
+      card.setCssProps({ '--ffc-tray-color': PRESET_VARS[color] ?? color });
     }
-    setIcon(card.createSpan({ cls: 'ffc-tray-card-icon' }), LAYER_ICONS[item.kind] ?? 'box');
+    setIcon(card.createSpan({ cls: 'ffc-tray-card-icon' }), item.kind === 'comment' ? 'message-circle' : LAYER_ICONS[item.kind] ?? 'box');
     card.createSpan({ cls: 'ffc-tray-card-label', text: item.label });
     if (inside > 0) card.createSpan({ cls: 'ffc-tray-card-count', text: `+${inside}` });
     card.addEventListener('pointerdown', (e) => this.dragOut(canvas, item, e));
@@ -306,7 +343,7 @@ export class Tray implements PanelDropTarget {
   /** Core's own drag from a menu button: an outline of the item, snapped, put back where it's dropped on the canvas. */
   private dragOut(canvas: CanvasLike, item: TrayItem, e: PointerEvent): void {
     if (e.button !== 0 || isReadonly(canvas) || !canvas.dragTempNode) return;
-    const box = itemBox(item);
+    const box = item.comment ? PIN_BOX : itemBox(item);
     // The strip may have moved since it was last measured (the pen colours lift it).
     this.stripRect = null;
     const watch = this.watchOver(e, canvas);
@@ -325,7 +362,9 @@ export class Tray implements PanelDropTarget {
       },
     });
     canvas.dragTempNode(e, { width: box.width, height: box.height }, (pos) => {
-      if (!onStrip) this.restore(canvas, item, pos);
+      if (onStrip) return;
+      if (item.comment) this.restoreComment(canvas, item, item.comment, pos);
+      else this.restore(canvas, item, pos);
     });
   }
 
