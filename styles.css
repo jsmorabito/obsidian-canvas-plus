@@ -2422,3 +2422,19 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   /* Drawn in the diagram's own units, which no CSS variable measures. */
   stroke-width: 2.5;
 }
+
+.ffc-context-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  margin-top: var(--size-4-2);
+}
+
+.ffc-context-mark-icon {
+  display: inline-flex;
+}
+
+.ffc-context-mark-icon .svg-icon {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}

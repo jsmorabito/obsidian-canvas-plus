@@ -6,6 +6,7 @@ import {
 } from './adapter.ts';
 import { SIZE_NOTE_CARD } from './constants.ts';
 import { findFreeSpot } from './free-spot.ts';
+import { templateFolders } from './template-folders.ts';
 import { createdNoteEffect } from './created-note.ts';
 import { fitNodeToCard, noteOfNode } from './note-card.ts';
 import { SideEffect, batchWithEffect } from './undo-journal.ts';
@@ -41,21 +42,8 @@ export class NotePicker extends SuggestModal<Item> {
     ]);
   }
 
-  /** Template folders (core Templates and Templater), whose notes are scaffolding rather than notes to add. */
-  private templateFolders(): string[] {
-    const app = this.app as unknown as {
-      internalPlugins?: { getPluginById?(id: string): { instance?: { options?: { folder?: string } } } | undefined };
-      plugins?: { plugins?: Record<string, { settings?: { templates_folder?: string } } | undefined> };
-    };
-    const folders = [
-      app.internalPlugins?.getPluginById?.('templates')?.instance?.options?.folder,
-      app.plugins?.plugins?.['templater-obsidian']?.settings?.templates_folder,
-    ];
-    return folders.filter((f): f is string => typeof f === 'string').map((f) => f.replace(/^\/+|\/+$/g, '')).filter(Boolean);
-  }
-
   private typedNotes(): Array<{ file: TFile; type: NoteType }> {
-    const folders = this.templateFolders();
+    const folders = templateFolders(this.app);
     const seen = new Set<string>();
     const out: Array<{ file: TFile; type: NoteType }> = [];
     for (const type of this.plugin.types.getNoteTypes()) {
@@ -87,7 +75,7 @@ export class NotePicker extends SuggestModal<Item> {
     }
     const found = scored.sort((a, b) => b.score - a.score).map((s) => s.item);
     const exact = this.app.metadataCache.getFirstLinkpathDest(q, '');
-    if (exact && exact.extension === 'md' && !this.templateFolders().some((f) => exact.path.startsWith(`${f}/`)) && !notes.some((n) => n.file.path === exact.path)) {
+    if (exact && exact.extension === 'md' && !templateFolders(this.app).some((f) => exact.path.startsWith(`${f}/`)) && !notes.some((n) => n.file.path === exact.path)) {
       found.unshift({ kind: 'note', file: exact, type: null });
     }
     const api = this.plugin.types;

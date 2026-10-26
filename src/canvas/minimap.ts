@@ -2,7 +2,7 @@ import { EventRef, setIcon } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasViewLike, afterCanvasFrame, shieldFromCanvas } from './adapter.ts';
 import { createShowButton, loadOpen, saveOpen } from './floating-panel.ts';
-import { MapTransform, Palette, drawMinimap, fitTransform, mapBounds, toCanvasPos } from './minimap-draw.ts';
+import { MapTransform, Palette, drawNodes, drawViewport, fitTransform, nodeLayerKey, mapBounds, toCanvasPos } from './minimap-draw.ts';
 import { trackPointer } from './pointer-session.ts';
 
 const OPEN_KEY = 'ffc-canvas-minimap-open';
@@ -10,6 +10,8 @@ const OPEN_KEY = 'ffc-canvas-minimap-open';
 const OPEN_CLASS = 'ffc-minimap-open';
 /** Minimap pixels kept clear around the drawing. */
 const PAD_PX = 8;
+/** The least time between minimap draws while the view moves. */
+const DRAW_INTERVAL_MS = 50;
 
 /**
  * A small overview of the whole canvas in the lower left, with a box for the part in view. Press or drag on it
@@ -29,6 +31,10 @@ export class Minimap {
   private transform: MapTransform | null = null;
   /** Held still while dragging, so the map doesn't rescale under the pointer as the view moves. */
   private frozen: MapTransform | null = null;
+  private drawTimer = 0;
+  /** The nodes, drawn once and reused while only the view box moves. */
+  private layer: { el: HTMLCanvasElement; key: string } | null = null;
+  private lastDraw = 0;
   private endDrag: (() => void) | null = null;
   private stopFrames: () => void;
   /** Draws once the minimap is laid out, and again when it changes size. */
@@ -50,12 +56,13 @@ export class Minimap {
     shieldFromCanvas(this.el);
     this.showBtn = createShowButton(view.contentEl, 'ffc-minimap-show', 'map', 'Show minimap', () => this.setOpen(true));
 
-    this.stopFrames = afterCanvasFrame(view.canvas!, () => this.draw());
+    this.stopFrames = afterCanvasFrame(view.canvas!, () => this.drawSoon());
     this.resizeObserver = new ResizeObserver(() => this.draw());
     this.resizeObserver.observe(this.mapEl);
     // The theme's colours only change with the CSS, so they're read again only then.
     this.cssRef = plugin.app.workspace.on('css-change', () => {
       this.palette = null;
+      this.layer = null;
       this.draw();
     });
     this.applyOpen();
@@ -73,6 +80,7 @@ export class Minimap {
   destroy(): void {
     this.endDrag?.();
     this.stopFrames();
+    if (this.drawTimer) this.el.win.clearTimeout(this.drawTimer);
     this.resizeObserver.disconnect();
     this.plugin.app.workspace.offref(this.cssRef);
     this.view.contentEl.removeClass(OPEN_CLASS);
@@ -117,7 +125,25 @@ export class Minimap {
     return { node, accent, colors };
   }
 
+  /**
+   * Core asks for a frame on every pan and zoom step, and a draw reads every node's data, so a big canvas
+   * can't keep up. Draw at most once per interval; the last request is always honoured, so it settles right.
+   */
+  private drawSoon(): void {
+    if (this.drawTimer) return;
+    const wait = DRAW_INTERVAL_MS - (Date.now() - this.lastDraw);
+    if (wait <= 0) {
+      this.draw();
+      return;
+    }
+    this.drawTimer = this.el.win.setTimeout(() => {
+      this.drawTimer = 0;
+      this.draw();
+    }, wait);
+  }
+
   private draw(): void {
+    this.lastDraw = Date.now();
     const canvas = this.canvas;
     if (!this.open || !canvas || !this.el.isShown()) return;
     const width = this.mapEl.clientWidth;
@@ -138,7 +164,23 @@ export class Minimap {
     const t = this.frozen ?? fitTransform(bounds, width, height, PAD_PX);
     this.transform = t;
     this.palette ??= this.readPalette();
-    drawMinimap(ctx, canvas, t, this.palette, viewport);
+    const w = this.mapEl.width;
+    const h = this.mapEl.height;
+    const key = `${w}x${h}|${nodeLayerKey(canvas, t)}`;
+    if (this.layer?.key !== key || this.layer.el.width !== w || this.layer.el.height !== h) {
+      const el = this.layer?.el ?? this.el.doc.createEl('canvas');
+      el.width = w;
+      el.height = h;
+      const layerCtx = el.getContext('2d');
+      if (!layerCtx) return;
+      layerCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      drawNodes(layerCtx, canvas, t, this.palette);
+      this.layer = { el, key };
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(this.layer.el, 0, 0);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    drawViewport(ctx, t, this.palette, viewport);
   }
 
   private pointAt(e: PointerEvent, t: MapTransform): { x: number; y: number } {

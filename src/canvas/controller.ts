@@ -1,7 +1,7 @@
 import type { CanvasPlusPlugin } from '../main.ts';
 import { Component, Notice } from 'obsidian';
 import {
-  CanvasLike, CanvasNodeLike, CanvasViewLike, getExtra, isElement, patchData, selectedNodes, setInsets, toCanvasPoint, watchSelection,
+  CanvasLike, CanvasNodeLike, CanvasViewLike, afterCanvasFrame, getExtra, isElement, patchData, selectedNodes, setInsets, toCanvasPoint, watchSelection,
 } from './adapter.ts';
 import { ContextPanel } from './context-panel.ts';
 import { attachUndoJournal } from './undo-journal.ts';
@@ -48,6 +48,8 @@ import type { ProviderId } from '../issues/types.ts';
 import { ActionId, isInkTool, isPlacementTool, PlaceTool, ToolId } from './tools.ts';
 
 /** Obsidian's own controls and menus live inside the canvas wrapper; a tool must never treat clicks on them as drawing. */
+/** How long after core's last frame the view counts as still. */
+const IDLE_MS = 300;
 const NATIVE_CANVAS_UI = '.canvas-controls, .canvas-card-menu, .canvas-menu-container, .ffc-mm-toolbar';
 
 let warnedNoMenu = false;
@@ -68,6 +70,8 @@ export class CanvasController {
   private toolbar: CardMenu | null;
   private ghost: HTMLElement | null = null;
   private cleanups: Array<() => void> = [];
+  /** When core last drew a frame, so the timer's sweep can wait out a pan or zoom. */
+  private lastFrame = 0;
   private dgContext: DgContext;
   private cancelDraw: (() => void) | null = null;
   private relations: RelationFlow;
@@ -115,6 +119,7 @@ export class CanvasController {
     this.presenter = new Presenter(plugin, view, () => this.setTool('select'));
     // Added after the present button, so it sits just before it in the header.
     this.focuser = new Focuser(plugin, view);
+    this.cleanups.push(afterCanvasFrame(view.canvas!, () => { this.lastFrame = performance.now(); }));
     this.cleanups.push(attachUndoJournal(view.canvas!, plugin.app));
     this.cleanups.push(keepMenuClearOfLabels(view.canvas!));
     this.cleanups.push(watchSelection(view.canvas!, () => {
@@ -307,6 +312,11 @@ export class CanvasController {
   }
 
   /** Tag node elements so CSS can style them: free text has no card chrome, note cards get a type chip. */
+  /** The timer's sweep: held back while the view is moving, as a sweep touches every node and would stutter the pan. */
+  sweepWhenIdle(): void {
+    if (performance.now() - this.lastFrame > IDLE_MS) this.sweep();
+  }
+
   sweep(): void {
     const canvas = this.view.canvas;
     const nodes = canvas?.nodes;

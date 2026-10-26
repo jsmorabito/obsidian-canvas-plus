@@ -28,6 +28,10 @@ export class CommentLayer {
   private cleanups: Array<() => void> = [];
   private endDrag: (() => void) | null = null;
   private tray: Tray | null = null;
+  /** Where the canvas sits in this layer, and how wide it is. Reading it forces a layout, so it's kept until a resize. */
+  private frame: { left: number; top: number; width: number } | null = null;
+  /** What each pin was last given, so a frame that didn't move it writes nothing. */
+  private lastPlace = new WeakMap<HTMLElement, string>();
 
   constructor(private view: CanvasViewLike) {
     const canvas = view.canvas!;
@@ -39,6 +43,10 @@ export class CommentLayer {
     };
     canvas.wrapperEl.addEventListener('pointerdown', away, true);
     this.cleanups.push(() => canvas.wrapperEl.removeEventListener('pointerdown', away, true));
+    const resizes = new ResizeObserver(() => { this.frame = null; });
+    resizes.observe(canvas.wrapperEl);
+    resizes.observe(this.el);
+    this.cleanups.push(() => resizes.disconnect());
     this.cleanups.push(afterCanvasFrame(canvas, () => this.sync()));
     this.sync();
   }
@@ -101,16 +109,21 @@ export class CommentLayer {
     if (this.placed.size === 0) return;
     const bbox = this.canvas.getViewportBBox?.();
     if (!bbox) return;
-    const wrap = this.canvas.wrapperEl.getBoundingClientRect();
-    const host = this.el.getBoundingClientRect();
-    const zoom = wrap.width / (bbox.maxX - bbox.minX);
+    if (!this.frame) {
+      const wrap = this.canvas.wrapperEl.getBoundingClientRect();
+      const host = this.el.getBoundingClientRect();
+      this.frame = { left: wrap.left - host.left, top: wrap.top - host.top, width: wrap.width };
+    }
+    const { left, top, width } = this.frame;
+    const zoom = width / (bbox.maxX - bbox.minX);
     if (!Number.isFinite(zoom) || zoom <= 0) return;
     for (const [pin, placement] of this.placed) {
       const at = pinPoint(this.canvas, placement);
-      pin.setCssProps({
-        '--ffc-x': `${(at.x - bbox.minX) * zoom + wrap.left - host.left}px`,
-        '--ffc-y': `${(at.y - bbox.minY) * zoom + wrap.top - host.top}px`,
-      });
+      const x = `${(at.x - bbox.minX) * zoom + left}px`;
+      const y = `${(at.y - bbox.minY) * zoom + top}px`;
+      if (this.lastPlace.get(pin) === `${x} ${y}`) continue;
+      this.lastPlace.set(pin, `${x} ${y}`);
+      pin.setCssProps({ '--ffc-x': x, '--ffc-y': y });
     }
   }
 

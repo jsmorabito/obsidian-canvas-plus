@@ -5,6 +5,21 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.2]
+
+### Added
+
+- **Mark as… in the relations panel.** When a note card has no relations yet,
+  the panel offers **Mark as…**: pick a relation, then a note (any note, or
+  one note type's). The relation is written to both notes and the note's card
+  and a labelled edge are added to the canvas. One undo step takes it all back.
+
+### Fixed
+
+- **Lag while panning and zooming.** The minimap no longer re-reads every
+  node's data on each frame, comment pins no longer force a layout on each
+  frame, and the periodic refresh waits until the view is still.
+
 ## [1.13.1]
 
 ### Added

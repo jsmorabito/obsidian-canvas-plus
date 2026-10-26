@@ -1,4 +1,4 @@
-import { TFile, setIcon } from 'obsidian';
+import { Notice, TFile, setIcon } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import type { NoteType, RelationType } from '../note-types.ts';
 import {
@@ -7,7 +7,9 @@ import {
 } from './adapter.ts';
 import { PLACE_GAP, SIZE_NOTE_CARD } from './constants.ts';
 import { fitNodeToCard, noteOfNode } from './note-card.ts';
-import { NoteRef, noteRefFor } from './relation-logic.ts';
+import { openMarkAsMenu } from './mark-as-menu.ts';
+import { NoteRef, addedRelationEffect, noteRefFor } from './relation-logic.ts';
+import { SideEffect, batchWithEffect } from './undo-journal.ts';
 
 /** Gap between the selected card and the column its related notes are added in. */
 const COLUMN_GAP = 240;
@@ -131,7 +133,18 @@ export class ContextPanel {
     this.titleLink(header, ref.file.basename, ref.file, () => false);
 
     if (groups.length === 0) {
-      this.el.createDiv({ cls: 'ffc-context-empty', text: 'No relations yet.' });
+      const empty = this.el.createDiv({ cls: 'ffc-context-empty' });
+      empty.createDiv({ text: 'No relations yet.' });
+      if (this.plugin.types.getRelationTypes().length > 0) {
+        const mark = empty.createEl('button', { cls: 'ffc-context-mark' });
+        setIcon(mark.createSpan({ cls: 'ffc-context-mark-icon' }), 'link');
+        mark.appendText('Mark as…');
+        mark.addEventListener('click', (e) => {
+          openMarkAsMenu(this.plugin, ref.file, { x: e.clientX, y: e.clientY }, (target, rt) => {
+            void this.markAs(canvas, ref, target, rt);
+          });
+        });
+      }
       return;
     }
     for (const group of groups) {
@@ -177,11 +190,28 @@ export class ContextPanel {
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
+  /**
+   * Relate the selected note to `target` from the empty state: written to both notes, and the target's card
+   * and edge put on the canvas, as one undo step that also takes the relation back out of the notes.
+   */
+  private async markAs(canvas: CanvasLike, ref: { node: CanvasNodeLike } & NoteRef, target: TFile, rt: RelationType): Promise<void> {
+    try {
+      const sides = await this.plugin.types.addRelation(ref.file, target, rt);
+      const added = sides.forward || sides.reverse;
+      if (!added) new Notice(`${ref.file.basename} is already related to ${target.basename}.`);
+      const effect = added ? addedRelationEffect(this.plugin, ref.file, target, rt, sides, false) : null;
+      const group: Group = { key: '', title: '', rt, outgoing: true, items: [] };
+      this.bringOn(canvas, ref.node, group, { file: target, type: undefined }, effect);
+    } catch (err) {
+      new Notice(`Could not add the relation: ${(err as Error).message}`);
+    }
+  }
+
   /** One undo step: the card (unless it's already there) and the edge, labelled with the relation as it really runs. */
-  private bringOn(canvas: CanvasLike, selected: CanvasNodeLike, group: Group, item: Item): void {
+  private bringOn(canvas: CanvasLike, selected: CanvasNodeLike, group: Group, item: Item, effect: SideEffect | null = null): void {
     const box = nodeBox(selected);
     if (!box) return;
-    batch(canvas, () => {
+    batchWithEffect(canvas, effect, () => {
       let other = this.nodeFor(canvas, item.file);
       if (!other) {
         other = createFileNode(canvas, { pos: this.nextInColumn(canvas, box), size: SIZE_NOTE_CARD, file: item.file });

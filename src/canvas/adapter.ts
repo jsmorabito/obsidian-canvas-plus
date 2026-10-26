@@ -10,6 +10,8 @@ export interface CanvasNodeLike {
   id?: string;
   nodeEl?: HTMLElement;
   text?: string;
+  /** Core's colour preset ('1' to '6') or a CSS colour; unset for none. */
+  color?: string;
   /** Set on file nodes. */
   file?: TFile;
   /** A file node's embedded note view, loaded on demand. `dirty` means it holds edits not yet saved. */

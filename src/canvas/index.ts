@@ -137,7 +137,11 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
   };
   plugin.registerEvent(plugin.app.metadataCache.on('changed', debounce(sweepVisible, 300, true)));
   plugin.sweepCanvases = sweepVisible;
-  plugin.registerInterval(window.setInterval(sweepVisible, 1000));
+  plugin.registerInterval(window.setInterval(() => {
+    for (const controller of controllers.values()) {
+      if (controller.view.containerEl.isShown()) controller.sweepWhenIdle();
+    }
+  }, 1000));
   // Issues arrive from their service a moment after their cards are drawn.
   for (const id of PROVIDER_IDS) plugin.register(plugin.issues[id].store.onUpdate(sweepVisible));
 

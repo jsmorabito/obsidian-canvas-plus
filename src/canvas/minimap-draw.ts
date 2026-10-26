@@ -68,7 +68,23 @@ function colorOf(data: Record<string, unknown>, palette: Palette): string {
 }
 
 /** Draw every node and the box of what's in view. `ctx` is already scaled to CSS pixels and cleared. */
-export function drawMinimap(ctx: CanvasRenderingContext2D, canvas: CanvasLike, t: MapTransform, palette: Palette, viewport: Bounds | null): void {
+/**
+ * What the node layer looks like, without reading any node's data: where each node is, its colour and whether
+ * it's selected. Equal keys mean `drawNodes` would draw the same picture, so a pan or zoom that doesn't move
+ * the map can reuse it.
+ */
+export function nodeLayerKey(canvas: CanvasLike, t: MapTransform): string {
+  const selection = canvas.selection ?? new Set<object>();
+  const parts: Array<string | number | undefined> = [t.scale, t.dx, t.dy];
+  for (const node of canvas.nodes?.values() ?? []) {
+    const box = nodeBox(node);
+    if (box) parts.push(box.x, box.y, box.width, box.height, node.color, selection.has(node) ? 1 : 0);
+  }
+  return parts.join('|');
+}
+
+/** The nodes alone, on a transparent map. */
+export function drawNodes(ctx: CanvasRenderingContext2D, canvas: CanvasLike, t: MapTransform, palette: Palette): void {
   const selection = canvas.selection ?? new Set<object>();
   // Each node's data is read once: this runs every frame while the view moves.
   const items = [...(canvas.nodes?.values() ?? [])].flatMap((node) => {
@@ -112,6 +128,11 @@ export function drawMinimap(ctx: CanvasRenderingContext2D, canvas: CanvasLike, t
       ctx.strokeRect(x - 0.5, y - 0.5, w + 1, h + 1);
     }
   }
+  ctx.globalAlpha = 1;
+}
+
+/** The box for the part of the canvas in view. */
+export function drawViewport(ctx: CanvasRenderingContext2D, t: MapTransform, palette: Palette, viewport: Bounds | null): void {
   if (viewport) {
     const x = viewport.minX * t.scale + t.dx;
     const y = viewport.minY * t.scale + t.dy;
