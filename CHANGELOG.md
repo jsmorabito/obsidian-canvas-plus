@@ -5,13 +5,20 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.13.0]
+## [1.13.1]
 
 ### Added
 
 - **Note type icon on cards.** A note card now shows its note type's link icon
   beside the title, in the type's link colour, as a styled link does. It
   appears when the type has **Style note links** and **Show link icon** on.
+  This was meant for 1.13.0, which was published without it.
+
+## [1.13.0]
+
+### Changed
+
+- Version bump only; the release did not include its code changes. See 1.13.1.
 
 ## [1.12.2]
 

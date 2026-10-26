@@ -1,4 +1,4 @@
-import { App, Component, MarkdownRenderer, TFile } from 'obsidian';
+import { App, Component, MarkdownRenderer, TFile, getIcon } from 'obsidian';
 import type { NoteType } from '../note-types.ts';
 import { resolveLinktext, stringifyFrontmatterValue } from '../utils/helpers.ts';
 import { displayValue } from './field-format.ts';
@@ -27,6 +27,8 @@ export interface CardField {
 
 export interface CardContent {
   title: string;
+  /** Lucide id of the type's link icon, shown beside the title, when the type styles its links with an icon. */
+  icon?: string;
   image: KeyImage | null;
   fields: CardField[];
 }
@@ -72,14 +74,18 @@ export async function readCardContent(app: App, file: TFile, type: NoteType): Pr
     const value = key ? displayValue(frontmatter?.[key]) : '';
     return value ? [{ label: f.label?.trim() || key, value }] : [];
   });
-  return { title: file.basename, image: findKeyImage(app, file, type, frontmatter, firstBlock), fields };
+  const icon = type.styledLinks && type.showLinkIcon ? type.linkIcon?.trim() : '';
+  return { title: file.basename, icon: icon || undefined, image: findKeyImage(app, file, type, frontmatter, firstBlock), fields };
 }
 
 /** Fill `card` (cleared first) with the key image, if any, the title, and the type's configured properties. */
 export function renderCard(card: HTMLElement, content: CardContent): void {
   card.empty();
   if (content.image) card.createEl('img', { cls: 'ffc-note-card-img', attr: { src: content.image.src, alt: '' } });
-  card.createDiv({ cls: 'ffc-note-card-title', text: content.title });
+  const heading = card.createDiv({ cls: 'ffc-note-card-heading' });
+  const iconSvg = content.icon ? getIcon(content.icon) : null;
+  if (iconSvg) heading.createSpan({ cls: 'ffc-status-icon ffc-link-icon ffc-note-card-icon' }).appendChild(iconSvg);
+  heading.createDiv({ cls: 'ffc-note-card-title', text: content.title });
   if (content.fields.length === 0) return;
   const fields = card.createDiv({ cls: 'ffc-note-card-fields' });
   for (const field of content.fields) {

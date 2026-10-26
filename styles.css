@@ -372,8 +372,26 @@ svg.ffc-ink path.ffc-ink-auto {
   flex-shrink: 0;
 }
 
-.ffc-note-card-title {
+/* The type's link icon beside the title, as in a styled link. */
+.ffc-note-card-heading {
   flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-4-1);
+}
+
+.ffc-note-card-heading .ffc-note-card-icon {
+  flex: none;
+  margin: 0;
+  /* Centre the icon on the title's first line. */
+  height: calc(var(--font-ui-large) * var(--line-height-tight));
+  color: var(--ffc-note-link-color, var(--text-normal));
+  top: 0;
+}
+
+.ffc-note-card-title {
+  flex: 1;
+  min-width: 0;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;

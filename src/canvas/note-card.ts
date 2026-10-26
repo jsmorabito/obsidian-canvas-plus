@@ -154,7 +154,7 @@ export function decorateNoteCards(
     card ??= container.createDiv({ cls: CARD_CLASS });
     card.setAttribute('data-ffc-image-fit', type.canvasImageFit ?? 'fill');
     // Re-render only when the note, its type, or the type's card settings changed.
-    const key = `${file.path}|${file.stat.mtime}|${type.id}|${type.imageKey ?? ''}|${JSON.stringify(type.canvasFields ?? [])}`;
+    const key = `${file.path}|${file.stat.mtime}|${type.id}|${type.imageKey ?? ''}|${JSON.stringify(type.canvasFields ?? [])}|${type.styledLinks}|${type.showLinkIcon}|${type.linkIcon ?? ''}`;
     if (drawn.get(node)?.key === key && card.childElementCount > 0) continue;
     drawn.set(node, { key });
     void readCardContent(plugin.app, file, type)
