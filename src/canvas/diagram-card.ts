@@ -125,6 +125,9 @@ export function decorateDiagrams(plugin: CanvasPlusPlugin, canvas: CanvasLike, o
       clearDiagram(node);
       continue;
     }
+    // Obsidian takes a node's element out of the page while it is off screen. Drawing into it then would only pile
+    // up drawings nothing shows, so the node is drawn when it comes back.
+    if (!el.isConnected) continue;
     el.setAttribute('data-ffc-diagram', '');
     el.toggleAttribute('data-ffc-mindmap', /^\s*mindmap\b/.test(diagram.source));
     el.toggleAttribute('data-ffc-flowchart', /^\s*(?:flowchart|graph)\b/.test(diagram.source.replace(/^\s*---[\s\S]*?\n---/, '')));
@@ -144,6 +147,9 @@ export function decorateDiagrams(plugin: CanvasPlusPlugin, canvas: CanvasLike, o
     }
     // Obsidian rebuilds a node's content when its text changes, which takes the drawing with it.
     current?.mounted.destroy();
+    current?.host.remove();
+    // Any drawing left from before (this node's, or a previous load of the plugin's) would sit under the new one.
+    for (const stale of Array.from(container.querySelectorAll(`:scope > .${CLASS}`))) stale.remove();
     const host = container.createDiv({ cls: CLASS });
     const entry: Drawn = { host, mounted: undefined as unknown as Mounted, source: diagram.source, links: diagram.links ?? {} };
     entry.mounted = mountDiagram(host, diagram.source, () => entry.links);

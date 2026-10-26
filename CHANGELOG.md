@@ -5,6 +5,17 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.1]
+
+### Fixed
+
+- **Lag and smeared diagrams.** Diagram cards that were off screen got a new
+  drawing every second, never removing the old one, so a long session piled up
+  over a thousand drawings per card. Panning one back into view froze the
+  canvas for up to a second, and the stacked drawings looked smeared. Off-screen
+  cards are now skipped and drawn once when they return, and any drawings left
+  over are cleared.
+
 ## [1.14.0]
 
 ### Added
