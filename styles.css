@@ -2382,3 +2382,25 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   stroke-width: var(--size-2-1);
   stroke-linecap: round;
 }
+
+/*
+ * While choosing where a signpost leads, the cursor is a crosshair over everything on the canvas. It is forced
+ * because core and the diagram cards each set their own (a grab hand on objects, a pointer on diagram nodes) on
+ * selectors that are hard to match one by one.
+ */
+.canvas-wrapper.ffc-signpost-picking,
+.canvas-wrapper.ffc-signpost-picking * {
+  cursor: crosshair !important;
+}
+
+/* What a click would pick is outlined: an object, or a node inside a diagram card. */
+.ffc-signpost-picking .canvas-node.ffc-signpost-hover .canvas-node-container {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 var(--size-2-1) var(--interactive-accent);
+}
+
+.ffc-signpost-picking .ffc-diagram .pele-node.ffc-signpost-hover :is(rect, circle, ellipse, path, polygon) {
+  stroke: var(--interactive-accent);
+  /* Drawn in the diagram's own units, which no CSS variable measures. */
+  stroke-width: 2.5;
+}

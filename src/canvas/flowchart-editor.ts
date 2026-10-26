@@ -6,7 +6,7 @@ import { TypeSource, createNoteFromText } from './convert-card.ts';
 import { diagramHost } from './diagram-card.ts';
 import { DiagramLinks, readDiagram } from './diagram-data.ts';
 import { addExportItems } from './diagram-export.ts';
-import { plainText } from './diagram-links.ts';
+import { plainText, webLinkIn, webLinkText } from './diagram-links.ts';
 import {
   EdgeStyle, FLOW_SHAPES, FlowShape, Flowchart, addEdge, addFirstNode, addNode, colorClassOf, descendantsOf, edgeLabelOf, edgeStyleOf, labelOf,
   moveAmongSiblings, nodeIds, parentOf, readFlowchart, removeEdge, removeNode, renameNode, reparentNode, setDirection, setEdgeLabel,
@@ -18,10 +18,12 @@ import { DotSpec } from './floating-tools.ts';
 import { openInPlaceField } from './in-place-field.ts';
 import { createIssueFromText } from './issue-create.ts';
 import { LinkPicker } from './link-picker.ts';
-import { TEXT_FORMATS, TextFormat, toggleFormat } from './mindmap-format.ts';
+import { addSignpostButtons, openSignpostMenu } from './signpost.ts';
+import { UrlPrompt } from './url-prompt.ts';
+import { TEXT_FORMATS, TextFormat, formatsOn, toggleFormat, wrapFormats } from './mindmap-format.ts';
 import { colorFromToken, colorToken } from './node-colors.ts';
 import { trackPointer } from './pointer-session.ts';
-import { ShapeOption, addColorButton, addCreateButtons, addFormatButtons, addShapeButton, toolButton } from './toolbar-parts.ts';
+import { ShapeOption, addColorButton, addCreateButtons, addFormatButtons, addLinkButton, addShapeButton, toolButton } from './toolbar-parts.ts';
 import type { SideEffect } from './undo-journal.ts';
 
 const CARD = '.canvas-node[data-ffc-flowchart]';
@@ -401,6 +403,12 @@ export class FlowchartEditor extends DiagramEditorBase {
     return [spec('Add node after', at[forward], 'after'), spec('Add node before', at[OPPOSITE[forward]], 'before'), spec('Add branch', at[across], 'branch')];
   }
 
+  /** Draw the toolbar again, as what it offers has changed. */
+  private redrawTools(): void {
+    this.tools.clear();
+    this.paint();
+  }
+
   private fillNodeBar(bar: HTMLElement, live: Live, id: string): void {
     const { flow } = live;
     addColorButton(bar, {
@@ -408,7 +416,9 @@ export class FlowchartEditor extends DiagramEditorBase {
       pick: (color) => this.change((now) => setNodeColorClass(now.flow, id, colorToken(color) || null)),
     });
     addShapeButton(bar, SHAPE_OPTIONS, shapeOfNode(flow, id), (shape) => this.change((now) => setNodeShape(now.flow, id, shape)));
-    addFormatButtons(bar, (format) => isOn(labelOf(flow, id), format), (format) => this.applyFormat(format), FLOW_FORMATS);
+    addFormatButtons(bar, (format) => this.formatOn(live, id, format), (format) => this.applyFormat(format), FLOW_FORMATS);
+    addLinkButton(bar, !!this.webLinkOf(live, id), () => this.linkUrl());
+    addSignpostButtons(bar, this.plugin, this.canvas, { node: live.node, part: id }, () => this.redrawTools());
     addCreateButtons(bar, this.plugin, { note: (source) => this.createNote(source), issue: (provider) => this.createIssue(provider) });
   }
 
@@ -537,13 +547,24 @@ export class FlowchartEditor extends DiagramEditorBase {
     }, FLOW_FORMATS);
   }
 
+  /** Whether a format is on for the node's text. A web link is written as a wikilink, but isn't a link to a note. */
+  private formatOn(live: Live, id: string, format: TextFormat): boolean {
+    if (format.id === 'wikilink' && this.webLinkOf(live, id)) return false;
+    return isOn(labelOf(live.flow, id), format);
+  }
+
+  /** The link a node's text has when it goes to a web address. */
+  private webLinkOf(live: Live, id: string): { name: string; url: string } | undefined {
+    return webLinkIn(labelOf(live.flow, id), readDiagram(live.node)?.links);
+  }
+
   /** Turn a format on or off for the node's text. A wikilink is turned on by picking the note it goes to. */
   private applyFormat(format: TextFormat): void {
     const live = this.current();
     if (!live || live.pick.kind !== 'node') return;
     const { id } = live.pick;
     const text = labelOf(live.flow, id);
-    if (format.id === 'wikilink' && !isOn(text, format)) {
+    if (format.id === 'wikilink' && !this.formatOn(live, id, format)) {
       this.linkNote(live, id);
       return;
     }
@@ -559,6 +580,30 @@ export class FlowchartEditor extends DiagramEditorBase {
 
   private linkNote(live: Live, id: string): void {
     new LinkPicker(this.view.app, this.view.file?.path ?? '', plainText(labelOf(live.flow, id)), (file) => this.applyNoteLink(id, file, null)).open();
+  }
+
+  /** Ask for a web address, and make the node's text a link to it (or take the link away when it is left empty). */
+  private linkUrl(): void {
+    const live = this.current();
+    if (!live || live.pick.kind !== 'node') return;
+    const { id } = live.pick;
+    const old = this.webLinkOf(live, id);
+    new UrlPrompt(this.view.app, old?.url ?? '', (url) => {
+      const now = this.current();
+      if (!now || now.node !== live.node || !nodeIds(now.flow).includes(id)) return;
+      const diagram = readDiagram(now.node);
+      const links = { ...(diagram?.links ?? {}) };
+      if (old) delete links[old.name];
+      const label = labelOf(now.flow, id);
+      const formats = formatsOn(label, FLOW_FORMATS);
+      const words = plainText(label);
+      if (!url) {
+        if (old) this.change((c) => renameNode(c.flow, id, wrapFormats(words, formats)), { links });
+        return;
+      }
+      const link = webLinkText(words, diagram?.source ?? '', links, old?.name);
+      this.change((c) => renameNode(c.flow, id, wrapFormats(link.text, formats)), { links: { ...links, [link.name]: url } });
+    }).open();
   }
 
   /** Make a note of one of the plugin's types from the node's text, and link the node to it. */
@@ -612,8 +657,9 @@ export class FlowchartEditor extends DiagramEditorBase {
       item('edit', 'Rename', 'pencil', () => this.rename());
       item('edit', 'Color…', 'palette', () => press('Color'));
       item('edit', 'Shape…', 'shapes', () => press('Shape'));
-      const text = labelOf(live.flow, id);
-      for (const format of FLOW_FORMATS) item('format', format.label, format.icon, () => this.applyFormat(format), isOn(text, format));
+      for (const format of FLOW_FORMATS) item('format', format.label, format.icon, () => this.applyFormat(format), this.formatOn(live, id, format));
+      item('format', 'Link to web address…', 'link', () => this.linkUrl());
+      item('format', 'Signpost…', 'signpost', () => openSignpostMenu(this.plugin, this.canvas, { node: live.node, part: id }, e, () => this.redrawTools()));
       if (this.plugin.hasNoteTypes) item('create', 'Convert to…', 'file-plus', () => this.createNote('notes'));
       if (this.plugin.hasDiscourseGraphs) item('create', 'Convert to discourse node…', 'file-plus', () => this.createNote('discourse'));
       if (this.plugin.hasIssues('linear')) item('create', 'Create Linear issue', 'square-arrow-out-up-right', () => this.createIssue('linear'));

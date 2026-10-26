@@ -113,6 +113,17 @@ export function addFormatButtons(
   }
 }
 
+/** A button that asks for a web address the node's text opens. It is lit when the node already has one. */
+export function addLinkButton(bar: HTMLElement, isOn: boolean, run: () => void): void {
+  const button = toolButton(bar, 'Link to web address');
+  setIcon(button, 'link');
+  if (isOn) button.addClass('is-active');
+  button.addEventListener('click', (e) => {
+    e.stopPropagation();
+    run();
+  });
+}
+
 export interface CreateActions {
   note: (source: TypeSource) => void;
   issue: (provider: ProviderId) => void;

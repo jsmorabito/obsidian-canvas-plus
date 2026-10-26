@@ -5,7 +5,7 @@ import { CLICK_SLOP_PX } from './constants.ts';
 import { createNoteFromText, TypeSource } from './convert-card.ts';
 import { diagramHost } from './diagram-card.ts';
 import { DiagramLinks, readDiagram } from './diagram-data.ts';
-import { plainText } from './diagram-links.ts';
+import { plainText, webLinkIn, webLinkText } from './diagram-links.ts';
 import { addExportItems, copyText } from './diagram-export.ts';
 import { DiagramEditorBase } from './diagram-editor-base.ts';
 import { DotSpec } from './floating-tools.ts';
@@ -13,14 +13,16 @@ import { openInPlaceField } from './in-place-field.ts';
 import { DG_NODE_ICON, LINEAR_ICON, NOTE_TYPES_ICON, TASKAPP_ICON } from './icons.ts';
 import { createIssueFromText } from './issue-create.ts';
 import { LinkPicker } from './link-picker.ts';
+import { addSignpostButtons, openSignpostMenu } from './signpost.ts';
+import { UrlPrompt } from './url-prompt.ts';
 import {
   Direction, MINDMAP_SHAPES, Mindmap, MindmapShape, Placement, addChild, addSibling, colorOf, duplicateNode, iconOf, isLabelFormatted,
   isWithin, labelOf, moveNode, neighbour, outlineOf, parseOutline, pasteOutline, readMindmap, relocate, remove, rename, setBranchColor,
   setColor, setNodeIcon, setShape, shapeOf, siblingsOf, toggleLabelFormat,
 } from './mindmap-edit.ts';
-import { TEXT_FORMATS, TextFormat } from './mindmap-format.ts';
+import { TEXT_FORMATS, TextFormat, formatsOn, wrapFormats } from './mindmap-format.ts';
 import { trackPointer } from './pointer-session.ts';
-import { ShapeOption, addColorButton, addCreateButtons, addFormatButtons, addIconButton, addShapeButton } from './toolbar-parts.ts';
+import { ShapeOption, addColorButton, addCreateButtons, addFormatButtons, addIconButton, addLinkButton, addShapeButton } from './toolbar-parts.ts';
 import type { SideEffect } from './undo-journal.ts';
 
 const ACTIVE_CLASS = 'ffc-mm-active';
@@ -333,9 +335,11 @@ export class MindmapEditor extends DiagramEditorBase {
         .setSection('format')
         .setTitle(format.label)
         .setIcon(format.icon)
-        .setChecked(isLabelFormatted(map, k, format))
+        .setChecked(this.formatOn(map, k, format, node))
         .onClick(() => this.applyFormat(format)));
     }
+    menu.addItem((item) => item.setSection('format').setTitle('Signpost…').setIcon('signpost').onClick(() => openSignpostMenu(this.plugin, this.canvas, { node, part: map.items[k].nodeId }, e, () => this.redrawTools())));
+    menu.addItem((item) => item.setSection('format').setTitle('Link to web address…').setIcon('link').onClick(() => this.linkUrl()));
     const make = (title: string, icon: string, run: () => void): void => {
       menu.addItem((item) => item.setSection('create').setTitle(title).setIcon(icon).onClick(run));
     };
@@ -468,11 +472,17 @@ export class MindmapEditor extends DiagramEditorBase {
   private applyFormat(format: TextFormat): void {
     const live = this.current();
     if (!live) return;
-    if (format.id === 'wikilink' && !isLabelFormatted(live.map, live.k, format)) {
+    if (format.id === 'wikilink' && !this.formatOn(live.map, live.k, format, live.node)) {
       this.linkNote(live);
       return;
     }
     this.apply(live.node, toggleLabelFormat(live.map, live.k, format), live.k);
+  }
+
+  /** Whether a format is on for the node's text. A web link is written as a wikilink, but isn't a link to a note. */
+  private formatOn(map: Mindmap, k: number, format: TextFormat, node: CanvasNodeLike): boolean {
+    if (format.id === 'wikilink' && this.webLinkOf(map, k, node)) return false;
+    return isLabelFormatted(map, k, format);
   }
 
   /** The node's text as plain words. */
@@ -490,6 +500,37 @@ export class MindmapEditor extends DiagramEditorBase {
   /** Pick a note (searching for the node's text, or creating it), and link the node to it. */
   private linkNote(live: { node: CanvasNodeLike; map: Mindmap; k: number }): void {
     new LinkPicker(this.view.app, this.view.file?.path ?? '', this.plainText(live), (file) => this.applyNoteLink(live, file, null)).open();
+  }
+
+  /** The link a node's text has when it goes to a web address. */
+  private webLinkOf(map: Mindmap, k: number, node: CanvasNodeLike): { name: string; url: string } | undefined {
+    return webLinkIn(labelOf(map, k), readDiagram(node)?.links);
+  }
+
+  /** Ask for a web address, and make the node's text a link to it (or take the link away when it is left empty). */
+  private linkUrl(): void {
+    const live = this.current();
+    if (!live) return;
+    const old = this.webLinkOf(live.map, live.k, live.node);
+    new UrlPrompt(this.view.app, old?.url ?? '', (url) => {
+      const now = this.current();
+      if (!now || now.node !== live.node) return;
+      const diagram = readDiagram(now.node);
+      const links = { ...(diagram?.links ?? {}) };
+      if (old) delete links[old.name];
+      const label = labelOf(now.map, now.k);
+      const formats = formatsOn(label, TEXT_FORMATS);
+      const words = this.plainText(now);
+      if (!url) {
+        if (old) this.edit(now.node, { source: rename(now.map, now.k, wrapFormats(words, formats)), index: now.k }, false, { links });
+        return;
+      }
+      const link = webLinkText(words, diagram?.source ?? '', links, old?.name);
+      const source = rename(now.map, now.k, wrapFormats(link.text, formats));
+      const after = readMindmap(source);
+      const name = after ? /\[\[([^\][|]+)/.exec(labelOf(after, now.k))?.[1] : undefined;
+      this.edit(now.node, { source, index: now.k }, false, { links: name ? { ...links, [name]: url } : links });
+    }).open();
   }
 
   /** Make a note of one of the plugin's types from the node's text, and link the node to it. */
@@ -535,8 +576,16 @@ export class MindmapEditor extends DiagramEditorBase {
       const live = this.current();
       if (live) this.apply(live.node, setNodeIcon(live.map, live.k, name), live.k);
     });
-    addFormatButtons(bar, (format) => isLabelFormatted(map, k, format), (format) => this.applyFormat(format));
+    addFormatButtons(bar, (format) => this.formatOn(map, k, format, current.node), (format) => this.applyFormat(format));
+    addLinkButton(bar, this.webLinkOf(map, k, current.node) !== undefined, () => this.linkUrl());
+    addSignpostButtons(bar, this.plugin, this.canvas, { node: current.node, part: map.items[k].nodeId }, () => this.redrawTools());
     addCreateButtons(bar, this.plugin, { note: (source) => this.createNote(source), issue: (provider) => this.createIssue(provider) });
+  }
+
+  /** Draw the toolbar again, as what it offers has changed. */
+  private redrawTools(): void {
+    this.clearTools();
+    this.paint();
   }
 
   private clearTools(): void {

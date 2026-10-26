@@ -46,3 +46,13 @@ export function toggleFormat(value: string, from: number, to: number, { open, cl
   }
   return { value: value.slice(0, from) + open + selected + close + value.slice(to), from: from + open.length, to: to + open.length };
 }
+
+/** The formats (besides a wikilink) that all of `text` has. */
+export function formatsOn(text: string, formats: readonly TextFormat[]): TextFormat[] {
+  return formats.filter((f) => f.id !== 'wikilink' && toggleFormat(text, 0, text.length, f).value.length < text.length);
+}
+
+/** `text` with each of `formats` put round all of it. */
+export function wrapFormats(text: string, formats: readonly TextFormat[]): string {
+  return formats.reduce((out, f) => `${f.open}${out}${f.close}`, text);
+}

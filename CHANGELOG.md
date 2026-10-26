@@ -5,6 +5,25 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.2]
+
+### Added
+
+- **Web links on diagram nodes.** In a mindmap or flowchart, the node toolbar
+  and right-click menu have a **Link to web address…** button. It turns the
+  node's text into a link that opens in your browser (Cmd or Ctrl-click, or
+  click a node that is already picked). Bold, italic and the other formats are
+  kept, and saving an empty address removes the link.
+- **Signposts.** Select any object and use the signpost button in its pop-up
+  menu to choose a next and a previous object by clicking them on the canvas.
+  Step-forward and step-back buttons then go there, selecting the object and
+  zooming to it, even on a locked canvas. Mindmap and flowchart nodes have the
+  same buttons in their toolbar and can be targets too.
+
+### Fixed
+
+- The wikilink button no longer shows as on for a node with a web link.
+
 ## [1.12.1]
 
 ### Fixed

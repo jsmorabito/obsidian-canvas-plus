@@ -22,6 +22,7 @@ import { attachDiagramMenu } from './diagram-export.ts';
 import { IssuePicker } from './issue-picker.ts';
 import { injectConvertButton } from './convert-card.ts';
 import { injectIssueButtons, moveIssueButtonsLast } from './issue-menu.ts';
+import { injectSignpostButtons } from './signpost.ts';
 import { injectViewToggleButton } from './view-toggle.ts';
 import { DgNodePicker } from './dg-create.ts';
 import { DgContext } from './dg-context.ts';
@@ -397,6 +398,7 @@ export class CanvasController {
     injectViewToggleButton(canvas, selected, () => this.sweep());
     injectKeyImageButton(this.plugin, canvas, selected);
     injectConvertButton(this.plugin, canvas, selected, () => this.sweep());
+    injectSignpostButtons(this.plugin, canvas, selected);
     injectIssueButtons(this.plugin, canvas, selected, () => this.sweep());
     moveIssueButtonsLast(canvas);
   }

@@ -11,6 +11,35 @@ export function plainText(label: string): string {
     .trim();
 }
 
+/** The name a web link is kept under: the node's words, without the characters that would break the link's markup. */
+export function linkName(words: string): string {
+  return words.replace(/[|[\]"⟦⟧]/g, ' ').replace(/\s+/g, ' ').trim() || 'Link';
+}
+
+const LINK_IN_LABEL = /\[\[([^\][|]+)(?:\|[^\][]*)?\]\]|⟦([^⟧|]+)(?:\|[^⟧]*)?⟧/;
+
+/** The first link in a node's text that goes to a web address: the name it is kept under, and the address. */
+export function webLinkIn(label: string, links: DiagramLinks | undefined): { name: string; url: string } | undefined {
+  const found = LINK_IN_LABEL.exec(label);
+  const name = found?.[1] ?? found?.[2];
+  const url = name ? links?.[name] : undefined;
+  return name && url ? { name, url } : undefined;
+}
+
+/**
+ * The text that makes a node's `words` a link to a web address. Its name must be its own: another node's link
+ * (to a note, or to an address) by that name would share it. So when the words are taken, the link is named with a
+ * number after them, and the words stay as its alias.
+ */
+export function webLinkText(words: string, source: string, links: DiagramLinks, own?: string): { name: string; text: string } {
+  const base = linkName(words);
+  const written = (name: string): string[] => [`⟦${name}⟧`, `⟦${name}|`, `[[${name}]]`, `[[${name}|`];
+  const taken = (name: string): boolean => name !== own && (name in links || written(name).some((w) => source.includes(w)));
+  let name = base;
+  for (let n = 2; taken(name); n++) name = `${base} ${n}`;
+  return { name, text: name === base ? `[[${name}]]` : `[[${name}|${base}]]` };
+}
+
 /**
  * The links that stay once a diagram's source has changed: a link's web address is kept only while a link of that
  * text is still in the source, written `[[text]]` (or `⟦text⟧` in a mindmap).

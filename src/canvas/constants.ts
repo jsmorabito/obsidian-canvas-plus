@@ -86,3 +86,9 @@ export const FIELD_EMBED_SIZE = 'ffcEmbedSize';
 
 /** The first size of an issue's full view, big enough for its properties and the start of its description. */
 export const SIZE_ISSUE_EMBED = { width: 360, height: 360 };
+
+/**
+ * Extra field on any node: where its signpost buttons go, `{ next?, prev? }`, each a node's id. Stored in canvas
+ * files, so the name must not change.
+ */
+export const FIELD_NAV = 'ffcNav';
