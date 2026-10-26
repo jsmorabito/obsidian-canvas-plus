@@ -68,7 +68,7 @@ export class WidgetPicker extends FuzzySuggestModal<Widget> {
   /** Duplicate names, shown with their view type. */
   private shared: Set<string>;
 
-  constructor(app: App, private leaf: WorkspaceLeaf) {
+  constructor(app: App, private onChoose: (widget: Widget) => void) {
     super(app);
     this.widgets = listWidgets(app);
     const seen = new Set<string>();
@@ -77,7 +77,7 @@ export class WidgetPicker extends FuzzySuggestModal<Widget> {
     this.emptyStateText = 'No widgets found.';
     this.setInstructions([
       { command: '↑↓', purpose: 'to navigate' },
-      { command: '↵', purpose: 'to open' },
+      { command: '↵', purpose: 'to choose' },
       { command: 'esc', purpose: 'to dismiss' },
     ]);
   }
@@ -100,6 +100,6 @@ export class WidgetPicker extends FuzzySuggestModal<Widget> {
   }
 
   onChooseItem(widget: Widget): void {
-    void this.leaf.setViewState({ type: widget.type, active: true });
+    this.onChoose(widget);
   }
 }

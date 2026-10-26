@@ -155,7 +155,7 @@ export class TabPanel {
     });
     setIcon(btn.createSpan({ cls: 'text-button-icon' }), 'puzzle');
     btn.createSpan({ cls: 'text-button-label', text: 'Open widget' });
-    const open = (): void => new WidgetPicker(app, this.leaf).open();
+    const open = (): void => new WidgetPicker(app, (w) => { void this.leaf.setViewState({ type: w.type, active: true }); }).open();
     btn.addEventListener('click', open);
     btn.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;

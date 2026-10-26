@@ -15,6 +15,8 @@ import { ActionsPanel } from './actions-panel.ts';
 import { actionEntries } from './actions-entries.ts';
 import { clearIssueCards, decorateIssueCards } from './issue-card.ts';
 import { clearDiagrams, decorateDiagrams } from './diagram-card.ts';
+import { addWidgetNode, clearWidgets, decorateWidget, pruneWidgets } from './widget-card.ts';
+import { WidgetPicker } from './widgets.ts';
 import { DiagramPicker } from './diagram-create.ts';
 import { MindmapEditor } from './mindmap-editor.ts';
 import { FlowchartEditor } from './flowchart-editor.ts';
@@ -184,6 +186,7 @@ export class CanvasController {
         openIssuePicker: (provider) => { this.openIssuePicker(provider); },
         openIssuePanel: (provider) => { this.tabPanels.openView(PROVIDERS[provider].viewType); },
         addDiagram: () => { this.addDiagram(); },
+        addWidget: () => { this.addWidget(); },
         createDiscourseNode: () => { this.createDiscourseNode(); },
         openDiscoursePanel: () => { this.openDiscoursePanel(); },
         onChanged: () => this.sweep(),
@@ -250,6 +253,14 @@ export class CanvasController {
     const canvas = this.view.canvas;
     if (!canvas) return false;
     new DiagramPicker(this.plugin, canvas, () => this.sweep()).open();
+    return true;
+  }
+
+  /** Pick a widget, then add it to the canvas as a node. */
+  addWidget(): boolean {
+    const canvas = this.view.canvas;
+    if (!canvas) return false;
+    new WidgetPicker(this.plugin.app, (widget) => { addWidgetNode(canvas, widget.type); this.sweep(); }).open();
     return true;
   }
 
@@ -337,11 +348,13 @@ export class CanvasController {
     this.comments.sync();
     this.injectKeyImage();
     fitAllFreeText(canvas);
+    pruneWidgets(canvas);
     for (const node of nodes.values()) {
       const el = node.nodeEl;
       if (!el) continue;
       // Read once: every check below would otherwise copy the node's data again.
       const data = node.getData?.();
+      decorateWidget(this.plugin.app, canvas, this.view.leaf, node, data);
       const ink = readInk(node, data);
       const kind = ink ? 'ink' : getExtra(node, FIELD_KIND, data);
       if (typeof kind === 'string') el.setAttribute('data-ffc-kind', kind);
@@ -379,6 +392,7 @@ export class CanvasController {
       clearNoteCards(this.view.canvas);
       clearIssueCards(this.view.canvas);
       clearDiagrams(this.view.canvas);
+      clearWidgets(this.view.canvas);
       setCardOwner(this.view.canvas, null);
     }
     this.component.unload();

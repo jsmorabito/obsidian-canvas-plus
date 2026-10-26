@@ -2438,3 +2438,26 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   width: var(--icon-xs);
   height: var(--icon-xs);
 }
+
+/* A widget node: the view fills the card, and takes presses only while the node is selected. */
+.ffc-widget {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--background-primary);
+  pointer-events: none;
+}
+
+.canvas-node.is-selected .ffc-widget,
+.canvas-node.is-focused .ffc-widget {
+  pointer-events: auto;
+}
+
+.ffc-widget-missing {
+  padding: var(--size-4-3);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}

@@ -92,3 +92,9 @@ export const SIZE_ISSUE_EMBED = { width: 360, height: 360 };
  * files, so the name must not change.
  */
 export const FIELD_NAV = 'ffcNav';
+
+/** Extra field on a `text` node holding a widget: `{ type }`, the view type shown in it. Stored in canvas files, so the name must not change. */
+export const FIELD_WIDGET = 'ffcWidget';
+
+/** Default size of a widget node, in canvas units. */
+export const SIZE_WIDGET = { width: 360, height: 420 };
