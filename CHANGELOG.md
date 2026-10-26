@@ -5,6 +5,16 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0]
+
+### Added
+
+- **Add widget… in the actions menu.** Pick a widget (any view that doesn't
+  show a file, such as the Linear panel) and it is added to the canvas as a
+  node running the live view. The view takes clicks and keys while the node is
+  selected, so an unselected node can still be dragged. It is saved with the
+  canvas and comes back when the canvas is reopened.
+
 ## [1.13.2]
 
 ### Added
