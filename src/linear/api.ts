@@ -14,14 +14,16 @@ interface RawIssue extends Omit<Issue, 'description' | 'labels'> {
   labels?: { nodes: Array<{ name: string; color: string }> };
 }
 
-const ISSUE_FIELDS = `fragment IssueFields on Issue {
-  id identifier title url description priority priorityLabel dueDate estimate updatedAt
+const FIELD_LIST = `id identifier title url description priority priorityLabel dueDate estimate updatedAt
   state { name type color }
   assignee { name avatarUrl }
   team { id key name }
   project { name }
-  labels { nodes { name color } }
-}`;
+  labels { nodes { name color } }`;
+
+const ISSUE_FIELDS = `fragment IssueFields on Issue { ${FIELD_LIST} }`;
+// searchIssues returns IssueSearchResult, which an Issue fragment can't be spread on.
+const SEARCH_FIELDS = `fragment SearchFields on IssueSearchResult { ${FIELD_LIST} }`;
 
 function toIssue(raw: RawIssue): Issue {
   return { ...raw, description: raw.description ?? '', labels: raw.labels?.nodes ?? [] };
@@ -77,7 +79,7 @@ export class LinearClient implements IssueClient {
 
   async search(term: string): Promise<Issue[]> {
     const data = await this.request<{ searchIssues: { nodes: RawIssue[] } }>(
-      `query($term: String!) { searchIssues(term: $term, first: 25) { nodes { ...IssueFields } } } ${ISSUE_FIELDS}`,
+      `query($term: String!) { searchIssues(term: $term, first: 25) { nodes { ...SearchFields } } } ${SEARCH_FIELDS}`,
       { term },
     );
     return data.searchIssues.nodes.map(toIssue);

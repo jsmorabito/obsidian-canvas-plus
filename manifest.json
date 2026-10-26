@@ -1,10 +1,10 @@
 {
 	"id": "canvas-plus",
 	"name": "Canvas Plus",
-	"version": "1.12.0",
 	"minAppVersion": "1.13.1",
 	"description": "Canvas tools in one bar, free text, ink, a layers panel and editable Mermaid diagrams. With Note Types: note cards, relations on edges and key images.",
 	"author": "John Morabito",
 	"authorUrl": "https://github.com/jsmorabito",
-	"isDesktopOnly": false
+	"isDesktopOnly": false,
+	"version": "1.12.1"
 }
