@@ -5,6 +5,64 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0]
+
+### Added
+
+- **Diagrams.** **Add diagram…** (`B`, or in the actions panel) puts a Mermaid
+  diagram on the canvas: mindmap, flowchart, sequence, state, class, entity
+  relationship, Gantt, timeline, kanban, pie, quadrant, XY chart or git graph.
+  Pele, a small Mermaid renderer, draws it in your theme's colors. The card
+  saves the Mermaid source, and its text is a `mermaid` code block, so it still
+  draws in a vault without this plugin. Double-click the card's background to
+  edit the source with a live preview. Diagrams are listed in the layers panel.
+- **Right-click a diagram card** for **Edit source…**, **Copy as Mermaid**,
+  **Copy as SVG** and **Save as SVG** (in your attachment folder, in the colors
+  of the current theme). A flowchart's card menu also sets which way it runs.
+- **Mindmaps can be edited on the canvas.**
+  - Pick a node by clicking it. Dots round it add a child or a sibling; `Tab`
+    adds a child, `Enter` a sibling, `F2` or a double-click renames it in place,
+    `Delete` removes it with what is under it, and the arrow keys move between
+    nodes.
+  - Drag a node to put it before or after a sibling, or inside another node as
+    its child. `Alt` + `↑`/`↓` moves it among its siblings, and `Cmd`/`Ctrl` +
+    `]`/`[` indents or outdents it.
+  - `Cmd`/`Ctrl` + `D` duplicates a node. Copying with a node picked puts it
+    and its children on the clipboard as a markdown list, and pasting a list or
+    an outline with a node picked adds it under that node.
+  - A toolbar over the node sets its color (the six canvas colors, or any color),
+    shape and icon, and turns on bold, italic, underline, code or a wikilink.
+    A wikilink opens a note picker that starts from the node's text, and
+    `Enter` creates the note when none has that name. Linked nodes open with
+    `Cmd`/`Ctrl` + click, or a second click on the picked node, and show a
+    preview on hover.
+  - With Note Types, Discourse Graphs, Linear or Task App on, the toolbar can
+    make a note, a discourse node or an issue from the node's text and link the
+    node to it.
+  - Web addresses typed into a node are links, and a right-click menu has all of
+    the above.
+- **Flowcharts can be edited on the canvas.**
+  - Click a node or an edge to pick it. Dots round a node add a node after it,
+    before it, or beside it as another branch; drag from a dot onto another node
+    to join them. `Tab` / `Shift` + `Tab` add a node after or before, and a
+    double-click, `Enter` or `F2` renames a node or labels an edge, in place.
+  - Drag a node to rearrange the chart: onto another node to hang it from that
+    node, or onto a side of a sibling to move it before or after. The side
+    matches the dots: the side the chart runs out of is a child.
+  - The toolbar sets a node's color, shape (14 of them) and formatting, and an
+    edge's style (arrow, line, dotted, thick). `Delete` removes what is picked.
+  - A flowchart that uses syntax the editor can't change safely (several nodes
+    joined with `&`, edge ids, arrows with text in them) says which line, and
+    stays editable as source.
+- A test suite for the diagram source editing (`npm test`), run in CI.
+
+### Changed
+
+- Pele is bundled, which makes the plugin about three times larger. The
+  production build is now minified.
+- The diagram toolbar, dots and in-place field are shared by the mindmap and the
+  flowchart editors, ready for more kinds of diagram.
+
 ## [1.11.0]
 
 ### Added

@@ -15,6 +15,9 @@ export const PANEL_ICON = 'ffc-panel-add';
 /** Icon id for presenting a canvas: Lucide's presentation, which Obsidian doesn't bundle. */
 export const PRESENT_ICON = 'ffc-presentation';
 
+/** Icon id for a wikilink: two pairs of square brackets, the same as the Text Formatting Toolbar's. */
+export const WIKILINK_ICON = 'ffc-wikilink';
+
 /** Each icon's paths, drawn on a 24 x 24 grid. */
 const ICONS: Record<string, string[]> = {
   [NOTE_TYPES_ICON]: [
@@ -32,6 +35,12 @@ const ICONS: Record<string, string[]> = {
   [PANEL_ICON]: [
     'M11.35 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9.35',
     'M14 19h6', 'M17 16v6',
+  ],
+  [WIKILINK_ICON]: [
+    'M14 5H15.5C15.6326 5 15.7598 5.08194 15.8536 5.22781C15.9473 5.37367 16 5.5715 16 5.77778V18.2222C16 18.4285 15.9473 18.6263 15.8536 18.7722C15.7598 18.9181 15.6326 19 15.5 19H14',
+    'M19 5H20.5C20.6326 5 20.7598 5.08194 20.8536 5.22781C20.9473 5.37367 21 5.5715 21 5.77778V18.2222C21 18.4285 20.9473 18.6263 20.8536 18.7722C20.7598 18.9181 20.6326 19 20.5 19H19',
+    'M10 19H8.5C8.36739 19 8.24021 18.9181 8.14645 18.7722C8.05268 18.6263 8 18.4285 8 18.2222V5.77778C8 5.5715 8.05268 5.37367 8.14645 5.22781C8.24021 5.08194 8.36739 5 8.5 5H10',
+    'M5 19H3.5C3.36739 19 3.24021 18.9181 3.14645 18.7722C3.05268 18.6263 3 18.4285 3 18.2222V5.77778C3 5.5715 3.05268 5.37367 3.14645 5.22781C3.24021 5.08194 3.36739 5 3.5 5H5',
   ],
   [PRESENT_ICON]: ['M2 3h20', 'M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3', 'm7 21 5-5 5 5'],
 };

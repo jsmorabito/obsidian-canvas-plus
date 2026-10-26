@@ -36,6 +36,8 @@ const context = await esbuild.context({
   target: "es2018",
   logLevel: "info",
   sourcemap: prod ? false : "inline",
+  // Pele brings a Mermaid renderer for every diagram type, which is most of the bundle.
+  minify: prod,
   treeShaking: true,
   outfile: "main.js",
 });

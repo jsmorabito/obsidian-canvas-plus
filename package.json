@@ -1,13 +1,14 @@
 {
   "name": "canvas-plus",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "Canvas tools, free text, ink and layers for Obsidian, with note cards and relations when Note Types is enabled.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc --noEmit -p tsconfig.json && node esbuild.config.mjs production",
     "version": "node version-bump.mjs && git add manifest.json versions.json",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "test": "node tests/run.mjs"
   },
   "keywords": [],
   "author": "John Morabito",
@@ -25,6 +26,7 @@
     "typescript-eslint": "^8.66.0"
   },
   "dependencies": {
+    "pele": "^1.9.0",
     "perfect-freehand": "^1.2.3"
   }
 }

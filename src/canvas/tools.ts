@@ -46,7 +46,7 @@ export function isPenTool(tool: ToolId): tool is 'marker' | 'highlighter' {
   return tool === 'marker' || tool === 'highlighter';
 }
 
-export type ActionId = 'picker' | 'linear' | 'taskapp' | 'dgnode' | 'actions';
+export type ActionId = 'picker' | 'linear' | 'taskapp' | 'dgnode' | 'diagram' | 'actions';
 
 export interface ActionDef {
   id: ActionId;
@@ -61,6 +61,7 @@ export const ACTIONS: readonly ActionDef[] = [
   { id: 'linear', label: 'Add Linear issue', icon: LINEAR_ICON, key: 'i' },
   { id: 'taskapp', label: 'Add Task App issue', icon: TASKAPP_ICON, key: 'j' },
   { id: 'dgnode', label: 'Create discourse node', icon: DG_NODE_ICON, key: 'd' },
+  { id: 'diagram', label: 'Add diagram', icon: 'workflow', key: 'b' },
 ];
 
 export function actionForKey(key: string): ActionDef | undefined {

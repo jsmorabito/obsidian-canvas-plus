@@ -37,6 +37,12 @@ export const PLACE_GAP = 24;
 /** Extra field on a `text` node holding one freehand stroke. Stored in canvas files, so the name must not change. */
 export const FIELD_INK = 'ffcInk';
 
+/** Extra field on a `text` node holding a diagram's Mermaid source. Stored in canvas files, so the name must not change. */
+export const FIELD_DIAGRAM = 'ffcDiagram';
+
+/** Default size of a diagram card, in canvas units. */
+export const SIZE_DIAGRAM = { width: 480, height: 320 };
+
 /** Canvas preset colours as hex, for SVG that has to carry its own colour (matches Obsidian's palette). */
 export const PRESET_HEX: Record<string, string> = {
   '1': '#e93147', '2': '#ec7500', '3': '#e0ac00', '4': '#08b94e', '5': '#00bfbc', '6': '#7852ee',

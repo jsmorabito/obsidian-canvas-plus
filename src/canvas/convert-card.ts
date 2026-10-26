@@ -10,12 +10,9 @@ import { draftFrom, isConvertibleCard } from './issue-create.ts';
 import { button } from './issue-menu.ts';
 import { DG_NODE_ICON, NOTE_TYPES_ICON } from './icons.ts';
 import { fitNodeToCard } from './note-card.ts';
+import { MAX_NAME, UNSAFE_NAME, titleFromText } from './note-name.ts';
 import { SideEffect, batchWithEffect } from './undo-journal.ts';
 
-/** Characters a file name can't hold. */
-const UNSAFE_NAME = /[\\/:*?"<>|#^[\]]/g;
-/** Well under the file system's limit, which counts the folder and extension too. */
-const MAX_NAME = 100;
 /** Markup that `firstLine` strips from a title. */
 const MARKUP = /[[\]*_`~]/;
 
@@ -141,6 +138,39 @@ async function convertCards(plugin: CanvasPlusPlugin, canvas: CanvasLike, nodes:
   }
   if (skipped > 0) new Notice(`${skipped} ${skipped === 1 ? 'card was' : 'cards were'} not converted: the note could not be created.`);
   onDone();
+}
+
+/**
+ * Ask for a note type, then make a note titled `text` of it (a note by that name that exists is used as it is) and
+ * hand it to `onMade`, with the side effect that undoes its creation when it was made new.
+ */
+export function createNoteFromText(
+  plugin: CanvasPlusPlugin, canvas: CanvasLike, text: string, source: TypeSource,
+  onMade: (file: TFile, effect: SideEffect | null) => void,
+): void {
+  const title = titleFromText(text);
+  if (!title) {
+    new Notice('Give the node some text to name the note.');
+    return;
+  }
+  new TypePicker(plugin, source, (target) => {
+    void (async () => {
+      try {
+        const result = await target.make(title, '');
+        if (!result) {
+          new Notice('The note could not be created.');
+          return;
+        }
+        // What the note holds right now, so undo can take it away only if nobody has touched it.
+        const effect = result.created
+          ? createdNoteEffect(plugin, canvas, result.file, await plugin.app.vault.read(result.file), canvasFilePath(plugin.app, canvas))
+          : null;
+        onMade(result.file, effect);
+      } catch (err) {
+        new Notice(`Could not create the note: ${(err as Error).message}`);
+      }
+    })();
+  }).open();
 }
 
 let picking = false;

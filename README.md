@@ -15,6 +15,13 @@ Open a canvas and Obsidian's bottom menu becomes one bar: Select, then its own d
 
 ![The tool bar placing a group around two cards](docs/mockups/tools.svg)
 
+**Diagrams**  
+**Add diagram…** (`B`, or in the actions panel) puts a [Mermaid](https://mermaid.js.org) diagram on the canvas: mindmap, flowchart, sequence, state, class, entity relationship, Gantt, timeline, kanban, pie, quadrant, XY chart or git graph. [Pele](https://pele.run), a small Mermaid renderer, draws it in your theme's colors. The card saves the Mermaid source, and its text is a `mermaid` code block, so it still draws in a vault without this plugin. Double-click the card's background to edit the source with a live preview. Right-click a card for **Edit source…**, **Copy as Mermaid**, **Copy as SVG** and **Save as SVG**.
+
+*Mindmaps* can be edited on the canvas. Click a node to pick it. Dots round it add a child or a sibling (`Tab` and `Enter` do too), a double-click or `F2` renames it in place, `Delete` removes it, and the arrow keys move between nodes. Drag a node to put it before or after a sibling or inside another node, or use `Alt` + `↑`/`↓` and `Cmd`/`Ctrl` + `]`/`[`. `Cmd`/`Ctrl` + `D` duplicates a node, and copy and paste move an outline as a markdown list. The toolbar over a node sets its color, shape and icon and turns on bold, italic, underline, code or a wikilink; a wikilink opens a note picker that starts from the node's text and creates the note when none has that name. With Note Types, Discourse Graphs, Linear or Task App on, the toolbar can also make a note, discourse node or issue from the node's text and link to it.
+
+*Flowcharts* can be edited on the canvas too. Click a node or an edge to pick it. Dots round a node add a node after it, before it or beside it, and dragging from a dot onto another node joins them. Double-click renames a node or labels an edge. Drag a node onto another to hang it from that node, or onto a side of a sibling to reorder. The toolbar sets a node's color, shape and formatting, and an edge's style. The card's right-click menu sets which way the chart runs. A flowchart that uses syntax the editor can't change safely (several nodes joined with `&`, edge ids, arrows with text in them) names the line and stays editable as source.
+
 **Ink**  
 Marker and highlighter strokes, with a pen color row (none plus the six canvas presets). The eraser removes whole strokes.
 
@@ -105,6 +112,8 @@ Task App is the self-hosted task app in `Task-App-1.0`. Its integration is in be
 
 The plugin has no telemetry and collects no data. It makes no requests unless you sign in to Linear, set a Linear API key, or turn on Task App. With a Linear sign-in or key, it sends requests to Linear (`api.linear.app`) to search issues, load the issues shown on your canvases (their title, status, assignee, labels and description), and create issues from cards. What is sent for a new issue is the title and description you confirm in the dialog. Nothing else from your vault leaves your device. Issue cards load again from Linear a few minutes apart while a canvas is open. With Task App turned on, the same things (searching, loading the issues shown on your canvases, and creating issues from cards) go to the server address you set, with your API token, and nowhere else.
 
+Diagrams make no requests. Copying a diagram or an outline puts text on your clipboard only when you choose a copy command, and pasting an outline reads only the paste you make. A web address or issue link in a diagram opens in your browser only when you click it with `Cmd`/`Ctrl` or select an already picked node a second time. Saving a diagram as SVG writes one file to your vault's attachment folder.
+
 If a note's key image is a web address, Obsidian loads it from that address whenever a note card shows it. That is a request from your device to the image's host, the same as for any image embedded from the web. Dropping an image link onto a note card only writes the link into the note, and downloads nothing. Dropping an image file saves a copy in your vault's attachment folder, as Obsidian does for any attachment.
 
 ---
@@ -122,6 +131,7 @@ npm install
 npm run dev      # watch mode
 npm run build    # type-check + production bundle
 npm run lint     # ESLint
+npm test         # tests for the diagram source editing
 ```
 
 Output artifacts (`main.js`) are written to the plugin root. See [AGENTS.md](AGENTS.md) for conventions.
@@ -130,4 +140,4 @@ Output artifacts (`main.js`) are written to the plugin root. See [AGENTS.md](AGE
 
 ## License
 
-MIT
+MIT. Diagrams are drawn by [Pele](https://pele.run) (MIT), and ink by [perfect-freehand](https://github.com/steveruizok/perfect-freehand) (MIT).

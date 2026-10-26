@@ -6,6 +6,8 @@ export interface ShortcutTarget {
   setTool(tool: ToolId): void;
   /** Returns false when the action isn't available, so the key goes on to whatever else wants it. */
   runAction(action: ActionId): boolean;
+  /** Keys that edit the mindmap node selected in a diagram card. Returns whether it took the key. */
+  mindmapKey(e: KeyboardEvent): boolean;
   /** Abandon a draw and go back to Select. Returns whether it did anything. */
   escape(): boolean;
 }
@@ -35,9 +37,13 @@ export function registerToolShortcuts(app: App, view: CanvasViewLike, target: Sh
   };
 }
 
-function handle(e: KeyboardEvent, target: ShortcutTarget): false | undefined {
+function handle(e: KeyboardEvent, target: ShortcutTarget): boolean | undefined {
+  // The field a mindmap node's text is edited in keeps every key to itself: the caret moves with the arrows, and
+  // the canvas must not move the card (or pan) as well. `true` ends the handling without cancelling the key.
+  if (isElement(e.target) && e.target.closest('.ffc-mm-input')) return true;
   // A field being typed in, like a search box or a name being edited, keeps every key, Escape included.
   if (e.isComposing || isTypingTarget(e.target)) return undefined;
+  if (target.mindmapKey(e)) return false;
   if (e.key === 'Escape') return target.escape() ? false : undefined;
   // Cmd or Ctrl+K opens the actions panel.
   if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') {

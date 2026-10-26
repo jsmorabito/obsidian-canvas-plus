@@ -39,6 +39,23 @@ export function draftFrom(node: CanvasNodeLike): Draft {
   return { node, title: `${title.slice(0, MAX_TITLE - 1)}…`, description: text.trim() };
 }
 
+/**
+ * Ask where to create an issue titled `title` (the title can still be changed there) and create it, then hand it to
+ * `onCreated`. Unlike creating from a card, nothing about `node`'s card is changed: the caller says what the issue
+ * becomes of it.
+ */
+export function createIssueFromText(
+  plugin: CanvasPlusPlugin, provider: ProviderId, canvas: CanvasLike, node: CanvasNodeLike, title: string, onCreated: (issue: Issue) => void,
+): void {
+  const text = title.trim();
+  if (!text) {
+    new Notice('Give the node some text to title the issue.');
+    return;
+  }
+  const draft: Draft = { node, title: text.length <= MAX_TITLE ? text : `${text.slice(0, MAX_TITLE - 1)}…`, description: text.length <= MAX_TITLE ? '' : text };
+  new CreateIssuesModal(plugin, provider, canvas, [draft], () => { /* the caller's callback is all that changes */ }, onCreated).open();
+}
+
 /** Ask where to create issues for the cards, create them, and turn the cards into issue cards. */
 export function createIssuesFromCards(plugin: CanvasPlusPlugin, provider: ProviderId, canvas: CanvasLike, nodes: CanvasNodeLike[], onDone: () => void): void {
   const drafts = nodes.filter(isConvertibleCard).map(draftFrom);
@@ -59,6 +76,8 @@ class CreateIssuesModal extends Modal {
     private canvas: CanvasLike,
     private drafts: Draft[],
     private onDone: () => void,
+    /** Given, it says what an issue becomes of its card, in place of turning the card into an issue card. */
+    private onCreated?: (issue: Issue) => void,
   ) {
     super(plugin.app);
   }
@@ -135,14 +154,18 @@ class CreateIssuesModal extends Modal {
     }
     if (created.length > 0) {
       this.plugin.updateConfig({ [this.teamKey]: this.teamId });
-      // A card removed while waiting stays removed.
-      const live = created.filter(({ draft }) => draft.node.id && this.canvas.nodes?.get(draft.node.id) === draft.node);
-      batch(this.canvas, () => {
-        for (const { draft, issue } of live) {
-          const ref = issueRef(this.provider, issue);
-          patchData(draft.node, { text: issueNodeText(ref), [PROVIDERS[this.provider].field]: ref });
-        }
-      });
+      if (this.onCreated) {
+        for (const { issue } of created) this.onCreated(issue);
+      } else {
+        // A card removed while waiting stays removed.
+        const live = created.filter(({ draft }) => draft.node.id && this.canvas.nodes?.get(draft.node.id) === draft.node);
+        batch(this.canvas, () => {
+          for (const { draft, issue } of live) {
+            const ref = issueRef(this.provider, issue);
+            patchData(draft.node, { text: issueNodeText(ref), [PROVIDERS[this.provider].field]: ref });
+          }
+        });
+      }
       new Notice(`Created ${created.map((c) => c.issue.identifier).join(', ')} in ${PROVIDERS[this.provider].name}.`);
     }
     if (failure) new Notice(`${PROVIDERS[this.provider].name}: ${failure.message}`);

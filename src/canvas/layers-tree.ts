@@ -1,11 +1,12 @@
 import type { CanvasPlusPlugin } from '../main.ts';
 import { Box, CanvasLike, CanvasNodeLike, getExtra, nodeBox } from './adapter.ts';
 import { FIELD_KIND, FIELD_LINK_NAME, KIND_TEXT } from './constants.ts';
+import { readDiagram } from './diagram-data.ts';
 import { readInk } from './ink-nodes.ts';
 import { anchorLabel, isAnchor } from './anchor.ts';
 import { noteRefFor } from './relation-logic.ts';
 
-export type LayerKind = 'group' | 'anchor' | 'note' | 'text' | 'card' | 'image' | 'file' | 'link' | 'ink';
+export type LayerKind = 'group' | 'anchor' | 'note' | 'text' | 'card' | 'image' | 'file' | 'link' | 'ink' | 'diagram';
 
 export interface Layer {
   node: CanvasNodeLike;
@@ -23,7 +24,7 @@ export interface Layer {
 
 /** The icon for each kind of layer. */
 export const LAYER_ICONS: Record<LayerKind, string> = {
-  group: 'frame', anchor: 'anchor', note: 'file-text', text: 'type', card: 'sticky-note', image: 'image', file: 'file', link: 'link', ink: 'pencil',
+  group: 'frame', anchor: 'anchor', note: 'file-text', text: 'type', card: 'sticky-note', image: 'image', file: 'file', link: 'link', ink: 'pencil', diagram: 'workflow',
 };
 
 const IMAGE_EXT = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'bmp']);
@@ -40,11 +41,20 @@ export function firstLine(text: string): string {
     .trim();
 }
 
+/** A diagram's title when its source gives one, else its type ("mindmap", "flowchart LR"). */
+function diagramLabel(source: string): string {
+  const lines = source.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('%%'));
+  const title = lines.map((l) => /^(?:title|pie title)\s+(.+)$/.exec(l)?.[1]).find(Boolean);
+  return title?.replace(/^"|"$/g, '') ?? lines[0] ?? 'Diagram';
+}
+
 /** A node's kind and the name the layers panel lists it by. */
 export function describe(plugin: CanvasPlusPlugin, node: CanvasNodeLike): Pick<Layer, 'kind' | 'label' | 'type' | 'url'> {
   const ink = readInk(node);
   if (ink) return { kind: 'ink', label: ink.tool === 'highlighter' ? 'Highlight' : 'Drawing' };
   const data = node.getData?.() ?? {};
+  const diagram = readDiagram(node, data);
+  if (diagram) return { kind: 'diagram', label: diagramLabel(diagram.source) };
   switch (data.type) {
     case 'group':
       return { kind: 'group', label: typeof data.label === 'string' && data.label.trim() ? data.label.trim() : 'Untitled group' };
@@ -146,6 +156,7 @@ const KIND_ORDER: Array<{ kind: LayerKind; label: string }> = [
   { kind: 'file', label: 'Files' },
   { kind: 'link', label: 'Links' },
   { kind: 'ink', label: 'Drawings' },
+  { kind: 'diagram', label: 'Diagrams' },
 ];
 
 export function walk(layers: Layer[], visit: (layer: Layer) => void): void {

@@ -581,6 +581,7 @@ svg.ffc-ink path.ffc-ink-auto {
 }
 
 .ffc-header-icon .svg-icon {
+  flex: none;
   width: var(--icon-s);
   height: var(--icon-s);
 }
@@ -1898,4 +1899,486 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
 .canvas-node.ffc-comment-target .canvas-node-container {
   outline: var(--size-2-1) solid var(--interactive-accent);
   outline-offset: var(--size-2-1);
+}
+
+/* Diagram cards: Pele's drawing replaces the node's own text, and takes its colours from the theme. */
+.canvas-node[data-ffc-diagram] .canvas-node-container > :not(.ffc-diagram) {
+  display: none;
+}
+
+.ffc-diagram {
+  --pele-bg: transparent;
+  --pele-fg: var(--text-normal);
+  --pele-muted: var(--text-muted);
+  --pele-line: var(--text-muted);
+  --pele-surface: var(--background-secondary);
+  --pele-surface-alt: var(--background-modifier-hover);
+  --pele-border: var(--background-modifier-border);
+  --pele-accent: var(--interactive-accent);
+  --pele-font: var(--font-interface);
+  --pele-series-1: var(--color-blue);
+  --pele-series-2: var(--color-orange);
+  --pele-series-3: var(--color-green);
+  --pele-series-4: var(--color-purple);
+  --pele-series-5: var(--color-red);
+  --pele-series-6: var(--color-cyan);
+  --pele-series-7: var(--color-yellow);
+  --pele-series-8: var(--color-pink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: var(--size-4-2);
+  overflow: hidden;
+}
+
+.ffc-diagram svg {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+}
+
+.ffc-diagram-error {
+  color: var(--text-error);
+  font-size: var(--font-ui-small);
+  white-space: pre-wrap;
+}
+
+.modal.ffc-diagram-editor {
+  /* No Obsidian variable is as wide as a source editor and its preview side by side. */
+  width: min(960px, 92vw);
+}
+
+.ffc-diagram-editor-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--size-4-3);
+  /* Tall enough for a diagram to read in the preview, never taller than the window. */
+  height: min(60vh, 520px);
+}
+
+.ffc-diagram-source {
+  height: 100%;
+  resize: none;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+}
+
+.ffc-diagram-preview {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+}
+
+@media (max-width: 700px) {
+  .ffc-diagram-editor-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+}
+
+/* Node colours for mindmaps: `:::ffc-c-<name>` under a node in the source. The shapes take the colour, and a bare label takes it as its text. */
+.ffc-diagram .pele-node.ffc-c-red :is(rect, circle, ellipse, path, polygon) {
+  fill: var(--color-red);
+  fill-opacity: 0.22;
+  stroke: var(--color-red);
+}
+
+.ffc-diagram .pele-node.pele-shape-text.ffc-c-red .pele-label {
+  fill: var(--color-red);
+}
+
+.ffc-diagram .pele-node.ffc-c-orange :is(rect, circle, ellipse, path, polygon) {
+  fill: var(--color-orange);
+  fill-opacity: 0.22;
+  stroke: var(--color-orange);
+}
+
+.ffc-diagram .pele-node.pele-shape-text.ffc-c-orange .pele-label {
+  fill: var(--color-orange);
+}
+
+.ffc-diagram .pele-node.ffc-c-yellow :is(rect, circle, ellipse, path, polygon) {
+  fill: var(--color-yellow);
+  fill-opacity: 0.22;
+  stroke: var(--color-yellow);
+}
+
+.ffc-diagram .pele-node.pele-shape-text.ffc-c-yellow .pele-label {
+  fill: var(--color-yellow);
+}
+
+.ffc-diagram .pele-node.ffc-c-green :is(rect, circle, ellipse, path, polygon) {
+  fill: var(--color-green);
+  fill-opacity: 0.22;
+  stroke: var(--color-green);
+}
+
+.ffc-diagram .pele-node.pele-shape-text.ffc-c-green .pele-label {
+  fill: var(--color-green);
+}
+
+.ffc-diagram .pele-node.ffc-c-cyan :is(rect, circle, ellipse, path, polygon) {
+  fill: var(--color-cyan);
+  fill-opacity: 0.22;
+  stroke: var(--color-cyan);
+}
+
+.ffc-diagram .pele-node.pele-shape-text.ffc-c-cyan .pele-label {
+  fill: var(--color-cyan);
+}
+
+.ffc-diagram .pele-node.ffc-c-blue :is(rect, circle, ellipse, path, polygon) {
+  fill: var(--color-blue);
+  fill-opacity: 0.22;
+  stroke: var(--color-blue);
+}
+
+.ffc-diagram .pele-node.pele-shape-text.ffc-c-blue .pele-label {
+  fill: var(--color-blue);
+}
+
+.ffc-diagram .pele-node.ffc-c-purple :is(rect, circle, ellipse, path, polygon) {
+  fill: var(--color-purple);
+  fill-opacity: 0.22;
+  stroke: var(--color-purple);
+}
+
+.ffc-diagram .pele-node.pele-shape-text.ffc-c-purple .pele-label {
+  fill: var(--color-purple);
+}
+
+.ffc-diagram .pele-node.ffc-c-pink :is(rect, circle, ellipse, path, polygon) {
+  fill: var(--color-pink);
+  fill-opacity: 0.22;
+  stroke: var(--color-pink);
+}
+
+.ffc-diagram .pele-node.pele-shape-text.ffc-c-pink .pele-label {
+  fill: var(--color-pink);
+}
+
+/* The colour in the toolbar's swatches. */
+.ffc-mm-swatch.ffc-c-red { background: var(--color-red); }
+.ffc-mm-swatch.ffc-c-orange { background: var(--color-orange); }
+.ffc-mm-swatch.ffc-c-yellow { background: var(--color-yellow); }
+.ffc-mm-swatch.ffc-c-green { background: var(--color-green); }
+.ffc-mm-swatch.ffc-c-cyan { background: var(--color-cyan); }
+.ffc-mm-swatch.ffc-c-blue { background: var(--color-blue); }
+.ffc-mm-swatch.ffc-c-purple { background: var(--color-purple); }
+.ffc-mm-swatch.ffc-c-pink { background: var(--color-pink); }
+
+.ffc-mm-swatch {
+  display: inline-block;
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+  border-radius: 50%;
+}
+
+.ffc-mm-pop {
+  position: absolute;
+  bottom: calc(100% + var(--size-4-1));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-3);
+  padding: var(--size-2-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
+  white-space: nowrap;
+}
+
+.ffc-mm-bar.is-below .ffc-mm-pop {
+  bottom: auto;
+  top: calc(100% + var(--size-4-1));
+}
+.ffc-mm-branch {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-3);
+  padding: 0 var(--size-2-2);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.ffc-mm-bar {
+  position: absolute;
+  left: var(--ffc-mm-left);
+  top: var(--ffc-mm-top);
+  /* One layer below the canvas's own selection menu (6), so that menu covers this one where they meet. */
+  z-index: 5;
+  pointer-events: auto;
+}
+
+/* The buttons of the canvas's own selection menu, from Obsidian's size variables: a 16px icon with 6px 8px padding (32 x 28), and 8px corners. */
+.ffc-mm-bar {
+  /* Near the card's edge there is less room than the buttons need; they keep their size and the bar overflows. */
+  width: max-content;
+}
+
+.ffc-mm-bar .clickable-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: auto;
+  height: auto;
+  padding: var(--size-2-3) var(--size-4-2);
+  border-radius: var(--radius-m);
+}
+
+.ffc-mm-bar .clickable-icon svg {
+  flex: none;
+  width: var(--icon-s);
+  height: var(--icon-s);
+}
+
+/* A node colour of the user's own: the drawing gives the node its colour as `--ffc-mm-color`. */
+.ffc-diagram .pele-node[class*="ffc-hex-"] :is(rect, circle, ellipse, path, polygon) {
+  fill: var(--ffc-mm-color);
+  fill-opacity: 0.22;
+  stroke: var(--ffc-mm-color);
+}
+
+.ffc-diagram .pele-node.pele-shape-text[class*="ffc-hex-"] .pele-label {
+  fill: var(--ffc-mm-color);
+}
+
+.ffc-mm-swatch.is-custom {
+  background: var(--ffc-mm-color);
+}
+
+/* Mindmap editing in a diagram card: the node that keys act on, and the field a rename is typed in. */
+.ffc-diagram {
+  position: relative;
+}
+
+.ffc-diagram .pele-node.ffc-mm-active :is(rect, circle, ellipse, path, polygon) {
+  stroke: var(--interactive-accent);
+  /* Drawn in the diagram's own units, which no CSS variable measures. */
+  stroke-width: 2.5;
+}
+
+.ffc-diagram .pele-node.ffc-mm-active .pele-label {
+  fill: var(--interactive-accent);
+}
+
+/* A node can be picked once its card is selected: say so with the pointer and a hover outline. */
+.canvas-node.is-selected .ffc-diagram .pele-node {
+  cursor: pointer;
+}
+
+.canvas-node.is-selected .ffc-diagram .pele-node:hover :is(rect, circle, ellipse, path, polygon) {
+  stroke: var(--interactive-accent);
+  stroke-width: 2;
+}
+
+.ffc-mm-tools {
+  position: absolute;
+  inset: 0;
+  /* With the toolbar: one layer below the canvas's own selection menu (6). */
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* With a node picked, its toolbar replaces the card's. */
+.ffc-mm-node-picked .canvas-menu-container,
+.ffc-fc-node-picked .canvas-menu-container {
+  display: none;
+}
+
+/* Mindmaps and flowcharts have no card outline of their own: it shows only while the card itself is selected, by its empty space. */
+.canvas-node:is([data-ffc-mindmap], [data-ffc-flowchart]):not(.is-selected):not(.is-focused) .canvas-node-container,
+.canvas-node:is([data-ffc-mindmap], [data-ffc-flowchart])[data-ffc-picked] .canvas-node-container {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+}
+
+.ffc-mm-dot {
+  position: absolute;
+  left: var(--ffc-mm-left);
+  top: var(--ffc-mm-top);
+  pointer-events: auto;
+}
+
+/* The dots round a node, as in FigJam: one click adds a node that way. */
+.ffc-mm-dot {
+  box-sizing: border-box;
+  width: var(--size-4-3);
+  height: var(--size-4-3);
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  box-shadow: none;
+  color: var(--text-on-accent);
+  font-size: 0;
+  line-height: var(--size-4-3);
+  text-align: center;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: width var(--anim-duration-superfast) ease-out, height var(--anim-duration-superfast) ease-out;
+}
+
+.ffc-mm-dot:hover {
+  width: var(--icon-m);
+  height: var(--icon-m);
+  font-size: var(--font-ui-small);
+  line-height: var(--icon-m);
+}
+
+.ffc-mm-dot:hover::before {
+  content: "+";
+}
+
+
+.ffc-mm-input {
+  position: absolute;
+  left: var(--ffc-mm-left);
+  top: var(--ffc-mm-top);
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  /* Grow with the text, round its middle, so a long name or a line break doesn't move it. */
+  field-sizing: content;
+  box-sizing: content-box;
+  min-width: 2ch;
+  margin: 0;
+  padding: 0 var(--size-2-2);
+  resize: none;
+  overflow: hidden;
+  appearance: none;
+  border: none;
+  border-radius: var(--radius-s);
+  outline: var(--size-2-1) solid var(--interactive-accent);
+  box-shadow: none;
+  background: transparent;
+  color: var(--ffc-mm-text-color, var(--text-normal));
+  font-family: var(--ffc-mm-font-family, inherit);
+  font-size: var(--ffc-mm-font-size, inherit);
+  font-weight: var(--ffc-mm-font-weight, inherit);
+  line-height: 1.3;
+  text-align: center;
+  white-space: pre;
+}
+
+.ffc-mm-input:focus,
+.ffc-mm-input:active {
+  border: none;
+  box-shadow: none;
+}
+
+/* The node's own text steps aside while its field is over it. */
+.ffc-diagram .pele-node.ffc-mm-editing .pele-label,
+.ffc-diagram .pele-node.ffc-mm-editing .pele-icon,
+.ffc-diagram .pele-edge-label.ffc-mm-editing text {
+  visibility: hidden;
+}
+
+
+/* Dragging a mindmap node among its siblings: the node fades, and a line shows where it will land. */
+.ffc-diagram .pele-node {
+  user-select: none;
+}
+
+.ffc-diagram .pele-node.ffc-mm-dragging {
+  opacity: 0.5;
+  pointer-events: none;
+  translate: var(--ffc-mm-drag, 0 0);
+}
+
+.ffc-mm-drop {
+  position: absolute;
+  left: var(--ffc-mm-left);
+  top: var(--ffc-mm-top);
+  width: var(--ffc-mm-width);
+  height: var(--size-2-2);
+  transform: translateY(-50%);
+  border-radius: var(--radius-s);
+  background: var(--interactive-accent);
+  pointer-events: none;
+}
+
+.ffc-mm-drop.is-vertical {
+  width: var(--size-2-2);
+  height: var(--ffc-mm-height);
+  transform: translateX(-50%);
+}
+
+.ffc-mm-drop.is-hidden {
+  display: none;
+}
+
+.ffc-diagram .pele-node.ffc-mm-drop-target :is(rect, circle, ellipse, path, polygon) {
+  stroke: var(--interactive-accent);
+  /* Drawn in the diagram's own units, which no CSS variable measures. */
+  stroke-width: 3;
+}
+
+.ffc-diagram .pele-node.ffc-mm-drop-target .pele-label {
+  fill: var(--interactive-accent);
+}
+
+
+/* The colour picker's panels are core's `canvas-submenu`; ours only lays them out under or over the toolbar. */
+.ffc-mm-pop.is-colors {
+  gap: var(--size-2-2);
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+
+.ffc-mm-submenu {
+  position: static;
+  inset: auto;
+  width: max-content;
+}
+
+/* A wikilink in a mindmap node: the text of its name, as a link; Cmd or Ctrl and click opens it. */
+.ffc-diagram .ffc-mm-link {
+  fill: var(--link-color);
+  text-decoration: underline;
+}
+
+/* Flowcharts: the wider path that takes the clicks on an edge draws nothing. */
+.ffc-diagram .ffc-edge-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: var(--size-4-3);
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.ffc-diagram .pele-edge.ffc-mm-active path:not(.ffc-edge-hit) {
+  stroke: var(--interactive-accent);
+}
+
+.ffc-diagram .pele-edge.ffc-mm-active .pele-marker {
+  fill: var(--interactive-accent);
+}
+
+.ffc-diagram .pele-edge-label {
+  cursor: pointer;
+}
+
+/* The line drawn from a dot to the node it is being joined to. */
+.ffc-connector {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: var(--layer-cover);
+  pointer-events: none;
+}
+
+.ffc-connector line {
+  stroke: var(--interactive-accent);
+  stroke-width: var(--size-2-1);
+  stroke-linecap: round;
 }

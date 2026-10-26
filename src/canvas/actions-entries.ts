@@ -19,6 +19,7 @@ export function openPluginSettings(plugin: CanvasPlusPlugin): void {
 export interface ActionHooks {
   openIssuePicker: (provider: ProviderId) => void;
   openIssuePanel: (provider: ProviderId) => void;
+  addDiagram: () => void;
   createDiscourseNode: () => void;
   openDiscoursePanel: () => void;
   onChanged: () => void;
@@ -28,7 +29,7 @@ export interface ActionHooks {
 const PICKER_HINTS: Record<ProviderId, string> = { linear: 'I', taskapp: 'J' };
 
 export function actionEntries(plugin: CanvasPlusPlugin, canvas: CanvasLike, hooks: ActionHooks): ActionEntry[] {
-  const { openIssuePicker, openIssuePanel, createDiscourseNode, openDiscoursePanel, onChanged } = hooks;
+  const { openIssuePicker, openIssuePanel, addDiagram, createDiscourseNode, openDiscoursePanel, onChanged } = hooks;
   const entries: ActionEntry[] = [];
   const settings = (): void => openPluginSettings(plugin);
 
@@ -80,6 +81,7 @@ export function actionEntries(plugin: CanvasPlusPlugin, canvas: CanvasLike, hook
       run: openDiscoursePanel,
     });
   }
+  entries.push({ section: 'Canvas Plus', label: 'Add diagram…', icon: 'workflow', hint: 'B', keywords: 'chart mindmap flowchart mermaid pele graph', run: addDiagram });
   const chosen = selectedNodes(canvas);
   if (plugin.hasDiscourseGraphs && chosen.length > 0 && chosen.every(isConvertibleCard)) {
     entries.push({

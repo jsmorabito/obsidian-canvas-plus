@@ -121,6 +121,16 @@ Follow Obsidian's **Developer Policies** and **Plugin Guidelines**. In particula
 - Use arrow notation for navigation: **Settings → Community plugins**.
 - Keep in-app strings short, consistent, and free of jargon.
 
+## Styling: core first
+
+Before writing a hardcoded value in `styles.css` or a style set from code, check for what Obsidian already provides, and use it. Only hardcode when nothing core fits, and say why in a short comment.
+
+- **Variables first.** Use Obsidian's CSS variables for colors (`--text-normal`, `--background-primary`, `--interactive-accent`, `--color-red`…), spacing (`--size-2-*`, `--size-4-*`), icon sizes (`--icon-xs`, `--icon-s`, `--icon-m`), radii (`--radius-*`), borders (`--border-width`), fonts (`--font-ui-*`), shadows (`--shadow-s`), animation (`--anim-duration-*`) and layers (`--layer-*`). Never write a raw color, and don't write a pixel value where a variable has that value.
+- **Core classes and components next.** Reuse core classes (`clickable-icon`, `canvas-menu`, `modal`, `mod-cta`, `prompt`, `setting-item`…) and API components (`Menu`, `Modal`, `SuggestModal`, `Setting`, `setIcon`, `getIcon`) before building your own. A new control should look like the core control beside it.
+- **Check the real thing.** When matching a core element, inspect it in DevTools (Ctrl/Cmd+Shift+I) and copy its computed spec: size, padding, radius, icon size. Then find the variable that holds each value.
+- **Zoomed surfaces.** Anything drawn inside a canvas node is scaled by the canvas zoom. Counter-scale it, and verify the on-screen size at more than one zoom, instead of guessing.
+- **Sentence case and plain wording**, as in the UX section.
+
 ## Performance
 
 - Keep startup light. Defer heavy work until needed.

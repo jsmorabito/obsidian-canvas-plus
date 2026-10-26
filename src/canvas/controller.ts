@@ -14,6 +14,11 @@ import { canToggleView, clearNoteCards, decorateNoteCards, fitNodeToCard, noteOf
 import { ActionsPanel } from './actions-panel.ts';
 import { actionEntries } from './actions-entries.ts';
 import { clearIssueCards, decorateIssueCards } from './issue-card.ts';
+import { clearDiagrams, decorateDiagrams } from './diagram-card.ts';
+import { DiagramPicker } from './diagram-create.ts';
+import { MindmapEditor } from './mindmap-editor.ts';
+import { FlowchartEditor } from './flowchart-editor.ts';
+import { attachDiagramMenu } from './diagram-export.ts';
 import { IssuePicker } from './issue-picker.ts';
 import { injectConvertButton } from './convert-card.ts';
 import { injectIssueButtons, moveIssueButtonsLast } from './issue-menu.ts';
@@ -42,7 +47,7 @@ import type { ProviderId } from '../issues/types.ts';
 import { ActionId, isInkTool, isPlacementTool, PlaceTool, ToolId } from './tools.ts';
 
 /** Obsidian's own controls and menus live inside the canvas wrapper; a tool must never treat clicks on them as drawing. */
-const NATIVE_CANVAS_UI = '.canvas-controls, .canvas-card-menu, .canvas-menu-container';
+const NATIVE_CANVAS_UI = '.canvas-controls, .canvas-card-menu, .canvas-menu-container, .ffc-mm-toolbar';
 
 let warnedNoMenu = false;
 /** Said once: without Obsidian's bottom menu the tool buttons have nowhere to go (the shortcuts still work). */
@@ -70,6 +75,8 @@ export class CanvasController {
   private minimap: Minimap;
   private tabPanels: CanvasPanels;
   private ink: InkTools;
+  private mindmaps: MindmapEditor;
+  private flowcharts: FlowchartEditor;
   readonly presenter: Presenter;
   readonly focuser: Focuser;
   private tray: Tray;
@@ -96,6 +103,12 @@ export class CanvasController {
       return { left, bottom: corner.width > left ? corner.height : 0 };
     });
     this.ink = new InkTools(view);
+    this.mindmaps = new MindmapEditor(plugin, view, () => this.sweep());
+    this.cleanups.push(this.mindmaps.attach());
+    this.flowcharts = new FlowchartEditor(plugin, view, () => this.sweep());
+    this.cleanups.push(this.flowcharts.attach());
+    // After the editors' own menus, which take a right-click on a node first.
+    this.cleanups.push(attachDiagramMenu(plugin, view, () => this.sweep(), (menu, node) => this.flowcharts.cardMenuItems(menu, node)));
     this.comments = new CommentLayer(view);
     this.cleanups.push(registerToolShortcuts(plugin.app, view, this));
     this.presenter = new Presenter(plugin, view, () => this.setTool('select'));
@@ -164,11 +177,16 @@ export class CanvasController {
       ? new ActionsPanel(menuEl, view.contentEl, actionsButton, () => actionEntries(plugin, view.canvas!, {
         openIssuePicker: (provider) => { this.openIssuePicker(provider); },
         openIssuePanel: (provider) => { this.tabPanels.openView(PROVIDERS[provider].viewType); },
+        addDiagram: () => { this.addDiagram(); },
         createDiscourseNode: () => { this.createDiscourseNode(); },
         openDiscoursePanel: () => { this.openDiscoursePanel(); },
         onChanged: () => this.sweep(),
       }))
       : null;
+  }
+
+  mindmapKey(e: KeyboardEvent): boolean {
+    return this.mindmaps.handleKey(e) || this.flowcharts.handleKey(e);
   }
 
   setTool(tool: ToolId): void {
@@ -197,6 +215,7 @@ export class CanvasController {
     if (action === 'linear') return this.plugin.hasLinear && this.openIssuePicker('linear');
     if (action === 'taskapp') return this.plugin.hasTaskApp && this.openIssuePicker('taskapp');
     if (action === 'dgnode') return this.plugin.hasDiscourseGraphs && this.createDiscourseNode();
+    if (action === 'diagram') return this.addDiagram();
     if (action === 'actions') {
       this.actions?.toggle();
       return !!this.actions;
@@ -217,6 +236,14 @@ export class CanvasController {
       this.sweep();
       window.requestAnimationFrame(() => this.sweep());
     }).open();
+    return true;
+  }
+
+  /** Pick a kind of diagram, then add its card. */
+  addDiagram(): boolean {
+    const canvas = this.view.canvas;
+    if (!canvas) return false;
+    new DiagramPicker(this.plugin, canvas, () => this.sweep()).open();
     return true;
   }
 
@@ -288,6 +315,9 @@ export class CanvasController {
     this.dgContext.sync();
     decorateNoteCards(this.plugin, canvas);
     decorateIssueCards(this.plugin, canvas);
+    decorateDiagrams(this.plugin, canvas, () => this.sweep());
+    this.mindmaps.refresh();
+    this.flowcharts.refresh();
     this.relations.sweep();
     this.panel.update();
     this.layers.update();
@@ -337,6 +367,7 @@ export class CanvasController {
       setInsets(this.view.canvas, null);
       clearNoteCards(this.view.canvas);
       clearIssueCards(this.view.canvas);
+      clearDiagrams(this.view.canvas);
       setCardOwner(this.view.canvas, null);
     }
     this.component.unload();

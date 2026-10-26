@@ -27,7 +27,7 @@ const PRESET_VARS: Record<string, string> = {
 /** Canvas units a comment pin's outline takes while it's dragged out of the tray. */
 const PIN_BOX = { width: 40, height: 40 };
 /** Core's menus and controls, and the toolbar the tray is in: a press there never starts a drag of nodes. */
-const CANVAS_UI = '.canvas-card-menu, .canvas-controls, .canvas-menu-container';
+const CANVAS_UI = '.canvas-card-menu, .canvas-controls, .canvas-menu-container, .ffc-mm-toolbar';
 
 /** Follows a pointer for the tray: `update` with each move, and `release` when it's let go. */
 interface OverWatch {
