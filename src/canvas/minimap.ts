@@ -36,7 +36,8 @@ export class Minimap {
   private layer: { el: HTMLCanvasElement; key: string } | null = null;
   private lastDraw = 0;
   private endDrag: (() => void) | null = null;
-  private stopFrames: () => void;
+  /** Set while the minimap is open: core's frames only matter to it then. */
+  private stopFrames: (() => void) | null = null;
   /** Draws once the minimap is laid out, and again when it changes size. */
   private resizeObserver: ResizeObserver;
   private cssRef: EventRef;
@@ -56,7 +57,6 @@ export class Minimap {
     shieldFromCanvas(this.el);
     this.showBtn = createShowButton(view.contentEl, 'ffc-minimap-show', 'map', 'Show minimap', () => this.setOpen(true));
 
-    this.stopFrames = afterCanvasFrame(view.canvas!, () => this.drawSoon());
     this.resizeObserver = new ResizeObserver(() => this.draw());
     this.resizeObserver.observe(this.mapEl);
     // The theme's colours only change with the CSS, so they're read again only then.
@@ -79,7 +79,7 @@ export class Minimap {
 
   destroy(): void {
     this.endDrag?.();
-    this.stopFrames();
+    this.stopFrames?.();
     if (this.drawTimer) this.el.win.clearTimeout(this.drawTimer);
     this.resizeObserver.disconnect();
     this.plugin.app.workspace.offref(this.cssRef);
@@ -98,6 +98,9 @@ export class Minimap {
     this.el.toggle(this.open);
     this.showBtn.toggle(!this.open);
     this.view.contentEl.toggleClass(OPEN_CLASS, this.open);
+    this.stopFrames?.();
+    this.stopFrames = null;
+    if (this.open && this.canvas) this.stopFrames = afterCanvasFrame(this.canvas, () => this.drawSoon());
     this.draw();
   }
 
@@ -168,7 +171,7 @@ export class Minimap {
     const h = this.mapEl.height;
     const key = `${w}x${h}|${nodeLayerKey(canvas, t)}`;
     if (this.layer?.key !== key || this.layer.el.width !== w || this.layer.el.height !== h) {
-      const el = this.layer?.el ?? this.el.doc.createEl('canvas');
+      const el = this.layer?.el ?? this.el.doc.createElement('canvas');
       el.width = w;
       el.height = h;
       const layerCtx = el.getContext('2d');

@@ -336,7 +336,7 @@ export class LayersPanel {
     const content = this.renderSection(
       canvas, 'Favorites', this.favoriteLayers.length, this.favoritesCollapsed, () => { this.favoritesCollapsed = !this.favoritesCollapsed; },
     );
-    if (content) this.renderList(canvas, content, this.favoriteLayers, selection, false);
+    if (content) this.renderList(canvas, content, this.favoriteLayers, selection, false, true);
   }
 
   /** A collapsible section header. Returns where its rows go, or null while it is collapsed. */
@@ -373,7 +373,7 @@ export class LayersPanel {
   }
 
   /** Core's tree markup and classes, as in the file explorer and outline, so themes style the list like those. */
-  private renderList(canvas: CanvasLike, parent: HTMLElement, layers: Layer[], selection: Set<object>, stars = true): void {
+  private renderList(canvas: CanvasLike, parent: HTMLElement, layers: Layer[], selection: Set<object>, stars = true, removable = false): void {
     for (const [i, layer] of layers.entries()) {
       const item = parent.createDiv({ cls: 'tree-item' });
       const row = item.createDiv({ cls: 'tree-item-self is-clickable ffc-layer-row' });
@@ -393,12 +393,13 @@ export class LayersPanel {
       // In presentation order, each anchor's stop number, in core's flair (where the file explorer puts counts).
       const stop = this.ordering ? i + 1 : undefined;
       const nodeId = layer.node.id;
-      if (layer.type || rename || stop || (stars && nodeId)) {
+      if (layer.type || rename || stop || ((stars || removable) && nodeId)) {
         const flair = row.createDiv({ cls: 'tree-item-flair-outer' });
         if (stop) flair.createSpan({ cls: 'tree-item-flair', text: String(stop) });
         if (layer.type) flair.createSpan({ cls: 'ffc-note-chip', text: layer.type });
         if (rename) this.makeRename(canvas, flair, row, label, layer.node, rename);
         if (stars && nodeId) this.makeStar(flair, nodeId);
+        if (removable && nodeId) this.makeUnfavorite(flair, nodeId);
       }
       if (toggle && id) this.makeToggle(toggle, label, id, collapsed);
 
@@ -449,17 +450,29 @@ export class LayersPanel {
   /** A star that adds the layer to the favourites section, or takes it out. Shown on hover, and always once starred. */
   private makeStar(flair: HTMLElement, id: string): void {
     const starred = this.favorites.has(id);
-    const btn = flair.createEl('button', {
-      cls: 'clickable-icon ffc-layer-star',
-      attr: { 'aria-label': starred ? 'Remove from favorites' : 'Add to favorites', 'data-tooltip-position': 'right' },
-    });
+    const btn = this.makeFavoriteButton(flair, id, 'ffc-layer-star', 'star', starred ? 'Remove from favorites' : 'Add to favorites');
     btn.toggleClass('is-starred', starred);
-    setIcon(btn, 'star');
+  }
+
+  /** An x on a row in the favourites section, shown on hover, that takes the layer out of it. */
+  private makeUnfavorite(flair: HTMLElement, id: string): void {
+    this.makeFavoriteButton(flair, id, 'ffc-layer-unfavorite', 'x', 'Remove favorite');
+  }
+
+  private makeFavoriteButton(flair: HTMLElement, id: string, cls: string, icon: string, label: string): HTMLButtonElement {
+    const btn = flair.createEl('button', {
+      cls: `clickable-icon ${cls}`,
+      attr: { 'aria-label': label, 'data-tooltip-position': 'right' },
+    });
+    setIcon(btn, icon);
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
+      // The redraw removes this button while it is hovered, so its tooltip would never get a mouseleave to close on.
+      activeDocument.body.findAll('.tooltip').forEach((tip) => tip.remove());
       this.toggleFavorite(id);
     });
     btn.addEventListener('dblclick', (e) => e.stopPropagation());
+    return btn;
   }
 
   /** A pencil, shown on hover, that turns a layer's label into a field to name it. */

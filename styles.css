@@ -1183,8 +1183,12 @@ svg.ffc-ink path.ffc-ink-auto {
   display: none;
 }
 
-/* Star on every row: hidden until hover or focus like the pencil, but always shown once the layer is a favourite. */
-.ffc-layer-star {
+/*
+ * Star on every row, and the x on favourites rows: hidden until hover or focus like the pencil. The star is always
+ * shown once the layer is a favourite.
+ */
+.ffc-layer-star,
+.ffc-layer-unfavorite {
   --icon-size: var(--icon-xs);
   width: 0;
   padding: var(--size-2-1) 0;
@@ -1194,9 +1198,12 @@ svg.ffc-ink path.ffc-ink-auto {
 }
 
 .ffc-layer-row:hover .ffc-layer-star,
+.ffc-layer-row:hover .ffc-layer-unfavorite,
 .ffc-layer-star:focus-visible,
+.ffc-layer-unfavorite:focus-visible,
 .ffc-layer-star.is-starred,
-.is-mobile .ffc-layer-star {
+.is-mobile .ffc-layer-star,
+.is-mobile .ffc-layer-unfavorite {
   width: auto;
   padding-inline: var(--size-2-1);
   opacity: 1;
@@ -1210,7 +1217,8 @@ svg.ffc-ink path.ffc-ink-auto {
   fill: currentColor;
 }
 
-.ffc-layer-row.is-being-renamed .ffc-layer-star {
+.ffc-layer-row.is-being-renamed .ffc-layer-star,
+.ffc-layer-row.is-being-renamed .ffc-layer-unfavorite {
   display: none;
 }
 

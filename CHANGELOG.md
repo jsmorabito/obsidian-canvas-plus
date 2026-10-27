@@ -5,6 +5,20 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.2]
+
+### Added
+
+- **Remove a favorite from the Favorites section.** Hover a favorite in the
+  layers panel and select the x to take it out.
+
+### Fixed
+
+- **Minimap drew nothing.** A hidden canvas it draws the nodes on was created
+  in a way that threw an error on every draw, so the minimap stayed blank.
+- **Less work while the minimap is hidden.** It no longer follows the canvas's
+  pan and zoom frames while it is closed.
+
 ## [1.14.1]
 
 ### Fixed
