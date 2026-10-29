@@ -5,6 +5,15 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.1]
+
+### Changed
+
+- **More room in the Linear and Task App panel.** The header, tabs and search
+  box are padded, issues in the list are taller with a hairline between them,
+  and the section label has its own spacing, all from Obsidian's spacing
+  variables.
+
 ## [1.15.0]
 
 ### Added
