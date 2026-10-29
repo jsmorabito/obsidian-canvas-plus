@@ -13,6 +13,12 @@ import { readWidget } from './widget-card.ts';
 import { listWidgets } from './widgets.ts';
 
 const PIN_CLASS = 'ffc-node-pin';
+/** Holds copies of what a pinned group held, in the group's preview. */
+const CONTENTS_CLASS = 'ffc-pin-contents';
+/** Custom properties core and this plugin set on a node for its colour and styling, which its content is drawn with. */
+const KEPT_PROP = /^--(?!ffc-pin-color)/;
+/** What a copy of a node leaves out: the pin, core's handles and label. */
+const LEFT_OUT = '.ffc-node-pin, .canvas-node-connection-point, .canvas-node-resizer, .canvas-node-label';
 /** On a pin that was just pressed: its hover preview stays hidden until the pointer leaves. */
 const QUIET_CLASS = 'ffc-pin-quiet';
 const FALLBACK_ICON = 'file';
@@ -35,6 +41,44 @@ function readSize(node: CanvasNodeLike, data?: Record<string, unknown>): { width
   return v && typeof v.width === 'number' && typeof v.height === 'number' && v.width > 0 && v.height > 0
     ? { width: v.width, height: v.height }
     : null;
+}
+
+/** The ids of what a pinned group held when it was pinned, which are hidden along with it. */
+function readMembers(node: CanvasNodeLike, data?: Record<string, unknown>): string[] {
+  const v = getExtra(node, FIELD_PIN, data) as { members?: unknown } | undefined;
+  return Array.isArray(v?.members) ? v.members.filter((id): id is string => typeof id === 'string') : [];
+}
+
+/** What a group holds: every other node whole inside its box (a nested group and what is in it too). */
+function groupMembers(canvas: CanvasLike, group: CanvasNodeLike): string[] {
+  if (group.getData?.().type !== 'group') return [];
+  const outer = nodeBox(group);
+  if (!outer) return [];
+  const ids: string[] = [];
+  for (const node of canvas.nodes?.values() ?? []) {
+    const box = nodeBox(node);
+    if (!node.id || node === group || !box) continue;
+    if (box.x >= outer.x && box.y >= outer.y && box.x + box.width <= outer.x + outer.width && box.y + box.height <= outer.y + outer.height) ids.push(node.id);
+  }
+  return ids;
+}
+
+/**
+ * A copy of a node as it is drawn, for a preview to hold. It keeps the node's classes and colour, which its content's styles
+ * are written against, and loses its place on the canvas, its pin and its selection.
+ */
+export function snapshotOf(source: HTMLElement): HTMLElement {
+  const copy = source.cloneNode(true) as HTMLElement;
+  copy.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+  copy.removeAttribute('data-ffc-pin');
+  copy.removeAttribute('data-ffc-pin-hidden');
+  copy.removeClasses(['is-selected', 'is-focused']);
+  copy.querySelectorAll(LEFT_OUT).forEach((el) => el.remove());
+  const props: Array<[string, string]> = [];
+  for (const name of Array.from(source.style)) if (KEPT_PROP.test(name)) props.push([name, source.style.getPropertyValue(name)]);
+  copy.removeAttribute('style');
+  for (const [name, value] of props) copy.style.setProperty(name, value);
+  return copy;
 }
 
 /** Whether the node is shown as a pin. */
@@ -72,7 +116,13 @@ export function togglePins(canvas: CanvasLike, nodes: CanvasNodeLike[]): void {
   batch(canvas, () => {
     for (const node of nodes) {
       if (unpin) unpinNode(node);
-      else if (!isPinned(node)) pinCard(node);
+      else if (!isPinned(node)) {
+        // A group takes what is in it along: asked before it shrinks, while its box still holds them.
+        const members = groupMembers(canvas, node);
+        pinCard(node);
+        const size = readSize(node);
+        if (members.length > 0 && size) patchData(node, { [FIELD_PIN]: { ...size, members } });
+      }
     }
   });
 }
@@ -113,6 +163,7 @@ export function pinLook(plugin: CanvasPlusPlugin, node: CanvasNodeLike, data = n
  * until the pin is hovered, when it opens beside the pin at the size it had. `open` runs when the pin is clicked. Idempotent, so safe to run on a timer.
  */
 export function decoratePins(plugin: CanvasPlusPlugin, canvas: CanvasLike, open: (node: CanvasNodeLike) => void): void {
+  const hidden = new Set<string>();
   for (const node of canvas.nodes?.values() ?? []) {
     const el = node.nodeEl;
     if (!el) continue;
@@ -123,6 +174,9 @@ export function decoratePins(plugin: CanvasPlusPlugin, canvas: CanvasLike, open:
       clearPin(node);
       continue;
     }
+    const members = readMembers(node, data);
+    for (const id of members) hidden.add(id);
+    if (members.length > 0) syncContents(canvas, node, members);
     const { icon, color } = pinLook(plugin, node, data);
     const key = `${icon}|${color}|${size.width}|${size.height}`;
     el.setAttribute('data-ffc-pin', '');
@@ -132,6 +186,56 @@ export function decoratePins(plugin: CanvasPlusPlugin, canvas: CanvasLike, open:
     el.querySelector(`.${PIN_CLASS}`)?.remove();
     openOnClick(canvas, node, createPinBubble(el, icon, PIN_CLASS), open);
   }
+  hideMembers(canvas, hidden);
+}
+
+/** What each pinned group's preview was last drawn from, so an unchanged one isn't copied again every sweep. */
+const shownContents = new WeakMap<CanvasNodeLike, string>();
+
+/**
+ * Put copies of what a pinned group held in its preview, where they were in the group. The nodes themselves stay hidden, so
+ * the preview is the only place they show. A view or a page isn't copied, as it would load a second time.
+ */
+function syncContents(canvas: CanvasLike, group: CanvasNodeLike, members: string[]): void {
+  const container = group.nodeEl?.querySelector<HTMLElement>(':scope > .canvas-node-container');
+  const origin = nodeBox(group);
+  if (!container || !origin) return;
+  const parts: Array<{ node: CanvasNodeLike; el: HTMLElement; dx: number; dy: number; width: number; height: number }> = [];
+  for (const id of members) {
+    const node = canvas.nodes?.get(id);
+    const box = node && nodeBox(node);
+    const el = node?.nodeEl;
+    if (!node || !box || !el || readWidget(node) || el.querySelector('iframe, webview')) continue;
+    parts.push({ node, el, dx: box.x - origin.x, dy: box.y - origin.y, width: box.width, height: box.height });
+  }
+  const signature = parts.map((p) => `${p.node.id}:${p.dx},${p.dy},${p.width},${p.height}:${p.el.textContent?.length ?? 0}`).join('|');
+  const holder = container.querySelector<HTMLElement>(`:scope > .${CONTENTS_CLASS}`);
+  if (holder && shownContents.get(group) === signature) return;
+  shownContents.set(group, signature);
+  const contents = holder ?? container.createDiv({ cls: CONTENTS_CLASS });
+  contents.empty();
+  for (const p of parts) {
+    const copy = snapshotOf(p.el);
+    copy.setCssProps({ '--ffc-dx': `${p.dx}px`, '--ffc-dy': `${p.dy}px`, '--ffc-w': `${p.width}px`, '--ffc-h': `${p.height}px` });
+    contents.appendChild(copy);
+  }
+}
+
+/** The canvases that have something hidden by a pinned group, so a sweep with nothing to hide needn't walk everything. */
+const hiding = new WeakSet<CanvasLike>();
+
+/** Hide what pinned groups held, and the edges that touch them; show everything else. */
+function hideMembers(canvas: CanvasLike, hidden: Set<string>): void {
+  if (hidden.size === 0 && !hiding.has(canvas)) return;
+  for (const node of canvas.nodes?.values() ?? []) node.nodeEl?.toggleAttribute('data-ffc-pin-hidden', !!node.id && hidden.has(node.id));
+  for (const edge of canvas.edges?.values() ?? []) {
+    const gone = !!edge.from.node.id && hidden.has(edge.from.node.id) || !!edge.to.node.id && hidden.has(edge.to.node.id);
+    edge.lineGroupEl?.classList.toggle('ffc-pin-hidden', gone);
+    edge.lineEndGroupEl?.classList.toggle('ffc-pin-hidden', gone);
+    edge.labelElement?.wrapperEl?.classList.toggle('ffc-pin-hidden', gone);
+  }
+  if (hidden.size > 0) hiding.add(canvas);
+  else hiding.delete(canvas);
 }
 
 /**
@@ -164,10 +268,13 @@ function clearPin(node: CanvasNodeLike): void {
   if (!el || !el.hasAttribute('data-ffc-pin')) return;
   el.removeAttribute('data-ffc-pin');
   el.querySelector(`.${PIN_CLASS}`)?.remove();
+  el.querySelector(`.${CONTENTS_CLASS}`)?.remove();
   el.setCssProps({ '--ffc-pin-width': '', '--ffc-pin-height': '', '--ffc-pin-color': '' });
   drawn.delete(node);
+  shownContents.delete(node);
 }
 
 export function clearPins(canvas: CanvasLike): void {
   for (const node of canvas.nodes?.values() ?? []) clearPin(node);
+  hideMembers(canvas, new Set());
 }

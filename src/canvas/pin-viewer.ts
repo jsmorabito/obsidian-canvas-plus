@@ -2,13 +2,8 @@ import { setIcon } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasNodeLike, CanvasViewLike, shieldFromCanvas } from './adapter.ts';
 import { readIssueRef } from './issue-ref.ts';
-import { isPinned, pinLook, pinnedSize, togglePins } from './pin-node.ts';
+import { isPinned, pinLook, pinnedSize, snapshotOf, togglePins } from './pin-node.ts';
 import { readWidget } from './widget-card.ts';
-
-/** Custom properties core and this plugin set on a node for its colour and styling, which its content is drawn with. */
-const KEPT_PROP = /^--(?!ffc-pin-)/;
-/** What a copy of a node leaves out: the pin, core's handles and label, and the selection. */
-const LEFT_OUT = '.ffc-node-pin, .canvas-node-connection-point, .canvas-node-resizer, .canvas-node-label';
 
 /**
  * What a pinned node opens into when its pin is clicked: its content, in a panel in the top right where the note's
@@ -38,8 +33,9 @@ export class PinViewer {
 
   open(node: CanvasNodeLike): void {
     this.node = node;
-    this.render(node);
+    // Shown first: the copy is fitted to the width the panel has.
     this.el.show();
+    this.render(node);
   }
 
   /** Put the panel away. Returns whether it was open. */
@@ -92,8 +88,11 @@ export class PinViewer {
     // The node's own shape, so a tall note isn't squashed and a wide diagram isn't stretched.
     if (size) body.setCssProps({ '--ffc-pin-ratio': `${size.width} / ${size.height}` });
     const copy = this.copyOf(node);
-    if (copy) body.appendChild(copy);
-    else body.createDiv({ cls: 'ffc-pin-viewer-live', text: 'This is live content. Select Show in full to use it.' });
+    if (copy) {
+      body.appendChild(copy);
+      // What a group held is laid out in canvas units; scale it to the panel.
+      if (size && body.clientWidth > 0) copy.querySelector<HTMLElement>('.ffc-pin-contents')?.setCssProps({ '--ffc-pin-fit': String(body.clientWidth / size.width) });
+    } else body.createDiv({ cls: 'ffc-pin-viewer-live', text: 'This is live content. Select Show in full to use it.' });
   }
 
   private action(parent: HTMLElement, icon: string, label: string, run: () => void): void {
@@ -106,27 +105,18 @@ export class PinViewer {
     const ref = readIssueRef(node);
     if (ref) return ref.title ? `${ref.identifier} ${ref.title}` : ref.identifier;
     if (node.file) return node.file.basename;
+    // A group has a label of its own.
+    const label = node.getData?.().label;
+    if (typeof label === 'string' && label.trim()) return label.trim();
     const line = (node.text ?? '').split('\n').find((l) => l.trim() && !l.startsWith('<'));
     return line?.replace(/^[#>\-*\s]+/, '').trim() || 'Pin';
   }
 
-  /**
-   * A copy of the node as it is drawn, for the panel to hold. It keeps the node's classes and colour, which its content's
-   * styles are written against, and loses its place on the canvas.
-   */
+  /** A copy of the node as it is drawn, for the panel to hold. Null for live content, which a copy couldn't run. */
   private copyOf(node: CanvasNodeLike): HTMLElement | null {
     const source = node.nodeEl;
     // A view or a page is a running thing: copying it would load it a second time, and the copy couldn't be used.
     if (!source || readWidget(node) || source.querySelector('iframe, webview')) return null;
-    const copy = source.cloneNode(true) as HTMLElement;
-    copy.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
-    copy.removeAttribute('data-ffc-pin');
-    copy.removeClasses(['is-selected', 'is-focused']);
-    copy.querySelectorAll(LEFT_OUT).forEach((el) => el.remove());
-    const props: Array<[string, string]> = [];
-    for (const name of Array.from(source.style)) if (KEPT_PROP.test(name)) props.push([name, source.style.getPropertyValue(name)]);
-    copy.removeAttribute('style');
-    for (const [name, value] of props) copy.style.setProperty(name, value);
-    return copy;
+    return snapshotOf(source);
   }
 }

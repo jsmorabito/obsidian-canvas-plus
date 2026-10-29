@@ -5,6 +5,17 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.1]
+
+### Fixed
+
+- **Pinning a group hides what's in it.** The objects inside a pinned group, and
+  the edges that touch them, are hidden while it is a pin, and come back when it
+  is shown in full. Hovering the pin, or opening it, shows what the group held,
+  and the opened panel is titled with the group's name.
+- **A pinned group's pin can be clicked.** Core ignores presses on a group until
+  it is selected, which the pin on one inherited.
+
 ## [1.16.0]
 
 ### Added

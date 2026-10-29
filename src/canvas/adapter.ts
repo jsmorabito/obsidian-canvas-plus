@@ -45,6 +45,7 @@ export interface CanvasEdgeLike {
   from: EdgeEnd;
   to: EdgeEnd;
   lineGroupEl?: Element;
+  lineEndGroupEl?: Element;
   labelElement?: { wrapperEl?: HTMLElement; focus?: (...args: unknown[]) => void };
   editLabel?: () => void;
   getData: () => Record<string, unknown>;

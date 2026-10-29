@@ -1977,6 +1977,8 @@ body {
 }
 
 .ffc-node-pin {
+  /* A group lets presses through until it is selected: the pin on one still takes them. */
+  pointer-events: auto;
   position: absolute;
   left: 0;
   bottom: 0;
@@ -2016,6 +2018,38 @@ body {
   left: var(--ffc-pin-extent);
   width: var(--ffc-pin-gap);
   height: var(--ffc-pin-extent);
+}
+
+.ffc-pin-contents {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ffc-pin-contents > .canvas-node {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--ffc-w);
+  height: var(--ffc-h);
+  transform: translate(var(--ffc-dx), var(--ffc-dy));
+}
+
+/* In the panel, which is not the size of the group: the same layout, scaled to fit. */
+.ffc-pin-viewer-body .ffc-pin-contents {
+  inset: auto;
+  top: 0;
+  left: 0;
+  width: var(--ffc-pin-width);
+  height: var(--ffc-pin-height);
+  transform: scale(var(--ffc-pin-fit, 1));
+  transform-origin: 0 0;
+}
+
+.canvas-node[data-ffc-pin-hidden],
+.ffc-pin-hidden {
+  display: none;
 }
 
 .canvas-node[data-ffc-pin] .canvas-node-label,
