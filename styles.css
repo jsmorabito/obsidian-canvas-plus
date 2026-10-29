@@ -590,6 +590,11 @@ svg.ffc-ink path.ffc-ink-auto {
   gap: var(--size-4-1);
 }
 
+/* Room round the buttons and the search box, as in Figma's Linear panel. */
+.ffc-linear-view > .nav-header {
+  padding: var(--size-4-3) var(--size-4-4) var(--size-4-2);
+}
+
 /* The service's icon at the left of the widget's header, shown even where core leaves its icon slot hidden. Core's own padding and margin on the slot are dropped so it sits close to the title. */
 .ffc-tab-panel .ffc-header-icon {
   display: flex;
@@ -610,8 +615,29 @@ svg.ffc-ink path.ffc-ink-auto {
   overflow-y: auto;
 }
 
+.ffc-linear-body {
+  padding: 0 var(--size-4-2) var(--size-4-2);
+}
+
+/* Taller rows with the text set apart from the edge, and a hairline between issues. */
 .ffc-linear-row .tree-item-self {
   gap: var(--size-4-3);
+  padding: var(--size-4-3) var(--size-4-2);
+  margin-bottom: var(--size-2-1);
+}
+
+.ffc-linear-row + .ffc-linear-row {
+  border-top: var(--border-width) solid var(--background-modifier-border);
+}
+
+.ffc-linear-section {
+  padding: var(--size-4-3) var(--size-4-2) var(--size-4-1);
+}
+
+.ffc-linear-row .tree-item-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-1);
 }
 
 .ffc-linear-row .tree-item-inner {

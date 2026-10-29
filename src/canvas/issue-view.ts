@@ -242,7 +242,7 @@ export abstract class IssueView extends ItemView {
       this.bodyEl.createDiv({ cls: 'pane-empty', text: 'No issues found.' });
       return;
     }
-    if (!this.query) this.bodyEl.createDiv({ cls: 'tree-item-self' }).createDiv({ cls: 'tree-item-inner u-muted', text: 'Recently updated' });
+    if (!this.query) this.bodyEl.createDiv({ cls: 'tree-item-self ffc-linear-section' }).createDiv({ cls: 'tree-item-inner u-muted', text: 'Recently updated' });
     for (const issue of this.results) {
       const there = onCanvas.has(issue.id);
       const row = this.row(issue.identifier, issue.title, issue.state, issue.assignee?.name);
