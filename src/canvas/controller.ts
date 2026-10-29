@@ -15,6 +15,7 @@ import { ActionsPanel } from './actions-panel.ts';
 import { actionEntries } from './actions-entries.ts';
 import { clearIssueCards, decorateIssueCards } from './issue-card.ts';
 import { clearDiagrams, decorateDiagrams } from './diagram-card.ts';
+import { CodeFilePicker } from './code-file-picker.ts';
 import { addWidgetNode, clearWidgets, decorateWidget, pruneWidgets } from './widget-card.ts';
 import { WidgetPicker } from './widgets.ts';
 import { DiagramPicker } from './diagram-create.ts';
@@ -187,6 +188,7 @@ export class CanvasController {
         openIssuePanel: (provider) => { this.tabPanels.openView(PROVIDERS[provider].viewType); },
         addDiagram: () => { this.addDiagram(); },
         addWidget: () => { this.addWidget(); },
+        addCodeFile: () => { this.addCodeFile(); },
         createDiscourseNode: () => { this.createDiscourseNode(); },
         openDiscoursePanel: () => { this.openDiscoursePanel(); },
         onChanged: () => this.sweep(),
@@ -261,6 +263,14 @@ export class CanvasController {
     const canvas = this.view.canvas;
     if (!canvas) return false;
     new WidgetPicker(this.plugin.app, (widget) => { addWidgetNode(canvas, widget.type); this.sweep(); }).open();
+    return true;
+  }
+
+  /** Pick a code file (such as an HTML page), then add it to the canvas as a node. */
+  addCodeFile(): boolean {
+    const canvas = this.view.canvas;
+    if (!canvas) return false;
+    new CodeFilePicker(this.plugin.app, canvas, () => this.sweep()).open();
     return true;
   }
 

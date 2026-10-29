@@ -21,6 +21,7 @@ export interface ActionHooks {
   openIssuePanel: (provider: ProviderId) => void;
   addDiagram: () => void;
   addWidget: () => void;
+  addCodeFile: () => void;
   createDiscourseNode: () => void;
   openDiscoursePanel: () => void;
   onChanged: () => void;
@@ -30,7 +31,7 @@ export interface ActionHooks {
 const PICKER_HINTS: Record<ProviderId, string> = { linear: 'I', taskapp: 'J' };
 
 export function actionEntries(plugin: CanvasPlusPlugin, canvas: CanvasLike, hooks: ActionHooks): ActionEntry[] {
-  const { openIssuePicker, openIssuePanel, addDiagram, addWidget, createDiscourseNode, openDiscoursePanel, onChanged } = hooks;
+  const { openIssuePicker, openIssuePanel, addDiagram, addWidget, addCodeFile, createDiscourseNode, openDiscoursePanel, onChanged } = hooks;
   const entries: ActionEntry[] = [];
   const settings = (): void => openPluginSettings(plugin);
 
@@ -84,6 +85,7 @@ export function actionEntries(plugin: CanvasPlusPlugin, canvas: CanvasLike, hook
   }
   entries.push({ section: 'Canvas Plus', label: 'Add diagram…', icon: 'workflow', hint: 'B', keywords: 'chart mindmap flowchart mermaid pele graph', run: addDiagram });
   entries.push({ section: 'Canvas Plus', label: 'Add widget…', icon: 'puzzle', keywords: 'view panel object embed', run: addWidget });
+  entries.push({ section: 'Canvas Plus', label: 'Add HTML file…', icon: 'file-code', keywords: 'html page website source embed', run: addCodeFile });
   const chosen = selectedNodes(canvas);
   if (plugin.hasDiscourseGraphs && chosen.length > 0 && chosen.every(isConvertibleCard)) {
     entries.push({

@@ -1,6 +1,8 @@
 import { Plugin } from 'obsidian';
 import { registerCanvasTools } from './canvas/index.ts';
 import { ISSUE_VIEWS } from './canvas/issue-view.ts';
+import { registerHtmlEmbed } from './html/embed.ts';
+import { HTML_EXTENSIONS, HTML_VIEW, HtmlView } from './html/view.ts';
 import { hiddenWidgets } from './canvas/widgets.ts';
 import { IssueService, PROVIDERS, PROVIDER_IDS } from './issues/providers.ts';
 import { IssueStore } from './issues/store.ts';
@@ -107,6 +109,13 @@ export class CanvasPlusPlugin extends Plugin {
       this.registerView(PROVIDERS[id].viewType, (leaf) => new ISSUE_VIEWS[id](leaf, this));
       this.register(() => hiddenWidgets.delete(PROVIDERS[id].viewType));
     }
+    this.registerView(HTML_VIEW, (leaf) => new HtmlView(leaf));
+    try {
+      this.registerExtensions(HTML_EXTENSIONS, HTML_VIEW);
+    } catch {
+      // Another plugin already opens HTML files.
+    }
+    registerHtmlEmbed(this);
     this.syncWidgets();
     this.addSettingTab(new CanvasPlusSettingTab(this));
     registerCanvasTools(this);

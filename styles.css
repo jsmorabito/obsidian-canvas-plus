@@ -2469,3 +2469,31 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   color: var(--text-muted);
   font-size: var(--font-ui-small);
 }
+
+/* An HTML file shown in a frame: it fills its tab or canvas card. */
+.ffc-html-view {
+  padding: 0;
+}
+
+.ffc-html-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  /* Pages assume a light page unless they paint their own, so the frame stays light in a dark theme. */
+  color-scheme: light;
+}
+
+.ffc-html-embed {
+  height: 100%;
+}
+
+/* In a canvas card the frame takes presses only while the node is selected, so an unselected node can still be dragged. */
+.canvas-node .ffc-html-frame {
+  pointer-events: none;
+}
+
+.canvas-node.is-selected .ffc-html-frame,
+.canvas-node.is-focused .ffc-html-frame {
+  pointer-events: auto;
+}

@@ -5,6 +5,21 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0]
+
+### Added
+
+- **HTML files open in tabs.** `.html` and `.htm` files in the vault open in a
+  tab, rendered in a sandboxed frame. Scripts run, but the page can't reach the
+  vault or Obsidian, and it reloads when the file changes.
+- **HTML files render on the canvas.** Adding an HTML file to a canvas shows the
+  live page in its node, and `![[page.html]]` embeds in notes do too. The page
+  takes clicks only while its node is selected, so an unselected node can still
+  be dragged.
+- **Add HTML file… in the actions menu.** Fuzzy search over the vault's HTML
+  files, which the regular file search leaves out, then add the chosen one to
+  the canvas. A file already on the canvas is selected instead of added twice.
+
 ## [1.14.2]
 
 ### Added
