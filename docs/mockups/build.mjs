@@ -603,13 +603,12 @@ scenes.actions = () => {
 
 scenes.embeds = () => {
   const html = { x: 60, y: 60, w: 330, h: 280 };
-  const lp = { x: 450, y: 52, w: 400, h: 350 };
+  const lp = { x: 450, y: 40, w: 400, h: 384 };
   const issues = [
     ['Refactor the import pipeline to use shared types…', 'ENG-2061 · In progress · Ana Ruiz', 'half-y'],
     ['Use the unified upsert in the sync worker…', 'ENG-1823 · In progress · Ana Ruiz', 'half-y'],
     ['Create a generic upsert route that accepts…', 'FEE-890 · Discovery · Sam Lee', 'dash'],
     ['Add a shared format resolver to the editor…', 'ENG-2207 · Ready for review · Ana Ruiz', 'half-g'],
-    ['Publish the node type format as a package…', 'ENG-2208 · Ready for review · Ana Ruiz', 'half-g'],
   ];
   const status = (x, y, k) => k === 'dash'
     ? `<circle cx="${x}" cy="${y}" r="6.5" fill="none" stroke="#c9c9d2" stroke-width="2" stroke-dasharray="2.4 2.4"/>`
@@ -630,13 +629,13 @@ scenes.embeds = () => {
     ${icon('back', lp.x + 18, lp.y + 17, 16, 'cf')}${icon('fwd', lp.x + 44, lp.y + 17, 16, 'cf')}
     ${appLogo(lp.x + 76, lp.y + 15, 'linear', 20)}${text(lp.x + 104, lp.y + 31, 'Linear', { size: 14, weight: 500 })}
     ${icon('more', lp.x + lp.w - 64, lp.y + 17, 17, 'cm')}${icon('x', lp.x + lp.w - 34, lp.y + 17, 17, 'cm')}
-    ${box(lp.x + 14, lp.y + 50, 126, 34, { r: 8, cls: 'surface-alt' })}${text(lp.x + 77, lp.y + 72, 'On canvas (0)', { size: 13, anchor: 'middle' })}
-    <rect x="${lp.x + 148}" y="${lp.y + 50}" width="76" height="34" rx="8" class="a"/>${text(lp.x + 186, lp.y + 72, 'Explore', { size: 13, cls: 'on-a', weight: 600, anchor: 'middle' })}
-    ${box(lp.x + 14, lp.y + 98, lp.w - 28, 34, { r: 17, cls: 'surface' })}${icon('search', lp.x + 28, lp.y + 107, 16, 'cm')}${text(lp.x + 54, lp.y + 120, 'Search Linear, or enter an identifier or URL', { size: 12.5, cls: 'tf' })}
-    ${text(lp.x + 28, lp.y + 160, 'Recently updated', { size: 13, cls: 'tm', weight: 500 })}
+    ${box(lp.x + 16, lp.y + 54, 126, 34, { r: 8, cls: 'surface-alt' })}${text(lp.x + 79, lp.y + 76, 'On canvas (0)', { size: 13, anchor: 'middle' })}
+    <rect x="${lp.x + 150}" y="${lp.y + 54}" width="76" height="34" rx="8" class="a"/>${text(lp.x + 188, lp.y + 76, 'Explore', { size: 13, cls: 'on-a', weight: 600, anchor: 'middle' })}
+    ${box(lp.x + 16, lp.y + 104, lp.w - 32, 34, { r: 17, cls: 'surface' })}${icon('search', lp.x + 30, lp.y + 113, 16, 'cm')}${text(lp.x + 56, lp.y + 126, 'Search Linear, or enter an identifier or URL', { size: 12.5, cls: 'tf' })}
+    ${text(lp.x + 24, lp.y + 168, 'Recently updated', { size: 13, cls: 'tm', weight: 500 })}
     ${issues.map(([t, m, k], i) => {
-      const y = lp.y + 176 + i * 34;
-      return `${status(lp.x + 34, y + 12, k)}${text(lp.x + 56, y + 10, t, { size: 12.5, weight: 500 })}${text(lp.x + 56, y + 27, m, { size: 11, cls: 'tm' })}${icon('plus', lp.x + lp.w - 38, y + 4, 15, 'cf')}`;
+      const y = lp.y + 184 + i * 46;
+      return `${i ? `<line x1="${lp.x + 16}" y1="${y}" x2="${lp.x + lp.w - 16}" y2="${y}" class="line"/>` : ''}${status(lp.x + 34, y + 24, k)}${text(lp.x + 56, y + 22, t, { size: 12.5, weight: 500 })}${text(lp.x + 56, y + 38, m, { size: 11, cls: 'tm' })}${icon('plus', lp.x + lp.w - 38, y + 16, 15, 'cf')}`;
     }).join('')}
   `);
 };
