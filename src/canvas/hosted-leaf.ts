@@ -100,7 +100,9 @@ export function createHostedLeaf(app: App, host: WorkspaceLeaf, onGone: () => vo
 function keepNewTabsHere(app: App, leaf: WorkspaceLeaf, el: HTMLElement): void {
   const workspace = app.workspace as unknown as WorkspaceInternals;
   let restore: (() => void) | null = null;
+  let timer = 0;
   const end = (): void => {
+    window.clearTimeout(timer);
     restore?.();
     restore = null;
   };
@@ -112,20 +114,22 @@ function keepNewTabsHere(app: App, leaf: WorkspaceLeaf, el: HTMLElement): void {
     const original = workspace.getLeaf;
     workspace.getLeaf = function (this: unknown, newLeaf?: unknown, direction?: unknown) {
       const intoNew = newLeaf === true || newLeaf === 'tab';
-      if (intoNew && leaf.view.getViewType() === 'empty') return leaf;
+      if (intoNew && leaf.view.getViewType() === 'empty') {
+        end();
+        return leaf;
+      }
       return original.call(this, newLeaf, direction);
     };
     restore = () => {
       if (had) workspace.getLeaf = original;
       else Reflect.deleteProperty(workspace, 'getLeaf');
     };
-    // Fallback in case the event never bubbles back up.
-    window.setTimeout(end, 0);
+    // Some actions (like New note) ask for a leaf only after an async step, so stay active until one is
+    // asked for, with a fallback in case none ever is.
+    timer = window.setTimeout(end, 3000);
   };
   el.addEventListener('click', begin, true);
-  el.addEventListener('click', end);
   el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') begin(e); }, true);
-  el.addEventListener('keydown', end);
 }
 
 /** Detach without adding to "Reopen closed tab". */
