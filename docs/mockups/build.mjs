@@ -48,6 +48,14 @@ const ICONS = {
   back: ['<path d="m12 19-7-7 7-7M19 12H5"/>'],
   fwd: ['<path d="M5 12h14M12 5l7 7-7 7"/>'],
   sidebar: ['<rect width="18" height="18" x="3" y="3" rx="2"/>', '<path d="M9 3v18"/>'],
+  comment: ['<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>'],
+  tray: ['<path d="M22 12h-6l-2 3h-4l-2-3H2"/>', '<path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'],
+  command: ['<path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/>'],
+  workflow: ['<rect width="8" height="8" x="3" y="3" rx="2"/>', '<path d="M7 11v4a2 2 0 0 0 2 2h4"/>', '<rect width="8" height="8" x="13" y="13" rx="2"/>'],
+  puzzle: ['<path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"/>'],
+  filecode: ['<path d="M10 12.5 8 15l2 2.5"/>', '<path d="m14 12.5 2 2.5-2 2.5"/>', '<path d="M14 2v4a2 2 0 0 0 2 2h4"/>', '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/>'],
+  link: ['<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>', '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'],
+  star: ['<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>'],
   grip: ['<circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/>'],
 };
 
@@ -202,7 +210,7 @@ function toolbar(cx, y, groups, active, size = 34) {
   return { out, pos, w };
 }
 
-const TOOLS = [['pointer'], ['card', 'note', 'media', 'types'], ['text', 'group', 'anchor', 'marker', 'highlighter', 'eraser']];
+const TOOLS = [['pointer'], ['card', 'note', 'media', 'types'], ['text', 'group', 'anchor', 'comment', 'marker', 'highlighter', 'eraser'], ['tray', 'command']];
 
 /** A small tooltip-style label centred on x, sitting above y. */
 function tip(x, y, label, key) {
@@ -312,11 +320,17 @@ scenes.layers = () => {
     { d: 1, ic: 'note', label: 'Wireframes' },
     { d: 1, ic: 'globe', label: 'Figma file', hover: true },
     { d: 0, ic: 'anchor', label: 'Anchor 2' },
-    { d: 0, ic: 'text', label: 'Launch plan' },
   ];
-  let list = '';
+  const favs = ['Wireframes', 'Anchor 1'];
+  let list = `${icon('down', px + 12, py + 99, 14, 'cf')}${icon('star', px + 30, py + 97, 16, 'ca')}${text(px + 54, py + 110, 'Favorites', { size: 13, weight: 600 })}`;
+  favs.forEach((f, i) => {
+    const y = py + 124 + i * 30;
+    if (i === 0) list += `<rect x="${px + 8}" y="${y - 4}" width="${pw - 16}" height="28" rx="6" class="fill-hover"/>${icon('x', px + pw - 34, y + 3, 14, 'cm')}`;
+    list += icon(i ? 'anchor' : 'note', px + 34, y + 2, 16, 'cm') + text(px + 58, y + 15, f, { size: 13 });
+  });
+  list += `<line x1="${px + 12}" y1="${py + 192}" x2="${px + pw - 12}" y2="${py + 192}" class="line"/>`;
   rows.forEach((r, i) => {
-    const y = py + 112 + i * 32;
+    const y = py + 204 + i * 30;
     const x = px + 12 + r.d * 20;
     if (r.sel) list += `<rect x="${px + 8}" y="${y - 4}" width="${pw - 16}" height="28" rx="6" class="asoft"/>`;
     if (r.hover) list += `<rect x="${px + 8}" y="${y - 4}" width="${pw - 16}" height="28" rx="6" class="fill-hover"/>${icon('pencil', px + pw - 36, y + 3, 14, 'cm')}`;
@@ -324,7 +338,7 @@ scenes.layers = () => {
     list += icon(r.ic, x + (r.d ? 4 : 18), y + 2, 16, r.sel ? 'ca' : 'cm');
     list += text(x + (r.d ? 28 : 42), y + 15, r.label, { size: 13, cls: r.sel ? 'a' : 't', weight: r.sel ? 600 : 400 });
   });
-  return svg('Layers panel listing groups, anchors and notes', `
+  return svg('Layers panel with a favorites section, groups, anchors and notes', `
     ${group(420, 76, 300, 180, 'Research')}
     ${card(440, 96, 124, 76, 'Interviews', [80, 60])}
     ${card(578, 96, 124, 76, 'Survey', [70, 84])}
@@ -460,6 +474,110 @@ scenes.notetypes = () => {
       return `${text(sx + 18, y + 12, k.toUpperCase(), { size: 10.5, cls: 'tf', weight: 700 })}
         ${box(sx + 14, y + 20, sw - 28, 32, { r: 8, cls: 'surface-alt' })}
         ${icon('note', sx + 24, y + 28, 16, 'cm')}${text(sx + 48, y + 41, v, { size: 13, weight: 500 })}`;
+    }).join('')}
+  `);
+};
+
+scenes.diagrams = () => {
+  const cx = 70, cy = 52, cw = 700, ch = 372;
+  const node = (x, y, w, label, { sel = false, root = false, cls = 'surface' } = {}) =>
+    `${box(x, y, w, 32, { r: root ? 16 : 8, cls: root ? 'a' : cls })}
+     ${sel ? `<rect x="${x - 3}" y="${y - 3}" width="${w + 6}" height="38" rx="11" class="as" stroke-width="2"/>` : ''}
+     ${text(x + w / 2, y + 21, label, { size: 13, weight: root ? 650 : 500, cls: root ? 'on-a' : 't', anchor: 'middle' })}`;
+  const link = (x1, y1, x2, y2) => `<path d="M${x1} ${y1} C ${x1 + 40} ${y1}, ${x2 - 40} ${y2}, ${x2} ${y2}" class="line-strong" stroke-width="1.6" fill="none"/>`;
+  const rootX = cx + 36, rootY = cy + 170;
+  const branches = [['Research', cy + 62, ['Interviews', 'Survey']], ['Design', cy + 170, ['Wireframes', 'Brand']], ['Launch', cy + 280, ['Checklist']]];
+  let tree = '';
+  branches.forEach(([name, y, kids]) => {
+    tree += link(rootX + 96, rootY + 16, cx + 200, y + 16) + node(cx + 200, y, 104, name, { sel: name === 'Design' });
+    kids.forEach((k, i) => {
+      const ky = y + 16 + (i - (kids.length - 1) / 2) * 44 - 16;
+      tree += link(cx + 304, y + 16, cx + 400, ky + 16) + node(cx + 400, ky, 112, k);
+    });
+  });
+  const dx = cx + 304, dy = cy + 186;
+  const tb = { x: cx + 160, y: cy + 112, w: 220, h: 38 };
+  return svg('A mindmap diagram on the canvas, with a node picked and its toolbar', `
+    ${box(cx, cy, cw, ch, { r: 12, shadow: true })}
+    ${text(cx + 24, cy + 32, 'Product launch', { size: 15, weight: 700 })}
+    ${pill(cx + cw - 96, cy + 14, 'mermaid', { size: 11 })}
+    ${node(rootX, rootY, 96, 'Launch', { root: true })}
+    ${tree}
+    <circle cx="${dx + 12}" cy="${dy}" r="9" class="a"/>${icon('plus', dx + 5, dy - 7, 14, 'on-a')}
+    ${box(tb.x, tb.y, tb.w, tb.h, { r: 10, shadow: true })}
+    <circle cx="${tb.x + 22}" cy="${tb.y + 19}" r="8" class="a"/>
+    <rect x="${tb.x + 42}" y="${tb.y + 11}" width="18" height="16" rx="5" class="line-strong" fill="none" stroke-width="1.5"/>
+    ${text(tb.x + 78, tb.y + 25, 'B', { size: 14, weight: 800 })}
+    ${text(tb.x + 100, tb.y + 25, 'I', { size: 14, weight: 500 })}
+    ${text(tb.x + 120, tb.y + 25, 'U', { size: 14, weight: 500 })}
+    ${icon('link', tb.x + 146, tb.y + 11, 16, 'cm')}
+    ${icon('globe', tb.x + 172, tb.y + 11, 16, 'cm')}
+    ${icon('note', tb.x + 196 - 4, tb.y + 11, 16, 'cm')}
+    ${cursor(dx + 40, dy + 24)}
+  `);
+};
+
+scenes.actions = () => {
+  const bar = toolbar(W / 2, H - 76, TOOLS, 'command');
+  const pw = 480, ph = 330, px = W / 2 - pw / 2, py = 44;
+  const entries = [
+    ['Linear', null],
+    ['Add Linear issue…', 'plus', 'I'],
+    ['Open Linear panel', 'panel'],
+    ['Canvas Plus', null],
+    ['Add diagram…', 'workflow', 'B', true],
+    ['Add widget…', 'puzzle'],
+    ['Add HTML file…', 'filecode'],
+    ['Open Canvas Plus settings', 'settings'],
+  ];
+  let y = py + 66, rows = '';
+  entries.forEach(([label, ic, hint, sel]) => {
+    if (!ic) { rows += text(px + 18, y + 14, label.toUpperCase(), { size: 10.5, cls: 'tf', weight: 700 }); y += 26; return; }
+    if (sel) rows += `<rect x="${px + 8}" y="${y - 4}" width="${pw - 16}" height="32" rx="7" class="asoft"/>`;
+    rows += icon(ic, px + 20, y + 3, 18, sel ? 'ca' : 'cm') + text(px + 50, y + 18, label, { size: 13.5, cls: sel ? 'a' : 't', weight: sel ? 600 : 400 });
+    if (hint) rows += `<rect x="${px + pw - 44}" y="${y + 4}" width="26" height="20" rx="5" class="fill-hover"/>${text(px + pw - 31, y + 18, hint, { size: 11.5, cls: 'tm', anchor: 'middle' })}`;
+    y += 34;
+  });
+  return svg('The actions panel: a searchable list of canvas actions', `
+    ${card(70, 90, 200, 110, 'Brief', [150, 130, 90])}
+    ${card(70, 240, 200, 110, 'Audience', [140, 150, 80])}
+    ${card(700, 110, 200, 110, 'Timeline', [150, 120, 100])}
+    <rect width="${W}" height="${H}" class="bg" opacity=".45"/>
+    ${box(px, py, pw, ph, { r: 12, shadow: true })}
+    ${icon('search', px + 18, py + 19, 18, 'cf')}${text(px + 46, py + 38, 'Search actions', { size: 14.5, cls: 'tf' })}
+    <line x1="${px}" y1="${py + 56}" x2="${px + pw}" y2="${py + 56}" class="line"/>
+    ${rows}
+    ${bar.out}
+    ${tip(bar.pos.command, H - 82, 'Actions', '⌘K')}
+  `);
+};
+
+scenes.embeds = () => {
+  const html = { x: 70, y: 76, w: 470, h: 330 };
+  const wd = { x: 590, y: 76, w: 300, h: 330 };
+  const issues = [['ENG-142', 'Sync drops edits on reconnect', 'In progress'], ['ENG-151', 'Add share links to canvases', 'Todo'], ['ENG-158', 'Minimap blank on first open', 'Done']];
+  return svg('An HTML page and a Linear widget running live as nodes on the canvas', `
+    ${text(html.x, html.y - 12, 'dashboard.html', { size: 12.5, cls: 'tf' })}
+    ${box(html.x, html.y, html.w, html.h, { r: 8, shadow: true })}
+    <rect x="${html.x - 3}" y="${html.y - 3}" width="${html.w + 6}" height="${html.h + 6}" rx="10" class="as" stroke-width="2"/>
+    <rect x="${html.x}" y="${html.y}" width="${html.w}" height="52" rx="8" class="a"/>
+    <rect x="${html.x}" y="${html.y + 30}" width="${html.w}" height="22" class="a"/>
+    ${text(html.x + 24, html.y + 33, 'Weekly metrics', { size: 17, weight: 700, cls: 'on-a' })}
+    ${[0, 1, 2].map((i) => `${box(html.x + 24 + i * 144, html.y + 76, 130, 70, { r: 8, cls: 'surface-alt' })}
+      ${text(html.x + 38 + i * 144, html.y + 100, ['Active', 'Signups', 'Churn'][i], { size: 11.5, cls: 'tm' })}
+      ${text(html.x + 38 + i * 144, html.y + 130, ['12.4k', '842', '1.8%'][i], { size: 22, weight: 700 })}`).join('')}
+    ${[40, 70, 52, 96, 80, 118, 100, 136].map((v, i) => `<rect x="${html.x + 32 + i * 52}" y="${html.y + 310 - v}" width="30" height="${v}" rx="4" class="a" opacity="${0.35 + i * 0.08}"/>`).join('')}
+    ${cursor(html.x + 380, html.y + 190)}
+    ${text(wd.x, wd.y - 12, 'Linear', { size: 12.5, cls: 'tf' })}
+    ${box(wd.x, wd.y, wd.w, wd.h, { r: 8, shadow: true })}
+    ${text(wd.x + 18, wd.y + 32, 'On canvas', { size: 14, weight: 700 })}
+    ${box(wd.x + 14, wd.y + 46, wd.w - 28, 30, { r: 8, cls: 'surface-alt' })}${icon('search', wd.x + 24, wd.y + 53, 15, 'cf')}${text(wd.x + 46, wd.y + 66, 'Search issues', { size: 12, cls: 'tf' })}
+    ${issues.map(([id, t, st], i) => {
+      const y = wd.y + 92 + i * 74;
+      return `${box(wd.x + 14, y, wd.w - 28, 64, { r: 8, cls: 'surface-alt' })}
+        ${text(wd.x + 26, y + 22, id, { size: 11, cls: 'tf', weight: 600 })}
+        ${text(wd.x + 26, y + 40, t, { size: 12.5, weight: 500 })}
+        ${pill(wd.x + 26, y + 46, st, { size: 9.5 })}`;
     }).join('')}
   `);
 };

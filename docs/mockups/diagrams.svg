@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="960" height="520" role="img" aria-label="A mindmap diagram on the canvas, with a node picked and its toolbar">
+<title>A mindmap diagram on the canvas, with a node picked and its toolbar</title>
+<style>
+  text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; }
+  .bg { fill: #f6f6f8; } .dot { fill: #d6d6dd; }
+  .surface { fill: #ffffff; stroke: #e2e2e8; stroke-width: 1; }
+  .surface-alt { fill: #f3f3f6; stroke: #e2e2e8; stroke-width: 1; }
+  .fill-surface { fill: #ffffff; } .fill-alt { fill: #f3f3f6; } .fill-hover { fill: #ececf1; }
+  .line { stroke: #e2e2e8; fill: none; } .line-strong { stroke: #b9b9c4; fill: none; }
+  .t { fill: #222228; } .tm { fill: #6c6c78; } .tf { fill: #a2a2ae; }
+  .bar-t { fill: #dcdce3; } .bar-f { fill: #ececf1; }
+  .c { color: #222228; } .cm { color: #6c6c78; } .cf { color: #a2a2ae; } .ca { color: #7655f0; }
+  .a { fill: #7655f0; } .as { stroke: #7655f0; fill: none; } .asoft { fill: #7655f0; fill-opacity: .1; }
+  .on-a { fill: #ffffff; }
+  .ink-red { stroke: #e93147; } .ink-green { stroke: #08b94e; }
+  .hl-yellow { stroke: #f5c400; stroke-opacity: .38; }
+  .shadow { flood-color: #1b1b30; flood-opacity: .08; }
+  .gfill { fill: #ffffff; fill-opacity: .6; }
+  .o-fill { fill: #f6e5dc; stroke: #d9a184; stroke-width: 1.2; } .o-t { fill: #a8461a; }
+  .chrome { fill: #ececf0; } .ink-dark { stroke: #222228; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #1c1c1f; } .dot { fill: #38383e; }
+    .surface { fill: #26262a; stroke: #36363c; }
+    .surface-alt { fill: #2d2d32; stroke: #36363c; }
+    .fill-surface { fill: #26262a; } .fill-alt { fill: #2d2d32; } .fill-hover { fill: #34343a; }
+    .line { stroke: #36363c; } .line-strong { stroke: #55555e; }
+    .t { fill: #e4e4e9; } .tm { fill: #a0a0ab; } .tf { fill: #6d6d78; }
+    .bar-t { fill: #3e3e45; } .bar-f { fill: #33333a; }
+    .c { color: #e4e4e9; } .cm { color: #a0a0ab; } .cf { color: #6d6d78; } .ca { color: #9b83ff; }
+    .a { fill: #8f76ff; } .as { stroke: #8f76ff; } .asoft { fill: #8f76ff; fill-opacity: .16; }
+    .on-a { fill: #ffffff; }
+    .hl-yellow { stroke-opacity: .3; }
+    .shadow { flood-color: #000000; flood-opacity: .35; }
+    .gfill { fill: #ffffff; fill-opacity: .025; }
+    .o-fill { fill: #3a2a22; stroke: #8a5235; } .o-t { fill: #f0a274; }
+    .chrome { fill: #161618; } .ink-dark { stroke: #e4e4e9; }
+  }
+  .ic { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+<defs>
+    <symbol id="i-note" viewBox="0 0 24 24" class="ic"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol><symbol id="i-globe" viewBox="0 0 24 24" class="ic"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/></symbol><symbol id="i-plus" viewBox="0 0 24 24" class="ic"><path d="M5 12h14M12 5v14"/></symbol><symbol id="i-link" viewBox="0 0 24 24" class="ic"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" class="dot"/></pattern>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="8" class="shadow"/></filter>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9c7ff"/><stop offset="1" stop-color="#e9d8ff"/></linearGradient>
+    <linearGradient id="dusk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd1b3"/><stop offset="1" stop-color="#f6a8c4"/></linearGradient>
+    <clipPath id="frame"><rect width="960" height="520" rx="14"/></clipPath>
+  </defs>
+<g clip-path="url(#frame)">
+  <rect width="960" height="520" class="bg"/>
+  <rect width="960" height="520" fill="url(#dots)"/>
+  
+    <rect x="70" y="52" width="700" height="372" rx="12" class="surface" filter="url(#sh)"/>
+    <text x="94" y="84" font-size="15" font-weight="700" text-anchor="start" class="t">Product launch</text>
+    <rect x="674" y="66" width="62.199999999999996" height="20" rx="10" class="asoft"/><text x="705.1" y="79.5" font-size="11" font-weight="600" text-anchor="middle" class="a">mermaid</text>
+    <rect x="106" y="222" width="96" height="32" rx="16" class="a"/>
+     
+     <text x="154" y="243" font-size="13" font-weight="650" text-anchor="middle" class="on-a">Launch</text>
+    <path d="M202 238 C 242 238, 230 130, 270 130" class="line-strong" stroke-width="1.6" fill="none"/><rect x="270" y="114" width="104" height="32" rx="8" class="surface"/>
+     
+     <text x="322" y="135" font-size="13" font-weight="500" text-anchor="middle" class="t">Research</text><path d="M374 130 C 414 130, 430 108, 470 108" class="line-strong" stroke-width="1.6" fill="none"/><rect x="470" y="92" width="112" height="32" rx="8" class="surface"/>
+     
+     <text x="526" y="113" font-size="13" font-weight="500" text-anchor="middle" class="t">Interviews</text><path d="M374 130 C 414 130, 430 152, 470 152" class="line-strong" stroke-width="1.6" fill="none"/><rect x="470" y="136" width="112" height="32" rx="8" class="surface"/>
+     
+     <text x="526" y="157" font-size="13" font-weight="500" text-anchor="middle" class="t">Survey</text><path d="M202 238 C 242 238, 230 238, 270 238" class="line-strong" stroke-width="1.6" fill="none"/><rect x="270" y="222" width="104" height="32" rx="8" class="surface"/>
+     <rect x="267" y="219" width="110" height="38" rx="11" class="as" stroke-width="2"/>
+     <text x="322" y="243" font-size="13" font-weight="500" text-anchor="middle" class="t">Design</text><path d="M374 238 C 414 238, 430 216, 470 216" class="line-strong" stroke-width="1.6" fill="none"/><rect x="470" y="200" width="112" height="32" rx="8" class="surface"/>
+     
+     <text x="526" y="221" font-size="13" font-weight="500" text-anchor="middle" class="t">Wireframes</text><path d="M374 238 C 414 238, 430 260, 470 260" class="line-strong" stroke-width="1.6" fill="none"/><rect x="470" y="244" width="112" height="32" rx="8" class="surface"/>
+     
+     <text x="526" y="265" font-size="13" font-weight="500" text-anchor="middle" class="t">Brand</text><path d="M202 238 C 242 238, 230 348, 270 348" class="line-strong" stroke-width="1.6" fill="none"/><rect x="270" y="332" width="104" height="32" rx="8" class="surface"/>
+     
+     <text x="322" y="353" font-size="13" font-weight="500" text-anchor="middle" class="t">Launch</text><path d="M374 348 C 414 348, 430 348, 470 348" class="line-strong" stroke-width="1.6" fill="none"/><rect x="470" y="332" width="112" height="32" rx="8" class="surface"/>
+     
+     <text x="526" y="353" font-size="13" font-weight="500" text-anchor="middle" class="t">Checklist</text>
+    <circle cx="386" cy="238" r="9" class="a"/><use href="#i-plus" x="379" y="231" width="14" height="14" class="on-a"/>
+    <rect x="230" y="164" width="220" height="38" rx="10" class="surface" filter="url(#sh)"/>
+    <circle cx="252" cy="183" r="8" class="a"/>
+    <rect x="272" y="175" width="18" height="16" rx="5" class="line-strong" fill="none" stroke-width="1.5"/>
+    <text x="308" y="189" font-size="14" font-weight="800" text-anchor="start" class="t">B</text>
+    <text x="330" y="189" font-size="14" font-weight="500" text-anchor="start" class="t">I</text>
+    <text x="350" y="189" font-size="14" font-weight="500" text-anchor="start" class="t">U</text>
+    <use href="#i-link" x="376" y="175" width="16" height="16" class="cm"/>
+    <use href="#i-globe" x="402" y="175" width="16" height="16" class="cm"/>
+    <use href="#i-note" x="422" y="175" width="16" height="16" class="cm"/>
+    <path d="M414 262l0 17l4.5-4.2l3 6.6l2.6-1.2l-3-6.4l6.1-.3z" fill="#111" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>
+  
+</g>
+<rect x=".5" y=".5" width="959" height="519" rx="14" class="line"/>
+</svg>

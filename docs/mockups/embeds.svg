@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="960" height="520" role="img" aria-label="An HTML page and a Linear widget running live as nodes on the canvas">
+<title>An HTML page and a Linear widget running live as nodes on the canvas</title>
+<style>
+  text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; }
+  .bg { fill: #f6f6f8; } .dot { fill: #d6d6dd; }
+  .surface { fill: #ffffff; stroke: #e2e2e8; stroke-width: 1; }
+  .surface-alt { fill: #f3f3f6; stroke: #e2e2e8; stroke-width: 1; }
+  .fill-surface { fill: #ffffff; } .fill-alt { fill: #f3f3f6; } .fill-hover { fill: #ececf1; }
+  .line { stroke: #e2e2e8; fill: none; } .line-strong { stroke: #b9b9c4; fill: none; }
+  .t { fill: #222228; } .tm { fill: #6c6c78; } .tf { fill: #a2a2ae; }
+  .bar-t { fill: #dcdce3; } .bar-f { fill: #ececf1; }
+  .c { color: #222228; } .cm { color: #6c6c78; } .cf { color: #a2a2ae; } .ca { color: #7655f0; }
+  .a { fill: #7655f0; } .as { stroke: #7655f0; fill: none; } .asoft { fill: #7655f0; fill-opacity: .1; }
+  .on-a { fill: #ffffff; }
+  .ink-red { stroke: #e93147; } .ink-green { stroke: #08b94e; }
+  .hl-yellow { stroke: #f5c400; stroke-opacity: .38; }
+  .shadow { flood-color: #1b1b30; flood-opacity: .08; }
+  .gfill { fill: #ffffff; fill-opacity: .6; }
+  .o-fill { fill: #f6e5dc; stroke: #d9a184; stroke-width: 1.2; } .o-t { fill: #a8461a; }
+  .chrome { fill: #ececf0; } .ink-dark { stroke: #222228; }
+  @media (prefers-color-scheme: dark) {
+    .bg { fill: #1c1c1f; } .dot { fill: #38383e; }
+    .surface { fill: #26262a; stroke: #36363c; }
+    .surface-alt { fill: #2d2d32; stroke: #36363c; }
+    .fill-surface { fill: #26262a; } .fill-alt { fill: #2d2d32; } .fill-hover { fill: #34343a; }
+    .line { stroke: #36363c; } .line-strong { stroke: #55555e; }
+    .t { fill: #e4e4e9; } .tm { fill: #a0a0ab; } .tf { fill: #6d6d78; }
+    .bar-t { fill: #3e3e45; } .bar-f { fill: #33333a; }
+    .c { color: #e4e4e9; } .cm { color: #a0a0ab; } .cf { color: #6d6d78; } .ca { color: #9b83ff; }
+    .a { fill: #8f76ff; } .as { stroke: #8f76ff; } .asoft { fill: #8f76ff; fill-opacity: .16; }
+    .on-a { fill: #ffffff; }
+    .hl-yellow { stroke-opacity: .3; }
+    .shadow { flood-color: #000000; flood-opacity: .35; }
+    .gfill { fill: #ffffff; fill-opacity: .025; }
+    .o-fill { fill: #3a2a22; stroke: #8a5235; } .o-t { fill: #f0a274; }
+    .chrome { fill: #161618; } .ink-dark { stroke: #e4e4e9; }
+  }
+  .ic { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+<defs>
+    <symbol id="i-search" viewBox="0 0 24 24" class="ic"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" class="dot"/></pattern>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="8" class="shadow"/></filter>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9c7ff"/><stop offset="1" stop-color="#e9d8ff"/></linearGradient>
+    <linearGradient id="dusk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd1b3"/><stop offset="1" stop-color="#f6a8c4"/></linearGradient>
+    <clipPath id="frame"><rect width="960" height="520" rx="14"/></clipPath>
+  </defs>
+<g clip-path="url(#frame)">
+  <rect width="960" height="520" class="bg"/>
+  <rect width="960" height="520" fill="url(#dots)"/>
+  
+    <text x="70" y="64" font-size="12.5" font-weight="400" text-anchor="start" class="tf">dashboard.html</text>
+    <rect x="70" y="76" width="470" height="330" rx="8" class="surface" filter="url(#sh)"/>
+    <rect x="67" y="73" width="476" height="336" rx="10" class="as" stroke-width="2"/>
+    <rect x="70" y="76" width="470" height="52" rx="8" class="a"/>
+    <rect x="70" y="106" width="470" height="22" class="a"/>
+    <text x="94" y="109" font-size="17" font-weight="700" text-anchor="start" class="on-a">Weekly metrics</text>
+    <rect x="94" y="152" width="130" height="70" rx="8" class="surface-alt"/>
+      <text x="108" y="176" font-size="11.5" font-weight="400" text-anchor="start" class="tm">Active</text>
+      <text x="108" y="206" font-size="22" font-weight="700" text-anchor="start" class="t">12.4k</text><rect x="238" y="152" width="130" height="70" rx="8" class="surface-alt"/>
+      <text x="252" y="176" font-size="11.5" font-weight="400" text-anchor="start" class="tm">Signups</text>
+      <text x="252" y="206" font-size="22" font-weight="700" text-anchor="start" class="t">842</text><rect x="382" y="152" width="130" height="70" rx="8" class="surface-alt"/>
+      <text x="396" y="176" font-size="11.5" font-weight="400" text-anchor="start" class="tm">Churn</text>
+      <text x="396" y="206" font-size="22" font-weight="700" text-anchor="start" class="t">1.8%</text>
+    <rect x="102" y="346" width="30" height="40" rx="4" class="a" opacity="0.35"/><rect x="154" y="316" width="30" height="70" rx="4" class="a" opacity="0.43"/><rect x="206" y="334" width="30" height="52" rx="4" class="a" opacity="0.51"/><rect x="258" y="290" width="30" height="96" rx="4" class="a" opacity="0.59"/><rect x="310" y="306" width="30" height="80" rx="4" class="a" opacity="0.6699999999999999"/><rect x="362" y="268" width="30" height="118" rx="4" class="a" opacity="0.75"/><rect x="414" y="286" width="30" height="100" rx="4" class="a" opacity="0.83"/><rect x="466" y="250" width="30" height="136" rx="4" class="a" opacity="0.91"/>
+    <path d="M450 266l0 17l4.5-4.2l3 6.6l2.6-1.2l-3-6.4l6.1-.3z" fill="#111" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>
+    <text x="590" y="64" font-size="12.5" font-weight="400" text-anchor="start" class="tf">Linear</text>
+    <rect x="590" y="76" width="300" height="330" rx="8" class="surface" filter="url(#sh)"/>
+    <text x="608" y="108" font-size="14" font-weight="700" text-anchor="start" class="t">On canvas</text>
+    <rect x="604" y="122" width="272" height="30" rx="8" class="surface-alt"/><use href="#i-search" x="614" y="129" width="15" height="15" class="cf"/><text x="636" y="142" font-size="12" font-weight="400" text-anchor="start" class="tf">Search issues</text>
+    <rect x="604" y="168" width="272" height="64" rx="8" class="surface-alt"/>
+        <text x="616" y="190" font-size="11" font-weight="600" text-anchor="start" class="tf">ENG-142</text>
+        <text x="616" y="208" font-size="12.5" font-weight="500" text-anchor="start" class="t">Sync drops edits on reconnect</text>
+        <rect x="616" y="214" width="78.69999999999999" height="18.5" rx="9.25" class="asoft"/><text x="655.35" y="226" font-size="9.5" font-weight="600" text-anchor="middle" class="a">In progress</text><rect x="604" y="242" width="272" height="64" rx="8" class="surface-alt"/>
+        <text x="616" y="264" font-size="11" font-weight="600" text-anchor="start" class="tf">ENG-151</text>
+        <text x="616" y="282" font-size="12.5" font-weight="500" text-anchor="start" class="t">Add share links to canvases</text>
+        <rect x="616" y="288" width="38.8" height="18.5" rx="9.25" class="asoft"/><text x="635.4" y="300" font-size="9.5" font-weight="600" text-anchor="middle" class="a">Todo</text><rect x="604" y="316" width="272" height="64" rx="8" class="surface-alt"/>
+        <text x="616" y="338" font-size="11" font-weight="600" text-anchor="start" class="tf">ENG-158</text>
+        <text x="616" y="356" font-size="12.5" font-weight="500" text-anchor="start" class="t">Minimap blank on first open</text>
+        <rect x="616" y="362" width="38.8" height="18.5" rx="9.25" class="asoft"/><text x="635.4" y="374" font-size="9.5" font-weight="600" text-anchor="middle" class="a">Done</text>
+  
+</g>
+<rect x=".5" y=".5" width="959" height="519" rx="14" class="line"/>
+</svg>

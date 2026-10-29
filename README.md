@@ -22,13 +22,17 @@ Open a canvas and Obsidian's bottom menu becomes one bar: Select, then its own d
 
 *Flowcharts* can be edited on the canvas too. Click a node or an edge to pick it. Dots round a node add a node after it, before it or beside it, and dragging from a dot onto another node joins them. Double-click renames a node or labels an edge. Drag a node onto another to hang it from that node, or onto a side of a sibling to reorder. The toolbar sets a node's color, shape and formatting, and an edge's style. The card's right-click menu sets which way the chart runs. A flowchart that uses syntax the editor can't change safely (several nodes joined with `&`, edge ids, arrows with text in them) names the line and stays editable as source.
 
+In a mindmap or flowchart, the node toolbar and right-click menu have **Link to web address…**, which turns the node's text into a link that opens in your browser (`Cmd`/`Ctrl` + click, or click a node that is already picked).
+
+![A mindmap diagram with a node picked and its toolbar](docs/mockups/diagrams.svg)
+
 **Ink**  
 Marker and highlighter strokes, with a pen color row (none plus the six canvas presets). The eraser removes whole strokes.
 
 ![Marker and highlighter strokes with the pen color row](docs/mockups/ink.svg)
 
 **Layers panel**  
-A panel on the left lists groups, anchors and what they contain; select an anchor to jump to it. Hover a group or web link and select the pencil to rename it; a link's name shows in place of its URL. It has a search box and a filter by kind of layer or note type. Filtered to **Anchors**, it lists them numbered in presentation order instead; drag a row to reorder them (on touch, hold the row first). It starts hidden: select the layers button in the top left to show it.
+A panel on the left lists groups, anchors and what they contain; select an anchor to jump to it. Hover a group or web link and select the pencil to rename it; a link's name shows in place of its URL. It has a search box and a filter by kind of layer or note type. Filtered to **Anchors**, it lists them numbered in presentation order instead; drag a row to reorder them (on touch, hold the row first). It has a collapsible **Favorites** section at the top (hover a favorite and select the × to remove it), and it is as wide as Figma's left panel by default; drag its right edge to resize it (double-click the edge to reset). It starts hidden: select the layers button in the top left to show it.
 
 ![The layers panel listing groups, anchors and notes](docs/mockups/layers.svg)
 
@@ -36,6 +40,9 @@ A panel on the left lists groups, anchors and what they contain; select an ancho
 An overview of the whole canvas in the lower left, with a box for the part in view. Select or drag on it to move the view. It starts hidden: select the map button in the lower left to show it, and the button in its corner to hide it again.
 
 ![The minimap in the lower left with a box for the part in view](docs/mockups/minimap.svg)
+
+**Signposts**  
+Select any object and use the signpost button in its pop-up menu to choose a next and a previous object by clicking them on the canvas. Step-forward and step-back buttons then go there, selecting the object and zooming to it, even on a locked canvas. Mindmap and flowchart nodes have the same buttons in their toolbar and can be targets too.
 
 **Presenting**  
 Select the presentation button in the view header, next to core's view buttons, or run **Toggle presentation**, to step through the canvas's anchors like slides, in the order set in the layers panel (or top to bottom, then left to right), starting from the selected anchor or the first. Each stop shows its frame, or else the smallest group around its anchor, or centres an anchor outside any group, and the view eases there as it does for core's zoom to selection (at once if your system asks for reduced motion). Move with the arrow keys, Space and Shift+Space, or Page Up and Page Down, or with the bar at the bottom; select the count, or press `G`, for a menu of every stop. `Esc` or the header button ends it, leaving the view where it is. While presenting, the canvas is read-only (core's lock) and the panels, menus and anchors are hidden. **Next presentation stop** and **Previous presentation stop** are commands too, so they can be given hotkeys, for a presentation clicker.
@@ -53,19 +60,28 @@ Select **Add panel** above the help button in the controls on the right to open 
 
 ![A tab panel floating over the canvas](docs/mockups/panels.svg)
 
+**Widgets and HTML files**  
+**Add widget…** (in the actions panel) puts any view that doesn't show a file, such as the Linear panel, on the canvas as a node running the live view. **Add HTML file…** searches the vault's HTML files and adds the chosen one the same way, showing the live page in its node (a file already on the canvas is selected instead of added twice). `![[page.html]]` embeds in notes render too. Both take clicks and keys only while their node is selected, so an unselected node can still be dragged, and both are saved with the canvas.
+
+`.html` and `.htm` files also open in a tab, rendered in a sandboxed frame. Scripts run, but the page can't reach the vault or Obsidian, and it reloads when the file changes.
+
+![An HTML page and a Linear widget running as nodes on the canvas](docs/mockups/embeds.svg)
+
 **With Note Types**  
 These need the [Note Types](https://github.com/jsmorabito/obsidian-note-types) plugin enabled. Without it, the rest of Canvas Plus works as usual.
 
-- **Note cards.** Typed notes appear as cards showing an optional key image, the title and any properties you list under **Canvas card fields** for that note type (in Note Types' settings). A button in the selection toolbar, or the **Cycle selected canvas note cards between card, embed and styled link** command, switches a card to a full embed or to a styled link, the same pill the editor shows.
+- **Note cards.** Typed notes appear as cards showing an optional key image, the title (with the note type's link icon, when the type has **Style note links** and **Show link icon** on) and any properties you list under **Canvas card fields** for that note type (in Note Types' settings). A button in the selection toolbar, or the **Cycle selected canvas note cards between card, embed and styled link** command, switches a card to a full embed or to a styled link, the same pill the editor shows.
 - **Add note (`N`).** Add a typed note to the canvas, or create a new note of a type and its card in one step.
-- **Relations on edges.** Connect two cards to choose a relation, which is written to both notes' frontmatter. Select a card to see its relations in a side panel.
+- **Relations on edges.** Connect two cards to choose a relation, which is written to both notes' frontmatter. Select a card to see its relations in a side panel. When a card has none yet, **Mark as…** in the panel picks a relation and a note, writes the relation to both notes and adds the note's card and a labelled edge, as one undo step.
 - **Key images.** Drop an image on a card to set its key image.
 - **Undo covers the notes too.** Undo and redo cover the note changes that relations and key images make, not only the canvas.
 
 ![Typed notes as cards, a relation on the edge between them and the relations panel](docs/mockups/notetypes.svg)
 
 **Actions panel (`⌘K`)**  
-The **Actions** button in the bottom bar (or `Cmd`/`Ctrl` + `K`) opens a searchable list of actions: the Linear and Task App ones, and a shortcut to this plugin's settings. The ⌘ button sits beside the tray's button. Arrow keys move, `Enter` runs, `Esc` closes.
+The **Actions** button in the bottom bar (or `Cmd`/`Ctrl` + `K`) opens a searchable list of actions: **Add diagram…**, **Add widget…**, **Add HTML file…**, **Convert to…**, the Linear, Task App and Discourse Graphs ones, and a shortcut to this plugin's settings. The ⌘ button sits beside the tray's button. Arrow keys move, `Enter` runs, `Esc` closes.
+
+![The actions panel with Add diagram selected](docs/mockups/actions.svg)
 
 **With Linear**  
 These are in beta and off by default: turn on **Enable Linear integration (beta)** under **Settings → Canvas Plus**, then sign in. Create an OAuth app in Linear (**Settings → API**), give it the callback URL shown there (`obsidian://canvas-plus-linear`), and enter its client ID. Sign-in uses PKCE, so there is no client secret, and the tokens are kept in Obsidian's secret storage. A personal API key works instead.
