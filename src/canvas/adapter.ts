@@ -52,6 +52,8 @@ export interface CanvasEdgeLike {
 
 export interface CanvasLike {
   wrapperEl: HTMLElement;
+  /** Core's resize handles and connection points for the selected node: one element on the canvas, moved to whichever node is its target. */
+  nodeInteractionLayer?: { interactionEl: HTMLElement; target?: CanvasNodeLike | null; setTarget?: (node: CanvasNodeLike | null) => void };
   nodes?: Map<string, CanvasNodeLike>;
   posFromEvt?: (evt: { clientX: number; clientY: number }) => { x: number; y: number };
   createTextNode?: (opts: {

@@ -2,6 +2,7 @@ import { Menu, Notice, TFile, setIcon } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import type { NoteType } from '../note-types.ts';
 import { CanvasLike, CanvasNodeLike, nodeBox } from './adapter.ts';
+import { isPinned } from './pin-node.ts';
 import { SideEffect, batchWithEffect } from './undo-journal.ts';
 import { SIZE_NOTE_CARD } from './constants.ts';
 import { addKeyImage, removeKeyImage, replaceKeyImage } from './key-image-text.ts';
@@ -108,7 +109,8 @@ function currentContribution(node: CanvasNodeLike, m: CardMetrics): number {
 /** Resize a card whose image went from taking `before` to taking `after` of its height. Call inside a batch. */
 function resizeBy(node: CanvasNodeLike, before: number, after: number): void {
   const box = nodeBox(node);
-  if (!box || before === after) return;
+  // A pinned note stays the size of its pin; the card it gives back is resized when it is unpinned, from the note's own image.
+  if (!box || before === after || isPinned(node)) return;
   const height = Math.max(SIZE_NOTE_CARD.height, Math.round(box.height - before + after));
   node.moveAndResize?.({ ...box, height });
 }
@@ -209,7 +211,7 @@ export function injectKeyImageButton(plugin: CanvasPlusPlugin, canvas: CanvasLik
   const node = selected.length === 1 ? selected[0] : null;
   if (!node || !node.nodeEl?.hasAttribute('data-ffc-note-type') || !noteRefFor(plugin, node)) return;
   // A styled link has no image to show, so there is nothing to add or replace.
-  if (node.nodeEl.getAttribute('data-ffc-view') === 'link') return;
+  if (node.nodeEl.getAttribute('data-ffc-view') === 'link' || isPinned(node)) return;
 
   const hasImage = (): boolean => node.nodeEl?.hasAttribute('data-ffc-key-image') ?? false;
   let btn = menuEl.querySelector<HTMLElement>(`.${BUTTON_CLASS}`);

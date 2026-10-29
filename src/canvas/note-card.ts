@@ -2,8 +2,10 @@ import { Component, TFile } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import type { NoteType } from '../note-types.ts';
 import { CanvasLike, CanvasNodeLike, batch, getExtra, nodeBox, patchData } from './adapter.ts';
-import { FIELD_CARD_SIZE, FIELD_EMBED_SIZE, SIZE_ISSUE_CARD, SIZE_ISSUE_EMBED, SIZE_NOTE_CARD } from './constants.ts';
+import { FIELD_CARD_SIZE, FIELD_EMBED_SIZE, FIELD_VIEW, SIZE_ISSUE_CARD, SIZE_ISSUE_EMBED, SIZE_NOTE_CARD } from './constants.ts';
 import { readIssueRef } from './issue-ref.ts';
+import { isPinned, pinNode, unpinNode } from './pin-node.ts';
+import { settleToCard } from './pin-size.ts';
 import { readCardContent, renderCard, renderLinkPill, typeLinkColor } from './note-card-content.ts';
 
 /** The label an earlier version added in place of Obsidian's own; removed if one is left over. */
@@ -14,8 +16,7 @@ const MEASURING_CLASS = 'ffc-measuring';
 /** How long a new card waits for its key image to load before sizing without it. */
 const IMAGE_WAIT_MS = 5000;
 
-/** Extension field on a file node: `"embed"` or `"link"`. Absent means card. */
-export const FIELD_VIEW = 'ffcView';
+export { FIELD_VIEW };
 export type ViewMode = 'card' | 'embed' | 'link';
 
 /** What was last drawn into a node's card or link, so an unchanged note isn't re-rendered every sweep. */
@@ -48,18 +49,26 @@ export function viewOf(node: CanvasNodeLike): ViewMode {
   return v === 'embed' ? 'embed' : v === 'link' ? 'link' : 'card';
 }
 
-/** Card, then the full embed, then the styled link, then back to the card. */
-const NEXT: Record<ViewMode, ViewMode> = { card: 'embed', embed: 'link', link: 'card' };
+/** Where a node is in the cycle of views: a pin is one more stop after the styled link, and is kept apart from the view it hides. */
+export type CycleStop = ViewMode | 'pin';
+
+export function stopOf(node: CanvasNodeLike): CycleStop {
+  return isPinned(node) ? 'pin' : viewOf(node);
+}
+
+/** Card, then the full embed, then the styled link, then a pin, then back to the card. */
+const NEXT: Record<CycleStop, CycleStop> = { card: 'embed', embed: 'link', link: 'pin', pin: 'card' };
 
 /** The tooltip and icon for the button that moves a card to its next view: they describe where it will go. */
-const NEXT_LABEL: Record<ViewMode, { label: string; icon: string }> = {
+const NEXT_LABEL: Record<CycleStop, { label: string; icon: string }> = {
   embed: { label: 'Show as embed', icon: 'file-text' },
   link: { label: 'Show as styled link', icon: 'link' },
   card: { label: 'Show as card', icon: 'sticky-note' },
+  pin: { label: 'Show as pin', icon: 'map-pin' },
 };
 
 /** What to show on the toggle for nodes in these views: the next view's label, or a general one when they differ. */
-export function toggleInfo(modes: ViewMode[]): { label: string; icon: string } {
+export function toggleInfo(modes: CycleStop[]): { label: string; icon: string } {
   const first = modes[0];
   return first !== undefined && modes.every((m) => m === first)
     ? NEXT_LABEL[NEXT[first]]
@@ -85,8 +94,18 @@ export function toggleViews(canvas: CanvasLike, nodes: CanvasNodeLike[]): void {
   if (nodes.length === 0) return;
   batch(canvas, () => {
     for (const node of nodes) {
-      const mode = viewOf(node);
-      const next = NEXT[mode];
+      const stop = stopOf(node);
+      if (stop === 'pin') {
+        unpinNode(node);
+        patchData(node, { [FIELD_VIEW]: undefined });
+        continue;
+      }
+      if (NEXT[stop] === 'pin') {
+        pinCard(node);
+        continue;
+      }
+      const mode = stop;
+      const next = NEXT[mode] as ViewMode;
       const box = nodeBox(node);
       const patch: Record<string, unknown> = { [FIELD_VIEW]: next === 'card' ? undefined : next };
       if (readIssueRef(node)) {
@@ -107,6 +126,17 @@ export function toggleViews(canvas: CanvasLike, nodes: CanvasNodeLike[]): void {
       patchData(node, patch);
     }
   });
+}
+
+/**
+ * Pin a node from whatever view it is in: a note card or issue goes back to its card view first, so the pin previews the card
+ * and unpinning gives the card back. Call inside a batch.
+ */
+export function pinCard(node: CanvasNodeLike): void {
+  const issue = !!readIssueRef(node);
+  const { size, patch } = settleToCard(viewOf(node), issue, nodeBox(node), { card: readSize(node, FIELD_CARD_SIZE) });
+  patchData(node, patch);
+  pinNode(node, size);
 }
 
 /**
@@ -191,6 +221,8 @@ function decorateLink(
 
 /** Size the node to the link: its fill is the whole box, plus the node's own border on every side. */
 export function fitToPill(canvas: CanvasLike, node: CanvasNodeLike, pill: HTMLElement, container: HTMLElement): void {
+  // A pinned node stays the size of its pin.
+  if (isPinned(node)) return;
   const box = nodeBox(node);
   const border = parseFloat(container.win.getComputedStyle(container).borderLeftWidth) || 0;
   const width = pill.offsetWidth + 2 * border;

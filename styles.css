@@ -954,22 +954,105 @@ svg.ffc-ink path.ffc-ink-auto {
 
 /* ── Context panel ───────────────────────────────────────────────────────── */
 
-.ffc-context-panel {
+/* The panels at the top right, one above the other: what a pin opened, then the selected note's context. */
+.ffc-side-column {
   /* Core's right-hand canvas controls: one icon plus its padding. Sit beside them. */
   --ffc-controls-width: calc(var(--icon-s) + 2 * var(--size-4-2));
   position: absolute;
   top: var(--size-4-2);
   right: calc(var(--size-4-2) + var(--ffc-controls-width) + var(--size-4-2));
   z-index: var(--layer-cover);
-  width: 16em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  align-items: flex-end;
   max-width: calc(50% - var(--size-4-6));
-  max-height: 60%;
+  max-height: calc(100% - var(--size-4-4));
+  pointer-events: none;
+}
+
+.ffc-side-column > * {
+  pointer-events: auto;
+}
+
+.ffc-pin-viewer,
+.ffc-context-panel {
+  box-sizing: border-box;
+  width: 16em;
+  max-width: 100%;
+  flex: 0 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--size-4-3);
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-m);
   box-shadow: var(--shadow-s);
+}
+
+.ffc-pin-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  /* More room than the context panel: it holds the node itself. */
+  width: 20em;
+}
+
+.ffc-pin-viewer-header {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  font-weight: var(--font-semibold);
+}
+
+.ffc-pin-viewer-icon {
+  display: flex;
+  flex: none;
+  color: var(--ffc-pin-color, var(--text-muted));
+}
+
+.ffc-pin-viewer-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ffc-pin-viewer-action {
+  flex: none;
+}
+
+.ffc-pin-viewer-live {
+  padding: var(--size-4-3);
+  font-size: var(--font-ui-small);
+  color: var(--text-faint);
+}
+
+/* A copy of the node, filling the body in place of its spot on the canvas. */
+.ffc-pin-viewer-body {
+  position: relative;
+  flex: 0 1 auto;
+  aspect-ratio: var(--ffc-pin-ratio, 4 / 3);
+  min-height: 8em;
+  max-height: 24em;
+  overflow: hidden;
+  border-radius: var(--radius-s);
+}
+
+.ffc-pin-viewer-body > .canvas-node {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  transform: none;
+}
+
+.ffc-pin-viewer-body .canvas-node-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .ffc-context-header {
@@ -1342,7 +1425,7 @@ svg.ffc-ink path.ffc-ink-auto {
 .ffc-presenting .ffc-layers-show,
 .ffc-presenting .ffc-minimap,
 .ffc-presenting .ffc-minimap-show,
-.ffc-presenting .ffc-context-panel,
+.ffc-presenting .ffc-side-column,
 .ffc-presenting .ffc-tab-panels,
 .ffc-presenting .ffc-tray,
 .ffc-presenting .ffc-comments,
@@ -1552,6 +1635,95 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
 .ffc-tab-panel-resize.mod-se { bottom: calc(var(--ffc-grip) / -2); right: calc(var(--ffc-grip) / -2); cursor: nwse-resize; }
 
 
+.ffc-panel-dock {
+  display: none;
+  flex-direction: column;
+}
+
+.ffc-panel-dock.is-shown {
+  display: flex;
+}
+
+/* Holding things, it is core's own button group, with only a shadow added: the tray strip's. Dashed while something is dragged. */
+.ffc-panel-dock:not(.is-empty) {
+  box-shadow: var(--shadow-s);
+}
+
+/* While something is dragged it is the tray strip's drop zone: white, with a dashed outline all the way round. */
+.ffc-panel-dock:not(.is-empty).is-dragging {
+  background: var(--background-primary);
+  border-style: dashed;
+  border-color: var(--background-modifier-border-hover);
+}
+
+
+.ffc-panel-dock-items {
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * A line between every button. Core draws one under each button except the last in its group, but the dock's buttons are
+ * in two lists (panels, then the tray's things) and the last of each would go without: draw the line above instead, on
+ * every button that has one before it, in its list or in the list above.
+ */
+.ffc-panel-dock .canvas-control-item {
+  border-bottom: none;
+}
+
+.ffc-panel-dock-items > .canvas-control-item + .canvas-control-item,
+.ffc-panel-dock-items:not(:empty) ~ .ffc-panel-dock-items > .canvas-control-item:first-child {
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* Tinted like the tray's card for the same thing. */
+.ffc-panel-dock .ffc-panel-dock-item.has-color {
+  color: var(--ffc-tray-color);
+  background: color-mix(in srgb, var(--ffc-tray-color) 16%, var(--background-secondary));
+}
+
+.ffc-panel-dock-item {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+/* While a panel is dragged it is a drop zone: room for it, outlined, and lit when the pointer is over it. */
+/* As wide as core's buttons above it: an icon and its padding. */
+.ffc-panel-dock-hint {
+  display: none;
+  box-sizing: border-box;
+  width: calc(var(--icon-s) + 2 * var(--size-4-2));
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--icon-s) * 6);
+  color: var(--text-faint);
+  border: 1px dashed var(--background-modifier-border-hover);
+  border-radius: var(--radius-m);
+}
+
+.ffc-panel-dock.is-dragging .ffc-panel-dock-hint {
+  display: flex;
+}
+
+/* Holding things, the drop area is just room under them, inside the box's own dashed outline: no icon, no second border. */
+.ffc-panel-dock:not(.is-empty) .ffc-panel-dock-hint {
+  min-height: calc(var(--icon-s) * 3);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ffc-panel-dock:not(.is-empty) .ffc-panel-dock-hint .svg-icon {
+  visibility: hidden;
+}
+
+.ffc-panel-dock.is-target .ffc-panel-dock-hint {
+  color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+}
+
 /* ── Tray ────────────────────────────────────────────────────────────────── */
 
 /* Opens just above the bottom toolbar, centred on it, and above the pen colours while those show. */
@@ -1658,13 +1830,24 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
 }
 
 /* Placeholder while the tray is empty, whether it's open or shown for a drag. */
+.ffc-tray-hint-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  --icon-size: var(--icon-s);
+}
+
 .ffc-tray-hint {
   display: none;
   position: absolute;
   inset: 0;
   align-items: center;
   justify-content: center;
-  padding: 0 var(--size-4-3);
+  gap: var(--size-2-3);
+  box-sizing: border-box;
+  padding: 0;
+  line-height: 1;
+  text-align: center;
   color: var(--text-faint);
   font-size: var(--font-ui-small);
   white-space: nowrap;
@@ -1690,10 +1873,163 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   color: var(--text-accent);
 }
 
+/* Over a drop zone, its dashed outline takes the accent colour. */
+.ffc-tray.is-dragging .ffc-tray-strip.is-target,
+.ffc-panel-dock:not(.is-empty).is-dragging.is-target {
+  border-color: var(--interactive-accent);
+}
+
+/*
+ * Empty, the tray and the dock are a soft shadow with a few words on it, like the empty state of a notification list,
+ * not a box, with the layered look of core's shadow and its shadow colour. Over it, the shadow takes the accent colour.
+ */
+.ffc-tray.is-empty .ffc-tray-strip,
+.ffc-tray.is-empty .ffc-tray-strip.is-target,
+.ffc-panel-dock.is-empty {
+  overflow: visible;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.ffc-tray.is-empty .ffc-tray-strip::before,
+.ffc-panel-dock.is-empty .ffc-panel-dock-hint::before {
+  /* The shape is moved out of sight and its shadow moved back by as much, so only the shadow shows. */
+  --ffc-shadow-shift: 10000px;
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(calc(-1 * var(--ffc-shadow-shift)));
+  /* Core's large shadow (--shadow-l, in its dark theme's sizes): three layers, further down and wider each, in its shadow colour. */
+  box-shadow:
+    var(--ffc-shadow-shift) 1.8px 7.3px var(--background-modifier-box-shadow),
+    var(--ffc-shadow-shift) 6.3px 24.7px var(--background-modifier-box-shadow),
+    var(--ffc-shadow-shift) 30px 90px var(--background-modifier-box-shadow);
+  pointer-events: none;
+  transition: box-shadow var(--anim-duration-fast) ease-out;
+}
+
+.ffc-tray.is-empty .ffc-tray-hint,
+.ffc-panel-dock.is-empty .ffc-panel-dock-hint {
+  font-weight: var(--font-semibold);
+  color: var(--text-muted);
+  text-shadow: 0 0 var(--size-4-2) var(--background-primary);
+}
+
+.ffc-panel-dock.is-empty .ffc-panel-dock-hint {
+  position: relative;
+  border-color: transparent;
+  background: transparent;
+}
+
+.ffc-tray.is-empty .ffc-tray-strip.is-target::before,
+.ffc-panel-dock.is-empty.is-target .ffc-panel-dock-hint::before {
+  box-shadow:
+    var(--ffc-shadow-shift) 0 30px 4px color-mix(in srgb, var(--interactive-accent) 40%, transparent),
+    var(--ffc-shadow-shift) 6.3px 24.7px var(--background-modifier-box-shadow),
+    var(--ffc-shadow-shift) 30px 90px var(--background-modifier-box-shadow);
+}
+
+.ffc-tray.is-empty .ffc-tray-strip.is-target .ffc-tray-hint,
+.ffc-panel-dock.is-empty.is-target .ffc-panel-dock-hint {
+  color: var(--text-accent);
+}
+
+
+/* The pin that comments and pinned nodes share. Its size is on screen: see watchPinScale for how a pin in the canvas keeps it. */
+body {
+  --ffc-pin-size: var(--size-4-8);
+}
+
+.ffc-pin-bubble {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--ffc-pin-size);
+  height: var(--ffc-pin-size);
+  background: var(--background-primary);
+  color: var(--text-muted);
+  border: var(--border-width) solid var(--background-modifier-border);
+  border-radius: 50% 50% 50% 0;
+  box-shadow: var(--shadow-s);
+  cursor: pointer;
+}
+
+.ffc-pin-bubble .svg-icon {
+  --icon-size: var(--icon-s);
+}
+
+/*
+ * Nodes shown as a pin: the shared bubble with the node's icon. The node is as big as the pin is at 100% zoom, and the
+ * bubble sits on its bottom-left corner, scaled back to its size on screen. The node's content stays in the node,
+ * hidden until the pin is hovered, when it opens beside the pin at the size it had.
+ */
+.canvas-node[data-ffc-pin] {
+  --ffc-pin-gap: var(--size-2-2);
+  /* The bubble's size in canvas units, and where its top edge falls. */
+  --ffc-pin-extent: calc(var(--ffc-pin-size) * var(--ffc-pin-scale, 1));
+}
+
+.canvas-node[data-ffc-pin]:hover {
+  z-index: 2;
+}
+
+.ffc-node-pin {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  transform: scale(var(--ffc-pin-scale, 1));
+  transform-origin: 0 100%;
+  color: var(--ffc-pin-color, var(--text-muted));
+}
+
+.canvas-node[data-ffc-pin].is-selected .ffc-node-pin,
+.canvas-node[data-ffc-pin].is-focused .ffc-node-pin {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-border-accent);
+}
+
+/* The content waits at its own size beside the pin, unseen, so showing it doesn't relayout anything. */
+.canvas-node[data-ffc-pin] .canvas-node-container {
+  position: absolute;
+  top: calc(var(--ffc-pin-size) - var(--ffc-pin-extent));
+  left: calc(var(--ffc-pin-extent) + var(--ffc-pin-gap));
+  width: var(--ffc-pin-width);
+  height: var(--ffc-pin-height);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity var(--anim-duration-fast) ease-out;
+}
+
+.canvas-node[data-ffc-pin]:hover:not(.ffc-pin-quiet) .canvas-node-container {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Keeps the hover from dropping while the pointer crosses the gap between the pin and its content. */
+.canvas-node[data-ffc-pin]:hover:not(.ffc-pin-quiet)::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--ffc-pin-size) - var(--ffc-pin-extent));
+  left: var(--ffc-pin-extent);
+  width: var(--ffc-pin-gap);
+  height: var(--ffc-pin-extent);
+}
+
+.canvas-node[data-ffc-pin] .canvas-node-label,
+.canvas-node[data-ffc-pin] .canvas-node-placeholder {
+  display: none;
+}
+
+/* No resize or connection handles: a pin is too small to hold them. */
+.canvas-node-interaction-layer.ffc-for-pin {
+  display: none;
+}
 
 /* Comment pins */
 .ffc-comments {
-  --ffc-comment-pin: var(--size-4-8);
   --ffc-comment-avatar: var(--size-4-7);
   --ffc-comment-width: 20em;
   position: absolute;
@@ -1726,43 +2062,21 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   opacity: 0.45;
 }
 
-.ffc-comment-bubble,
 .ffc-comment-avatar {
   display: flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  width: var(--ffc-comment-pin);
-  height: var(--ffc-comment-pin);
-  background: var(--background-primary);
-  color: var(--text-muted);
-  border-radius: 50% 50% 50% 0;
-  box-shadow: var(--shadow-s);
-  cursor: pointer;
-}
-
-.ffc-comment-bubble {
-  box-sizing: border-box;
-  border: var(--border-width) solid var(--background-modifier-border);
-}
-
-.ffc-comment-avatar {
   width: var(--ffc-comment-avatar);
   height: var(--ffc-comment-avatar);
-  border-radius: 50%;
-  box-shadow: none;
-  background: none;
-  cursor: default;
   margin-top: var(--size-2-1);
+  color: var(--text-muted);
+  border-radius: 50%;
 }
 
 .ffc-comment-avatar .svg-icon {
   --icon-size: var(--icon-s);
   --icon-stroke: var(--icon-s-stroke-width);
-}
-
-.ffc-comment-bubble .svg-icon {
-  --icon-size: var(--icon-s);
 }
 
 .ffc-comment.is-open .ffc-comment-bubble {
@@ -1781,7 +2095,7 @@ body.ffc-canvas-focus.is-frameless .ffc-focus-leaf > .view-header > .view-action
   gap: var(--size-4-2);
   box-sizing: border-box;
   width: max-content;
-  min-width: var(--ffc-comment-pin);
+  min-width: var(--ffc-pin-size);
   max-width: calc(var(--ffc-comment-width) * 0.9);
   padding: var(--size-4-2) var(--size-4-4) var(--size-4-2) var(--size-4-3);
   background: var(--background-primary);

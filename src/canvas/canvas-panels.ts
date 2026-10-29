@@ -2,7 +2,10 @@ import { EventRef, TFile, ViewState, WorkspaceLeaf, debounce, setIcon } from 'ob
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasViewLike, newId, shieldFromCanvas } from './adapter.ts';
 import { PANEL_ICON } from './icons.ts';
+import { Holder, holderOf, splitByHolder } from './holder.ts';
 import { PanelRecord, PanelStore } from './panel-store.ts';
+import { trackPointer } from './pointer-session.ts';
+import { CLICK_SLOP_PX } from './constants.ts';
 import { TabPanel } from './tab-panel.ts';
 import { PROVIDERS, PROVIDER_IDS } from '../issues/providers.ts';
 
@@ -14,7 +17,7 @@ const BASE_LAYER = 1;
 /** How far below the pointer a panel taken out of the tray puts its top edge, so the pointer is on its header. */
 export const HEADER_GRAB_PX = 16;
 
-/** Somewhere a panel can be dropped while it's dragged by its header: the canvas's tray. */
+/** Somewhere a panel can be dropped while it's dragged by its header: the canvas's tray or its panel dock. */
 export interface PanelDropTarget {
   /** Returns whether the pointer is over it. */
   dragOver(e: PointerEvent): boolean;
@@ -22,7 +25,7 @@ export interface PanelDropTarget {
   drop(e: PointerEvent | null): boolean;
 }
 
-/** Shown on a panel's card in the tray. */
+/** Shown on a panel's card in the tray and its button in the dock. */
 export function describePanel(record: PanelRecord): string {
   const state = record.state;
   const file = state?.state?.file;
@@ -45,8 +48,10 @@ export class CanvasPanels {
   private resizeObserver: ResizeObserver;
   private destroyed = false;
   private loaded = false;
-  private target: PanelDropTarget | null = null;
-  private onHeldChange: () => void = () => { /* no tray yet */ };
+  /** Where a panel can be dropped (the tray and the dock), each told when the panels held change. */
+  private targets: Array<{ holder: Holder; target: PanelDropTarget; onHeldChange: () => void }> = [];
+  /** The held panels split by holder, for each list the store has handed out, so a holder gets the same list back until it changes. */
+  private split = new WeakMap<PanelRecord[], Record<Holder, PanelRecord[]>>();
   private saveStates = debounce(() => { for (const p of this.panels) this.save(p); }, 300, true);
 
   constructor(private plugin: CanvasPlusPlugin, private view: CanvasViewLike, private store: PanelStore) {
@@ -80,40 +85,119 @@ export class CanvasPanels {
     this.layerEl.remove();
   }
 
-  /** Let panels be dropped into the tray, which is told when the panels it holds change. */
-  setTray(target: PanelDropTarget, onHeldChange: () => void): void {
-    this.target = target;
-    this.onHeldChange = onHeldChange;
+  /** Let panels be dropped onto `target`, which then holds them as `holder`, and is told when the panels held change. */
+  addDropTarget(holder: Holder, target: PanelDropTarget, onHeldChange: () => void): void {
+    this.targets.push({ holder, target, onHeldChange });
   }
 
-  /** The panels this canvas's tray holds. */
-  held(): PanelRecord[] {
-    return this.store.getHeld(this.file?.path ?? '');
+  /** Show every drop zone while a panel is carried, and light the one it is over. Returns whether it is over one. */
+  hoverTargets(e: PointerEvent): boolean {
+    return this.targets.map(({ target }) => target.dragOver(e)).some(Boolean);
   }
 
-  /** Take a panel out of the tray, with its header under the pointer. */
+  /** The drop zone a pointer was let go over, or null (cancelled, or over none). Puts every drop zone away. */
+  private dropOnTarget(e: PointerEvent | null): Holder | null {
+    let taken: Holder | null = null;
+    // Every target is told, so each puts its drop zone away.
+    for (const { holder, target } of this.targets) if (target.drop(e) && !taken) taken = holder;
+    return taken;
+  }
+
+  /**
+   * A held panel's card was pressed: an outline of the panel follows the pointer. Let go over a drop zone and the panel is held
+   * there, or over the canvas and it opens there.
+   */
+  dragHeldOut(record: PanelRecord, e: PointerEvent): void {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const doc = this.view.containerEl.doc;
+    const ghost = doc.body.createDiv({ cls: 'ffc-canvas-ghost' });
+    let moved = false;
+    // Measured once: the pane doesn't move while the outline does.
+    let pane: DOMRect | null = null;
+    const inPane = (m: PointerEvent): boolean => {
+      const r = pane ??= this.view.contentEl.getBoundingClientRect();
+      return m.clientX >= r.left && m.clientX <= r.right && m.clientY >= r.top && m.clientY <= r.bottom;
+    };
+    const stop = trackPointer(doc, e.pointerId, {
+      move: (m) => {
+        if (!moved && Math.hypot(m.clientX - e.clientX, m.clientY - e.clientY) < CLICK_SLOP_PX) return;
+        moved = true;
+        const over = this.hoverTargets(m);
+        ghost.toggleClass('is-visible', !over && inPane(m));
+        ghost.setCssProps({
+          '--ffc-x': `${m.clientX - record.width / 2}px`,
+          '--ffc-y': `${m.clientY - HEADER_GRAB_PX}px`,
+          '--ffc-w': `${record.width}px`,
+          '--ffc-h': `${record.height}px`,
+        });
+      },
+      up: (u) => {
+        stop();
+        ghost.remove();
+        if (!moved || this.dropHeld(record.id, u)) return;
+        if (inPane(u)) this.release(record.id, u.clientX, u.clientY);
+      },
+      cancel: () => {
+        stop();
+        ghost.remove();
+        if (moved) this.dropHeld(record.id, null);
+      },
+    });
+  }
+
+  /** A held panel was let go at `e`: if over a drop zone it moves there. Returns whether it did (or was let go over its own). */
+  dropHeld(id: string, e: PointerEvent | null): boolean {
+    const holder = this.dropOnTarget(e);
+    if (!holder) return false;
+    const record = [...this.held('tray'), ...this.held('dock')].find((r) => r.id === id);
+    if (this.file && record && holderOf(record.holder) !== holder) {
+      this.store.rehold(this.file.path, id, holder);
+      this.onHeldChange();
+    }
+    return true;
+  }
+
+  private onHeldChange(): void {
+    for (const { onHeldChange } of this.targets) onHeldChange();
+  }
+
+  /** The panels `holder` holds on this canvas. The same list until it changes. */
+  held(holder: Holder): PanelRecord[] {
+    const all = this.store.getHeld(this.file?.path ?? '');
+    let by = this.split.get(all);
+    if (!by) {
+      by = splitByHolder(all);
+      this.split.set(all, by);
+    }
+    return by[holder];
+  }
+
+  /** Take a panel out of the dock, with its header under the pointer. */
   release(id: string, clientX: number, clientY: number): void {
-    const record = this.held().find((r) => r.id === id);
+    const record = [...this.held('tray'), ...this.held('dock')].find((r) => r.id === id);
     if (!this.file || !record) return;
     const pane = this.layerEl.getBoundingClientRect();
+    // Leaves its holder behind: an open panel isn't held.
     const placed: PanelRecord = {
       ...record,
       x: Math.round(clientX - pane.left - record.width / 2),
       y: Math.round(clientY - pane.top - HEADER_GRAB_PX),
     };
+    delete placed.holder;
     this.store.unhold(this.file.path, id);
     this.store.add(this.file.path, placed);
     this.mount(placed);
     this.onHeldChange();
   }
 
-  /** Put a panel in the tray: it closes, and its place and what it shows are kept there. */
-  private stash(panel: TabPanel): void {
+  /** Put a panel away in `holder`: it closes, and its place and what it shows are kept there. */
+  private stash(panel: TabPanel, holder: Holder): void {
     if (!this.file) return;
     this.save(panel);
     const record = this.store.get(this.file.path).find((r) => r.id === panel.record.id) ?? panel.record;
     this.store.remove(this.file.path, record.id);
-    this.store.hold(this.file.path, record);
+    this.store.hold(this.file.path, { ...record, holder });
     this.panels.remove(panel);
     panel.destroy();
     this.onHeldChange();
@@ -188,10 +272,12 @@ export class CanvasPanels {
       onMove: () => this.save(panel),
       onClose: () => this.forget(panel),
       onRaise: () => panel.setLayer(++this.layer),
-      onDrag: (e) => this.target?.dragOver(e) ?? false,
+      // Every target is told, so each shows or puts away its drop zone.
+      onDrag: (e) => this.hoverTargets(e),
       onDrop: (e) => {
-        if (!this.target?.drop(e)) return false;
-        this.stash(panel);
+        const holder = this.dropOnTarget(e);
+        if (!holder) return false;
+        this.stash(panel, holder);
         return true;
       },
     });

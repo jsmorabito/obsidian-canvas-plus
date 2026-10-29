@@ -1,6 +1,7 @@
 import { Menu, setIcon } from 'obsidian';
 import { CanvasLike, CanvasNodeLike, CanvasViewLike, afterCanvasFrame, batch, shieldFromCanvas, toCanvasPoint } from './adapter.ts';
 import { CLICK_SLOP_PX } from './constants.ts';
+import { createPinBubble } from './pin-bubble.ts';
 import { trackPointer } from './pointer-session.ts';
 import type { Tray } from './tray.ts';
 import { CanvasComment, CommentMessage, movedTo, newCommentId, nodeUnder, pinPoint, readComments, timeAgo, writeComments } from './comments.ts';
@@ -53,7 +54,7 @@ export class CommentLayer {
 
   private get canvas(): CanvasLike { return this.view.canvas!; }
 
-  /** The tray a dragged pin can be dropped on. */
+  /** The tray (and its dock) a dragged pin can be dropped on. */
   setTray(tray: Tray): void {
     this.tray = tray;
   }
@@ -130,8 +131,7 @@ export class CommentLayer {
   private pinEl(at: Placement, cls: string): { pin: HTMLElement; bubble: HTMLElement } {
     const pin = this.el.createDiv({ cls: `ffc-comment ${cls}` });
     this.placed.set(pin, at);
-    const bubble = pin.createDiv({ cls: 'ffc-comment-bubble' });
-    setIcon(bubble, 'message-circle');
+    const bubble = createPinBubble(pin, 'message-circle', 'ffc-comment-bubble');
     return { pin, bubble };
   }
 
@@ -171,8 +171,11 @@ export class CommentLayer {
     const finish = (): void => {
       stop();
       mark(undefined);
-      if (at) this.tray?.drop(null);
       this.endDrag = null;
+    };
+    // A drag that ended without a drop puts the drop zones away. A drop has already done so, and must keep which one took it.
+    const abandon = (): void => {
+      if (at) this.tray?.carryDrop(null);
     };
     const stop = trackPointer(this.view.containerEl.doc, down.pointerId, {
       move: (e) => {
@@ -184,14 +187,14 @@ export class CommentLayer {
         // Free of its node while it's carried.
         this.placed.set(pin, at);
         // Over the tray, it would go in, not onto a node.
-        overTray = this.tray?.dragOver(e) ?? false;
+        overTray = this.tray?.carryOver(e) ?? false;
         mark(overTray ? undefined : nodeUnder(this.canvas, at));
         this.layout();
       },
       up: (e) => {
         const moved = at;
         const node = target;
-        const toTray = moved !== null && this.tray?.drop(e) === true;
+        const toTray = moved !== null && this.tray?.carryDrop(e) === true;
         finish();
         if (!moved) click();
         else if (toTray) {
@@ -202,11 +205,13 @@ export class CommentLayer {
       },
       cancel: () => {
         finish();
+        abandon();
         this.render();
       },
     });
     this.endDrag = () => {
       finish();
+      abandon();
       this.render();
     };
   }

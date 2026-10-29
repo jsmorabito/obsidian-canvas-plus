@@ -1,5 +1,8 @@
 import { Plugin, TAbstractFile, ViewState } from 'obsidian';
 import type { PluginData } from '../plugin-data.ts';
+import type { Holder } from './holder.ts';
+
+export type { Holder };
 
 /** A tab panel's position in pixels over its canvas pane, and what it shows. */
 export interface PanelRecord {
@@ -9,7 +12,10 @@ export interface PanelRecord {
   width: number;
   height: number;
   state?: ViewState;
+  /** Where a panel put away is held, when it is. Absent means the tray, which was the only place before the dock. */
+  holder?: Holder;
 }
+
 
 interface StoredData {
   /** By canvas path. */
@@ -46,6 +52,11 @@ export class PanelStore {
 
   hold(path: string, record: PanelRecord): void {
     this.write(path, [...this.getHeld(path), { ...record }], 'held');
+  }
+
+  /** Move a held panel to another holder. */
+  rehold(path: string, id: string, holder: Holder): void {
+    this.write(path, this.getHeld(path).map((r) => (r.id === id ? { ...r, holder } : r)), 'held');
   }
 
   unhold(path: string, id: string): void {

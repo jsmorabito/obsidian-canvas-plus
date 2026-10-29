@@ -2,6 +2,7 @@ import type { CanvasPlusPlugin } from '../main.ts';
 import { Box, CanvasLike, CanvasNodeLike, getCanvasExtra, importNodes, nodeBox, setCanvasExtra } from './adapter.ts';
 import { FIELD_TRAY } from './constants.ts';
 import type { CanvasComment } from './comments.ts';
+import type { Holder } from './holder.ts';
 import { LayerKind, describe, readingOrder } from './layers-tree.ts';
 
 /**
@@ -20,10 +21,12 @@ export interface TrayItem {
   bundle?: boolean;
   /** A comment pin held, with its thread: it has no nodes. */
   comment?: CanvasComment;
+  /** Where it is held, when not the tray. Stored in canvas files, so the name must not change. */
+  holder?: Holder;
 }
 
 /** A comment pin as a tray item. */
-export function commentItem(comment: CanvasComment): TrayItem {
+export function commentItem(comment: CanvasComment, holder?: Holder): TrayItem {
   const first = comment.thread[0]?.text.split('\n')[0] ?? '';
   return {
     id: comment.id,
@@ -32,6 +35,7 @@ export function commentItem(comment: CanvasComment): TrayItem {
     nodes: [],
     edges: [],
     comment,
+    ...(holder && holder !== 'tray' ? { holder } : {}),
   };
 }
 

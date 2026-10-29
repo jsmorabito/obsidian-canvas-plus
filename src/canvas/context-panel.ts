@@ -38,8 +38,9 @@ export class ContextPanel {
   private el: HTMLElement;
   private shown = '';
 
-  constructor(private plugin: CanvasPlusPlugin, private view: CanvasViewLike) {
-    this.el = view.contentEl.createDiv({ cls: 'ffc-context-panel' });
+  /** `parent` is the column the panel shares with whatever opens above it. */
+  constructor(private plugin: CanvasPlusPlugin, private view: CanvasViewLike, parent: HTMLElement) {
+    this.el = parent.createDiv({ cls: 'ffc-context-panel' });
     this.el.hide();
     shieldFromCanvas(this.el);
   }

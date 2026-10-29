@@ -5,6 +5,39 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0]
+
+### Added
+
+- **Show any node as a pin.** Select a node and use the pin button in the
+  selection toolbar to shrink it to a small bubble, the same bubble as a
+  comment's, which stays the same size on screen at any zoom. Hover the pin to
+  preview the node beside it, or select it to open the node in the top right,
+  above a note's context panel. Selecting anything else on the canvas closes it,
+  and **Show in full** there brings the node back at its old size.
+- **Pins wear the icon of what they hold.** A typed note's pin has its note
+  type's icon and color, a diagram's has the diagram icon, and other nodes get
+  the icon of the tool or view that makes them (text, group, a widget's view,
+  HTML files, images, links).
+- **Pin joins the Show as cycle.** For typed notes and issues, the **Show as**
+  button now cycles card, embed, styled link, pin, then back to the card.
+- **A dock for panels.** Drag a tab panel by its header and a vertical drop zone
+  appears under the buttons on the right. Drop the panel there to put it away
+  for a while; it stays as a button in the dock, and dragging that back onto the
+  canvas opens the panel again.
+- **Hold anything in the tray or the dock.** Nodes, groups, comment pins and
+  panels can be held in either, each keeping its own, and a held thing can be
+  dragged from one to the other. Held things show the icon and color their pin
+  would. The tray closes itself when its last item is taken out. Empty, the tray
+  and the dock are a soft shadow with a few words on it, not a box, and both are
+  dashed while something is dragged over them.
+
+### Changed
+
+- **The layers panel follows the selection.** Selecting an object on the canvas
+  scrolls the list to its row, opening any collapsed group it is inside.
+- **A favorited group shows its children** in the Favorites section.
+
 ## [1.15.1]
 
 ### Changed

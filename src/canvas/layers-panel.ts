@@ -79,6 +79,10 @@ export class LayersPanel {
   private visible: Layer[] = [];
   /** Ids of the groups collapsed in the list. Lasts as long as the view. */
   private collapsed = new Set<string>();
+  /** The selection the list last jumped to, so it moves only when the selection does. */
+  private revealedKey = '';
+  /** The list should scroll to the selection once it is drawn. */
+  private revealPending = false;
   /** Ids of the favourited layers, kept per canvas file as a per-viewer preference. */
   private favorites = new Set<string>();
   private favoritesLoadedFor: string | undefined;
@@ -86,7 +90,7 @@ export class LayersPanel {
   private favoritesCollapsed = false;
   /** Whether the Layers section, shown under Favorites, is collapsed. */
   private layersCollapsed = false;
-  /** The favourited layers present on the canvas at the last update, flat and in canvas order. */
+  /** The favourited layers present on the canvas at the last update, in canvas order. A favourited group brings its children. */
   private favoriteLayers: Layer[] = [];
   /** Whether the canvas had no layers at the last update, for the empty message. */
   private emptyCanvas = false;
@@ -265,7 +269,28 @@ export class LayersPanel {
     this.emptyCanvas = roots.length === 0;
     this.syncFavorites(roots);
     this.visible = this.ordering ? this.stopList(roots) : this.filtering ? filterLayers(roots, this.keeper()) : roots;
+    this.revealSelection(canvas);
     this.render(canvas);
+  }
+
+  /** When the selection changes, open the groups it is inside and scroll the list to it once it is drawn. */
+  private revealSelection(canvas: CanvasLike): void {
+    const selected = new Set<object>(canvas.selection ?? []);
+    const key = [...selected].map((n) => (n as { id?: string }).id ?? '').sort().join('|');
+    if (key === this.revealedKey) return;
+    this.revealedKey = key;
+    if (selected.size === 0) return;
+    const open = (layers: Layer[]): boolean => {
+      let found = false;
+      for (const layer of layers) {
+        const inside = open(layer.children);
+        if (inside && layer.node.id) this.collapsed.delete(layer.node.id);
+        if (inside || selected.has(layer.node)) found = true;
+      }
+      return found;
+    };
+    open(this.visible);
+    this.revealPending = true;
   }
 
   /** Redraw the list last built by `update`, only when it would look different. */
@@ -277,7 +302,12 @@ export class LayersPanel {
       this.query, this.filter, [...this.collapsed], this.showFavorites, this.favoritesCollapsed, this.layersCollapsed, [...this.favorites], this.ordering && isReadonly(canvas), this.flatten(visible, selection),
     ]);
     // Not while a row is renamed or dragged: rebuilding the list would throw that away.
-    if (signature === this.shown || this.renaming || isReordering(this.bodyEl)) return;
+    if (signature === this.shown) {
+      // Nothing it shows changed, so there is nothing to jump to.
+      this.revealPending = false;
+      return;
+    }
+    if (this.renaming || isReordering(this.bodyEl)) return;
     this.shown = signature;
     this.clearHover();
     this.bodyEl.empty();
@@ -298,6 +328,12 @@ export class LayersPanel {
       const nodes = visible.map((l) => l.node);
       const rows = Array.from(this.bodyEl.querySelectorAll<HTMLElement>('.ffc-layer-row'));
       makeReorderable(this.bodyEl, rows, (from, to) => this.moveStop(canvas, nodes, from, to));
+    }
+    if (this.revealPending) {
+      this.revealPending = false;
+      // A favourite is drawn twice, above the tree and in it: the tree's row, which is the later one, is where it belongs.
+      const rows = this.bodyEl.querySelectorAll<HTMLElement>('.ffc-layer-row.is-selected');
+      rows[rows.length - 1]?.scrollIntoView({ block: 'nearest' });
     }
   }
 
@@ -320,7 +356,15 @@ export class LayersPanel {
       this.favorites = new Set(Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : []);
     }
     const found: Layer[] = [];
-    walk(roots, (l) => { if (l.node.id && this.favorites.has(l.node.id)) found.push({ ...l, children: [] }); });
+    // A favourite inside a favourite group is already listed with it.
+    const collect = (layers: Layer[], inside: boolean): void => {
+      for (const l of layers) {
+        const favorite = !!l.node.id && this.favorites.has(l.node.id);
+        if (favorite && !inside) found.push(l);
+        collect(l.children, inside || favorite);
+      }
+    };
+    collect(roots, false);
     this.favoriteLayers = found;
   }
 
@@ -331,7 +375,7 @@ export class LayersPanel {
     this.update();
   }
 
-  /** The starred layers as a flat list, without stars of their own. */
+  /** The starred layers, each with what is inside it, without stars of their own. */
   private renderFavorites(canvas: CanvasLike, selection: Set<object>): void {
     const content = this.renderSection(
       canvas, 'Favorites', this.favoriteLayers.length, this.favoritesCollapsed, () => { this.favoritesCollapsed = !this.favoritesCollapsed; },

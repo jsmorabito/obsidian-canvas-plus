@@ -98,3 +98,15 @@ export const FIELD_WIDGET = 'ffcWidget';
 
 /** Default size of a widget node, in canvas units. */
 export const SIZE_WIDGET = { width: 360, height: 420 };
+
+/**
+ * Extra field on any node shown as a pin: the size to go back to, `{ width, height }`. Its presence is what marks the node
+ * as pinned, and the node itself shrinks to the pin. Stored in canvas files, so the name must not change.
+ */
+export const FIELD_PIN = 'ffcPin';
+
+/** A pinned node's size, in canvas units: the pin's size on screen (`--size-4-8`) at 100% zoom, where its bubble is drawn at that size. */
+export const SIZE_PIN = 32;
+
+/** Extension field on a file node: `"embed"` or `"link"`. Absent means card. */
+export const FIELD_VIEW = 'ffcView';

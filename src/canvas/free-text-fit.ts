@@ -1,4 +1,5 @@
 import { CanvasLike, CanvasNodeLike, getExtra } from './adapter.ts';
+import { isPinned } from './pin-node.ts';
 import { FIELD_KIND, KIND_TEXT, MIN_DRAW_HEIGHT_TEXT } from './constants.ts';
 
 /** Space the node's own padding takes above and below the text, in canvas units. */
@@ -21,7 +22,7 @@ function contentHeight(node: CanvasNodeLike): number | null {
  * the user set, so the text wraps there. Returns whether the node changed size.
  */
 export function fitFreeText(canvas: CanvasLike, node: CanvasNodeLike): boolean {
-  if (getExtra(node, FIELD_KIND) !== KIND_TEXT || node.x === undefined || node.y === undefined || !node.width) return false;
+  if (getExtra(node, FIELD_KIND) !== KIND_TEXT || node.x === undefined || node.y === undefined || !node.width || isPinned(node)) return false;
   const content = contentHeight(node);
   if (content === null || content === 0) return false;
   const height = Math.max(MIN_DRAW_HEIGHT_TEXT, Math.ceil(content + VERTICAL_PADDING));

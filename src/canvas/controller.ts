@@ -26,7 +26,11 @@ import { IssuePicker } from './issue-picker.ts';
 import { injectConvertButton } from './convert-card.ts';
 import { injectIssueButtons, moveIssueButtonsLast } from './issue-menu.ts';
 import { injectSignpostButtons } from './signpost.ts';
-import { injectViewToggleButton } from './view-toggle.ts';
+import { injectPinButton, injectViewToggleButton } from './view-toggle.ts';
+import { watchPinScale } from './pin-bubble.ts';
+import { clearPins, decoratePins } from './pin-node.ts';
+import { PanelDock } from './panel-dock.ts';
+import { PinViewer } from './pin-viewer.ts';
 import { DgNodePicker } from './dg-create.ts';
 import { DgContext } from './dg-context.ts';
 import { NotePicker } from './note-picker.ts';
@@ -79,6 +83,9 @@ export class CanvasController {
   private cancelDraw: (() => void) | null = null;
   private relations: RelationFlow;
   private panel: ContextPanel;
+  private pinViewer: PinViewer;
+  private panelDock: PanelDock;
+  private sideColumn: HTMLElement;
   private layers: LayersPanel;
   private minimap: Minimap;
   private tabPanels: CanvasPanels;
@@ -99,7 +106,11 @@ export class CanvasController {
     this.component.load();
     setCardOwner(view.canvas!, this.component);
     this.relations = new RelationFlow(plugin, view);
-    this.panel = new ContextPanel(plugin, view);
+    // The panels down the top right share a column, so a pin's opened node sits above the note's context panel.
+    const column = view.contentEl.createDiv({ cls: 'ffc-side-column' });
+    this.sideColumn = column;
+    this.pinViewer = new PinViewer(plugin, view, column, () => this.sweep());
+    this.panel = new ContextPanel(plugin, view, column);
     this.layers = new LayersPanel(plugin, view);
     this.minimap = new Minimap(plugin, view);
     this.tabPanels = new CanvasPanels(plugin, view, panelStore);
@@ -118,6 +129,7 @@ export class CanvasController {
     // After the editors' own menus, which take a right-click on a node first.
     this.cleanups.push(attachDiagramMenu(plugin, view, () => this.sweep(), (menu, node) => this.flowcharts.cardMenuItems(menu, node)));
     this.comments = new CommentLayer(view);
+    this.cleanups.push(watchPinScale(view.canvas!));
     this.cleanups.push(registerToolShortcuts(plugin.app, view, this));
     this.presenter = new Presenter(plugin, view, () => this.setTool('select'));
     // Added after the present button, so it sits just before it in the header.
@@ -178,7 +190,8 @@ export class CanvasController {
       doc.removeEventListener('pointerup', up, true);
     });
     // Last: its button joins the toolbar after the drawing tools, and it leaves presses an armed tool took alone.
-    this.tray = new Tray(plugin, view, this.tabPanels, menuEl, () => this.sweep());
+    this.panelDock = new PanelDock(plugin, view, this.tabPanels);
+    this.tray = new Tray(plugin, view, this.tabPanels, this.panelDock, menuEl, () => this.sweep());
     this.comments.setTray(this.tray);
     // After the tray, so its button goes after the tray's.
     const actionsButton = this.toolbar?.addActionsItem(() => this.runAction('actions'));
@@ -320,7 +333,7 @@ export class CanvasController {
       this.actions.hide();
       return true;
     }
-    if (this.comments.dismiss()) return true;
+    if (this.comments.dismiss() || this.pinViewer.dismiss()) return true;
     if (this.tool !== 'select' || this.cancelDraw) {
       this.setTool('select');
       return true;
@@ -347,6 +360,8 @@ export class CanvasController {
     this.dgContext.sync();
     decorateNoteCards(this.plugin, canvas);
     decorateIssueCards(this.plugin, canvas);
+    decoratePins(this.plugin, canvas, (node) => this.pinViewer.open(node));
+    this.pinViewer.sync();
     decorateDiagrams(this.plugin, canvas, () => this.sweep());
     this.mindmaps.refresh();
     this.flowcharts.refresh();
@@ -380,11 +395,14 @@ export class CanvasController {
     this.presenter.destroy();
     this.focuser.destroy();
     this.tray.destroy();
+    this.panelDock.destroy();
     this.actions?.destroy();
     this.comments.destroy();
     this.cancelDraw?.();
     this.relations.destroy();
     this.panel.destroy();
+    this.pinViewer.destroy();
+    this.sideColumn.remove();
     this.layers.destroy();
     this.minimap.destroy();
     this.tabPanels.destroy();
@@ -401,6 +419,7 @@ export class CanvasController {
       setInsets(this.view.canvas, null);
       clearNoteCards(this.view.canvas);
       clearIssueCards(this.view.canvas);
+      clearPins(this.view.canvas);
       clearDiagrams(this.view.canvas);
       clearWidgets(this.view.canvas);
       setCardOwner(this.view.canvas, null);
@@ -430,6 +449,7 @@ export class CanvasController {
     if (!canvas) return;
     const selected = selectedNodes(canvas);
     injectViewToggleButton(canvas, selected, () => this.sweep());
+    injectPinButton(canvas, selected, () => this.sweep());
     injectKeyImageButton(this.plugin, canvas, selected);
     injectConvertButton(this.plugin, canvas, selected, () => this.sweep());
     injectSignpostButtons(this.plugin, canvas, selected);
