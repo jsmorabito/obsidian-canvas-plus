@@ -4,7 +4,7 @@ import {
   CanvasLike, CanvasNodeLike, CanvasViewLike, afterCanvasFrame, batch, draggedNodes, holdEdgePan, isElement, isReadonly,
   removeNode, shieldFromCanvas,
 } from './adapter.ts';
-import { CLICK_SLOP_PX } from './constants.ts';
+import { CLICK_SLOP_PX, PRESET_VARS } from './constants.ts';
 import { isAnchor } from './anchor.ts';
 import { readInk } from './ink-nodes.ts';
 import { LAYER_ICONS } from './layers-tree.ts';
@@ -18,17 +18,12 @@ import { PRESENTING_CLASS } from './presentation.ts';
 import { TrayItem, commentItem, itemBox, readTray, restoreItem, trayItemsFrom, writeTray } from './tray-items.ts';
 import { CanvasComment, movedTo, readComments, writeComments } from './comments.ts';
 
-/** The theme colours behind core's six canvas colours. */
 /**
  * Whether each view's tray is open, and the file it was open for. Kept by view rather than by tray, so it survives
  * the controller being rebuilt (a canvas moved to a popout), and gone with the view when the tab closes.
  */
 const viewState = new WeakMap<object, { open: boolean; path: string | undefined }>();
 
-const PRESET_VARS: Record<string, string> = {
-  '1': 'var(--color-red)', '2': 'var(--color-orange)', '3': 'var(--color-yellow)',
-  '4': 'var(--color-green)', '5': 'var(--color-cyan)', '6': 'var(--color-purple)',
-};
 /** Canvas units a comment pin's outline takes while it's dragged out of the tray. */
 const PIN_BOX = { width: 40, height: 40 };
 /** Core's menus and controls, and the toolbar the tray is in: a press there never starts a drag of nodes. */

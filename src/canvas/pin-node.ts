@@ -1,7 +1,7 @@
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasNodeLike, batch, getExtra, nodeBox, patchData, pressNode } from './adapter.ts';
 import { isAnchor } from './anchor.ts';
-import { CLICK_SLOP_PX, FIELD_KIND, FIELD_PIN, KIND_TEXT, SIZE_NOTE_CARD, SIZE_PIN } from './constants.ts';
+import { CLICK_SLOP_PX, FIELD_KIND, FIELD_PIN, KIND_TEXT, PRESET_VARS, SIZE_NOTE_CARD, SIZE_PIN } from './constants.ts';
 import { LINEAR_ICON, TASKAPP_ICON } from './icons.ts';
 import { readDiagram } from './diagram-data.ts';
 import { readIssueRef } from './issue-ref.ts';
@@ -127,8 +127,18 @@ export function togglePins(canvas: CanvasLike, nodes: CanvasNodeLike[]): void {
   });
 }
 
-/** The icon and colour a pin wears: the note type's, for a typed note, else one for what the node holds. */
+/**
+ * The icon and colour a pin wears. The icon is the note type's for a typed note, else one for what the node holds. The colour is
+ * the one the node was given on the canvas, else the note type's link colour, else none.
+ */
 export function pinLook(plugin: CanvasPlusPlugin, node: CanvasNodeLike, data = node.getData?.()): { icon: string; color: string } {
+  const look = iconFor(plugin, node, data);
+  const given = data?.color;
+  const color = typeof given === 'string' && given ? PRESET_VARS[given] ?? given : look.color;
+  return color === look.color ? look : { ...look, color };
+}
+
+function iconFor(plugin: CanvasPlusPlugin, node: CanvasNodeLike, data: Record<string, unknown> | undefined): { icon: string; color: string } {
   const ref = readIssueRef(node, data);
   if (ref) return { icon: ref.provider === 'linear' ? LINEAR_ICON : TASKAPP_ICON, color: '' };
   // The same icon as the Add diagram tool.
@@ -184,7 +194,10 @@ export function decoratePins(plugin: CanvasPlusPlugin, canvas: CanvasLike, open:
     drawn.set(node, key);
     el.setCssProps({ '--ffc-pin-width': `${size.width}px`, '--ffc-pin-height': `${size.height}px`, '--ffc-pin-color': color });
     el.querySelector(`.${PIN_CLASS}`)?.remove();
-    openOnClick(canvas, node, createPinBubble(el, icon, PIN_CLASS), open);
+    const bubble = createPinBubble(el, icon, PIN_CLASS);
+    // A pin with a colour is tinted like the card it came from.
+    bubble.toggleClass('has-color', !!color);
+    openOnClick(canvas, node, bubble, open);
   }
   hideMembers(canvas, hidden);
 }

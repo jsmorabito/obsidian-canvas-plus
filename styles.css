@@ -1987,6 +1987,11 @@ body {
   color: var(--ffc-pin-color, var(--text-muted));
 }
 
+.ffc-node-pin.has-color {
+  background: color-mix(in srgb, var(--ffc-pin-color) 16%, var(--background-primary));
+  border-color: color-mix(in srgb, var(--ffc-pin-color) 55%, var(--background-modifier-border));
+}
+
 .canvas-node[data-ffc-pin].is-selected .ffc-node-pin,
 .canvas-node[data-ffc-pin].is-focused .ffc-node-pin {
   border-color: var(--color-accent);

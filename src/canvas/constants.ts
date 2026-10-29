@@ -110,3 +110,9 @@ export const SIZE_PIN = 32;
 
 /** Extension field on a file node: `"embed"` or `"link"`. Absent means card. */
 export const FIELD_VIEW = 'ffcView';
+
+/** The theme colours behind core's six canvas colours, as CSS values. */
+export const PRESET_VARS: Record<string, string> = {
+  '1': 'var(--color-red)', '2': 'var(--color-orange)', '3': 'var(--color-yellow)',
+  '4': 'var(--color-green)', '5': 'var(--color-cyan)', '6': 'var(--color-purple)',
+};
