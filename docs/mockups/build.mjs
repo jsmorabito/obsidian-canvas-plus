@@ -56,13 +56,20 @@ const ICONS = {
   filecode: ['<path d="M10 12.5 8 15l2 2.5"/>', '<path d="m14 12.5 2 2.5-2 2.5"/>', '<path d="M14 2v4a2 2 0 0 0 2 2h4"/>', '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/>'],
   link: ['<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>', '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'],
   star: ['<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>'],
+  cube: ['<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/>', '<path d="M12 22V12"/>', '<path d="m3.3 7 8.7 5 8.7-5"/>'],
+  trash: ['<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'],
+  palette: ['<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/>', '<circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/>'],
+  edit: ['<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>', '<path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/>'],
+  signpost: ['<path d="M12 13v8M12 3v3"/>', '<path d="M18 6H5a1 1 0 0 0-.92.6l-.6 1.4a1 1 0 0 0 .2 1.1l.7.7a1 1 0 0 0 .7.3H18a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z"/>'],
+  expand: ['<path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8"/>', '<path d="M3 16.2V21m0 0h4.8M3 21l6-6"/>', '<path d="M21 7.8V3m0 0h-4.8M21 3l-6 6"/>', '<path d="M3 7.8V3m0 0h4.8M3 3l6 6"/>'],
+  clock: ['<circle cx="12" cy="12" r="10"/>', '<path d="M12 6v6l4 2"/>'],
   grip: ['<circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/>'],
 };
 
 const STYLE = `
   text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; }
-  .bg { fill: #f6f6f8; } .dot { fill: #d6d6dd; }
-  .surface { fill: #ffffff; stroke: #e2e2e8; stroke-width: 1; }
+  .bg { fill: #ffffff; } .dot { fill: #e3e3e8; }
+  .surface { fill: #ffffff; stroke: #d8d8de; stroke-width: 1.2; }
   .surface-alt { fill: #f3f3f6; stroke: #e2e2e8; stroke-width: 1; }
   .fill-surface { fill: #ffffff; } .fill-alt { fill: #f3f3f6; } .fill-hover { fill: #ececf1; }
   .line { stroke: #e2e2e8; fill: none; } .line-strong { stroke: #b9b9c4; fill: none; }
@@ -75,10 +82,10 @@ const STYLE = `
   .hl-yellow { stroke: #f5c400; stroke-opacity: .38; }
   .shadow { flood-color: #1b1b30; flood-opacity: .08; }
   .gfill { fill: #ffffff; fill-opacity: .6; }
-  .o-fill { fill: #f6e5dc; stroke: #d9a184; stroke-width: 1.2; } .o-t { fill: #a8461a; }
-  .chrome { fill: #ececf0; } .ink-dark { stroke: #222228; }
+  .o-c { color: #a8461a; } .o-fill { fill: #f6e5dc; stroke: #d9a184; stroke-width: 1.2; } .o-t { fill: #a8461a; }
+  .chrome { fill: #ececf0; } .ribbon { fill: #f6f6f8; } .ink-dark { stroke: #222228; }
   @media (prefers-color-scheme: dark) {
-    .bg { fill: #1c1c1f; } .dot { fill: #38383e; }
+    .bg { fill: #1e1e1e; } .dot { fill: #333338; }
     .surface { fill: #26262a; stroke: #36363c; }
     .surface-alt { fill: #2d2d32; stroke: #36363c; }
     .fill-surface { fill: #26262a; } .fill-alt { fill: #2d2d32; } .fill-hover { fill: #34343a; }
@@ -91,8 +98,8 @@ const STYLE = `
     .hl-yellow { stroke-opacity: .3; }
     .shadow { flood-color: #000000; flood-opacity: .35; }
     .gfill { fill: #ffffff; fill-opacity: .025; }
-    .o-fill { fill: #3a2a22; stroke: #8a5235; } .o-t { fill: #f0a274; }
-    .chrome { fill: #161618; } .ink-dark { stroke: #e4e4e9; }
+    .o-fill { fill: #3a2a22; stroke: #8a5235; } .o-t { fill: #f0a274; } .o-c { color: #f0a274; }
+    .chrome { fill: #161618; } .ribbon { fill: #1a1a1c; } .ink-dark { stroke: #e4e4e9; }
   }
   .ic { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 `;
@@ -147,7 +154,7 @@ const lines = (x, y, widths, { gap = 14, h = 6, cls = 'bar-t' } = {}) =>
 
 /** A plain canvas card: title plus a few text lines. */
 function card(x, y, w, h, title, widths = [w - 60, w - 90, w - 120], { selected = false } = {}) {
-  return `${box(x, y, w, h, { r: 10, shadow: true })}
+  return `${box(x, y, w, h, { r: 8 })}
     ${selected ? `<rect x="${x - 3}" y="${y - 3}" width="${w + 6}" height="${h + 6}" rx="12" class="as" stroke-width="2"/>` : ''}
     ${text(x + 16, y + 28, title, { size: 14, weight: 600 })}
     ${lines(x + 16, y + 44, widths)}`;
@@ -157,14 +164,15 @@ function card(x, y, w, h, title, widths = [w - 60, w - 90, w - 120], { selected 
 function group(x, y, w, h, label, { size = 17 } = {}) {
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" class="gfill"/>
     <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" class="line-strong" stroke-width="1.2"/>
-    ${text(x + 4, y - 10, label, { size, cls: 't', weight: 400 })}`;
+    ${text(x + 4, y - 10, label, { size, cls: 'tm', weight: 400 })}`;
 }
 
 /** A core file node coloured orange, with its name above as core shows it. */
 function fileCard(x, y, w, h, title, { label = title, size = 14 } = {}) {
   return `${text(x, y - 9, label, { size: 12.5, cls: 'tf' })}
     <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" class="o-fill"/>
-    ${text(x + 12, y + h / 2 + size * .35, title, { size, cls: 'o-t', weight: 650 })}`;
+    ${icon('cube', x + 11, y + h / 2 - 6, 12, 'o-c')}
+    ${text(x + 29, y + h / 2 + size * .35, title, { size, cls: 'o-t', weight: 650 })}`;
 }
 
 /** Core's controls on the right, as stacked button groups. */
@@ -188,8 +196,8 @@ const anchor = (x, y, name) =>
   `${icon('anchor', x, y, 20, 'ca')}${text(x + 10, y - 9, name, { size: 12.5, cls: 'tf', anchor: 'middle' })}`;
 
 /** Tool bar from groups of tools. Returns markup and the x of each tool by id. */
-function toolbar(cx, y, groups, active, size = 34) {
-  const gap = 2, sep = 13, pad = 6, is = Math.round(size * .53);
+function toolbar(cx, y, groups, active, size = 40) {
+  const gap = 2, sep = 13, pad = 6, is = Math.round(size * .56);
   let w = pad * 2;
   groups.forEach((g, i) => { w += g.length * size + (g.length - 1) * gap + (i ? sep : 0); });
   let x = cx - w / 2 + pad;
@@ -202,7 +210,7 @@ function toolbar(cx, y, groups, active, size = 34) {
     }
     g.forEach((id) => {
       pos[id] = x + size / 2;
-      if (id === active) out += `<rect x="${x}" y="${y + pad}" width="${size}" height="${size}" rx="8" class="asoft"/>`;
+      if (id === active && id !== 'pointer') out += `<rect x="${x}" y="${y + pad}" width="${size}" height="${size}" rx="8" class="asoft"/>`;
       out += icon(id, x + (size - is) / 2, y + pad + (size - is) / 2, is, id === active ? 'ca' : 'cm');
       x += size + gap;
     });
@@ -210,7 +218,7 @@ function toolbar(cx, y, groups, active, size = 34) {
   return { out, pos, w };
 }
 
-const TOOLS = [['pointer'], ['card', 'note', 'media', 'types'], ['text', 'group', 'anchor', 'comment', 'marker', 'highlighter', 'eraser'], ['tray', 'command']];
+const TOOLS = [['pointer'], ['card', 'note', 'media', 'types', 'puzzle'], ['text', 'group', 'anchor', 'comment', 'marker', 'highlighter', 'eraser'], ['tray', 'command']];
 
 /** A small tooltip-style label centred on x, sitting above y. */
 function tip(x, y, label, key) {
@@ -261,13 +269,45 @@ function imageCard(x, y, w, h, title, grad = 'sky') {
     ${text(x + 12, y + h - 17, title, { size: 14, weight: 600 })}`;
 }
 
+
+/** Obsidian's own window around a scene: tabs, ribbon, view header, canvas controls and status bar. */
+const L = 40, T = 82;
+function app(title, body, { header = true, extras = true, bar = 'pointer', controlsOn = true, layersBtn = true, minimapBtn = true, w = W, h = H } = {}) {
+  const tabs = ['Dashboard', 'Meeting notes', 'Roadmap'];
+  let tabMarkup = '';
+  tabs.forEach((t, i) => { tabMarkup += text(L + 40 + i * 132 + 8, 26, t, { size: 12.5, cls: 'tm' }) + (i ? `<line x1="${L + 40 + i * 132 - 8}" y1="13" x2="${L + 40 + i * 132 - 8}" y2="27" class="line-strong"/>` : ''); });
+  const ax = L + 40 + tabs.length * 132;
+  const ribbonIcons = ['search', 'book', 'card', 'types', 'map', 'layers', 'star', 'link', 'settings'];
+  const chrome = `
+    <rect width="${L + w}" height="40" class="chrome"/>
+    <circle cx="22" cy="20" r="6" fill="#ff5f57"/><circle cx="42" cy="20" r="6" fill="#febc2e"/><circle cx="62" cy="20" r="6" fill="#28c840"/>
+    ${tabMarkup}
+    <path d="M${ax - 14} 40v-26a8 8 0 0 1 8-8h120a8 8 0 0 1 8 8v26z" class="fill-surface"/>
+    ${icon('group', ax, 14, 14, 'cm')}${text(ax + 22, 26.5, 'Main', { size: 12.5, weight: 500 })}${icon('x', ax + 100, 15, 13, 'cm')}
+    ${icon('plus', ax + 150, 14, 15, 'cm')}
+    <rect y="40" width="${L}" height="${T - 40 + h}" class="ribbon"/>
+    <line x1="${L}" y1="40" x2="${L}" y2="${T + h}" class="line"/>
+    ${ribbonIcons.map((n, i) => icon(n, 11, T + 14 + i * 36, 18, 'cm')).join('')}
+    ${header ? `<rect x="${L}" y="40" width="${w}" height="${T - 40}" class="fill-surface"/>
+    <line x1="${L}" y1="${T}" x2="${L + w}" y2="${T}" class="line"/>
+    ${icon('back', L + 18, 51, 18, 'cf')}${icon('fwd', L + 46, 51, 18, 'cf')}${text(L + 80, 66, 'Main', { size: 14, weight: 500 })}
+    ${icon('expand', L + w - 150, 52, 17, 'cm')}${icon('present', L + w - 114, 51, 18, 'cm')}${icon('star', L + w - 78, 52, 17, 'cm')}${icon('more', L + w - 42, 51, 18, 'cm')}` : ''}`;
+  const overlay = extras ? `
+    ${controlsOn ? controls(w - 58, 16) : ''}
+    ${layersBtn ? `${box(12, 12, 36, 36, { r: 8, shadow: true })}${icon('layers', 21, 21, 18, 'cm')}` : ''}
+    ${minimapBtn ? `${box(12, h - 48, 36, 36, { r: 8, shadow: true })}${icon('map', 21, h - 39, 18, 'cm')}` : ''}
+    ${text(w - 224, h - 12, '0 backlinks', { size: 12, cls: 'tm' })}${text(w - 70, h - 12, 'Home', { size: 12, cls: 'tm' })}
+    ${bar ? toolbar(w / 2, h - 80, TOOLS, bar).out : ''}` : '';
+  return svg(title, `<g transform="translate(${L},${T})">${body}${overlay}</g>${chrome}`, L + w, T + h);
+}
+
 // ---------- scenes ----------
 
 const scenes = {};
 
 scenes.tools = () => {
-  const bar = toolbar(W / 2, H - 76, TOOLS, 'group');
-  return svg('Canvas Plus tool bar placing a group', `
+  const bar = toolbar(W / 2, H - 80, TOOLS, 'group');
+  return app('Canvas Plus tool bar placing a group', `
     ${text(150, 120, 'Launch plan', { size: 30, weight: 700 })}
     ${text(152, 148, 'Free text, no card chrome', { size: 14, cls: 'tm' })}
     <rect x="128" y="176" width="510" height="158" rx="12" class="asoft"/>
@@ -280,11 +320,11 @@ scenes.tools = () => {
     ${lines(712, 214, [110, 80, 96], { gap: 16, cls: 'bar-f' })}
     ${bar.out}
     ${tip(bar.pos.group, H - 82, 'Group', 'G')}
-  `);
+  `, { bar: null });
 };
 
 scenes.ink = () => {
-  const bar = toolbar(W / 2, H - 76, TOOLS, 'marker');
+  const bar = toolbar(W / 2, H - 80, TOOLS, 'marker');
   const colors = ['#e93147', '#ec7500', '#e0ac00', '#08b94e', '#00bfbc', '#7852ee'];
   const rowW = 7 * 26 + 16;
   const rx = bar.pos.marker - rowW / 2, ry = H - 128;
@@ -294,7 +334,7 @@ scenes.ink = () => {
     if (i === 0) swatches += `<circle cx="${cx}" cy="${ry + 20}" r="11.5" fill="none" stroke="${c}" stroke-width="2"/>`;
     swatches += `<circle cx="${cx}" cy="${ry + 20}" r="8" fill="${c}"/>`;
   });
-  return svg('Marker and highlighter strokes on a canvas', `
+  return app('Marker and highlighter strokes on a canvas', `
     ${text(170, 112, 'Sprint review', { size: 30, weight: 700 })}
     <path d="M164 104 C 250 100, 340 102, 392 101" class="hl-yellow" stroke-width="22" stroke-linecap="round" fill="none"/>
     ${card(170, 160, 220, 116, 'Shipped', [180, 150, 110])}
@@ -306,7 +346,7 @@ scenes.ink = () => {
     ${box(rx, ry, rowW, 40, { r: 10, shadow: true })}
     ${swatches}
     ${bar.out}
-  `);
+  `, { bar: null });
 };
 
 scenes.layers = () => {
@@ -338,7 +378,7 @@ scenes.layers = () => {
     list += icon(r.ic, x + (r.d ? 4 : 18), y + 2, 16, r.sel ? 'ca' : 'cm');
     list += text(x + (r.d ? 28 : 42), y + 15, r.label, { size: 13, cls: r.sel ? 'a' : 't', weight: r.sel ? 600 : 400 });
   });
-  return svg('Layers panel with a favorites section, groups, anchors and notes', `
+  return app('Layers panel with a favorites section, groups, anchors and notes', `
     ${group(420, 76, 300, 180, 'Research')}
     ${card(440, 96, 124, 76, 'Interviews', [80, 60])}
     ${card(578, 96, 124, 76, 'Survey', [70, 84])}
@@ -355,7 +395,7 @@ scenes.layers = () => {
     ${icon('search', px + 22, py + 59, 14, 'cf')}${text(px + 44, py + 70.5, 'Search layers', { size: 12.5, cls: 'tf' })}
     ${box(px + pw - 52, py + 50, 40, 32, { r: 8, cls: 'surface-alt' })}${icon('filter', px + pw - 41, py + 58, 16, 'cm')}
     ${list}
-  `);
+  `, { layersBtn: false, minimapBtn: false, bar: null });
 };
 
 scenes.minimap = () => {
@@ -382,7 +422,7 @@ scenes.minimap = () => {
       ? group(X, Y, w * k, h * k, t.slice(1))
       : card(X, Y, w * k, h * k, t, [w * k - 60, w * k - 100].slice(0, h > 60 ? 2 : 1));
   }).join('');
-  return svg('Minimap in the lower left, with a box for the part in view', `
+  return app('Minimap in the lower left, with a box for the part in view', `
     ${main}
     ${box(mx, my, mw, mh, { r: 12, shadow: true })}
     ${mini}
@@ -390,7 +430,7 @@ scenes.minimap = () => {
     <rect x="${ox + view[0] * s}" y="${oy + view[1] * s}" width="${view[2] * s}" height="${view[3] * s}" rx="3" class="as" stroke-width="1.5"/>
     ${icon('hide', mx + mw - 26, my + 8, 14, 'cf')}
     ${cursor(ox + (view[0] + view[2] * 0.62) * s, oy + (view[1] + view[3] * 0.55) * s)}
-  `);
+  `, { minimapBtn: false });
 };
 
 scenes.present = () => {
@@ -405,7 +445,7 @@ scenes.present = () => {
     menu += text(mx + 18, y + 19, String(i + 1), { size: 12, cls: 'tf', weight: 600 });
     menu += text(mx + 40, y + 19, s, { size: 13, cls: i === 1 ? 'a' : 't', weight: i === 1 ? 600 : 400 });
   });
-  return svg('Presenting a canvas stop by stop', `
+  return app('Presenting a canvas stop by stop', `
     <rect width="${W}" height="${head}" class="fill-surface"/>
     <line x1="0" y1="${head}" x2="${W}" y2="${head}" class="line"/>
     ${viewHeader(W, 0, 'Roadmap', true)}
@@ -420,12 +460,12 @@ scenes.present = () => {
     ${icon('left', bx + 14, by + 12, 20, 'cm')}
     ${text(W / 2, by + 27, '2 / 5', { size: 14, weight: 500, anchor: 'middle' })}
     ${icon('right', bx + barW - 34, by + 12, 20, 'cm')}
-  `);
+  `, { header: false, extras: false });
 };
 
 scenes.panels = () => {
   const px = 470, py = 46, pw = 404, ph = 420;
-  return svg('A tab panel floating over the canvas', `
+  return app('A tab panel floating over the canvas', `
     ${group(48, 70, 360, 230, 'Kickoff')}
     ${card(68, 92, 150, 96, 'Agenda', [100, 80, 110])}
     ${card(238, 92, 150, 96, 'Attendees', [90, 110, 70])}
@@ -441,8 +481,8 @@ scenes.panels = () => {
     ${[0, 1, 2].map((i) => `<circle cx="${px + 38}" cy="${py + 214 + i * 22}" r="3" class="tm"/>${lines(px + 50, py + 211 + i * 22, [[210, 250, 170][i]], { h: 7 })}`).join('')}
     ${lines(px + 32, py + 300, [330, 290, 310, 180], { gap: 16, h: 7 })}
     <path d="M${px + pw - 8} ${py + ph - 20}L${px + pw - 20} ${py + ph - 8}M${px + pw - 8} ${py + ph - 13}L${px + pw - 13} ${py + ph - 8}" class="line-strong" stroke-width="1.5" stroke-linecap="round"/>
-    ${controls(W - 58, 40, 'panel')}
-  `);
+    ${controls(W - 58, 16, 'panel')}
+  `, { controlsOn: false });
 };
 
 scenes.notetypes = () => {
@@ -451,7 +491,7 @@ scenes.notetypes = () => {
     `${text(x, y + i * 22, k, { size: 12, cls: 'tm' })}${text(x + 76, y + i * 22, v, { size: 12, weight: 500 })}`).join('');
   const sx = 720, sy = 16, sw = W - sx - 16, sh = H - 32;
   const rel = [['Led by', 'Ana Ruiz'], ['Part of', 'Q4 roadmap'], ['Depends on', 'Sync engine']];
-  return svg('Typed notes as cards, with a relation on the edge between them', `
+  return app('Typed notes as cards, with a relation on the edge between them', `
     ${box(a.x, a.y, a.w, 300, { r: 12, shadow: true })}
     <rect x="${a.x - 3}" y="${a.y - 3}" width="${a.w + 6}" height="306" rx="14" class="as" stroke-width="2"/>
     ${keyImage(a.x + 10, a.y + 10, a.w - 20, 130)}
@@ -475,109 +515,128 @@ scenes.notetypes = () => {
         ${box(sx + 14, y + 20, sw - 28, 32, { r: 8, cls: 'surface-alt' })}
         ${icon('note', sx + 24, y + 28, 16, 'cm')}${text(sx + 48, y + 41, v, { size: 13, weight: 500 })}`;
     }).join('')}
-  `);
+  `, { controlsOn: false });
 };
 
+/** App badges as the actions panel and node toolbars show them. */
+const appLogo = (x, y, kind, s = 18) =>
+  kind === 'linear'
+    ? `<rect x="${x}" y="${y}" width="${s}" height="${s}" rx="4" fill="#222228"/><circle cx="${x + s / 2}" cy="${y + s / 2}" r="${s * .28}" fill="none" stroke="#fff" stroke-width="1.6"/>`
+    : kind === 'taskapp'
+      ? `<rect x="${x}" y="${y}" width="${s}" height="${s}" rx="4" fill="#4a47c8"/><rect x="${x + s * .25}" y="${y + s * .25}" width="${s * .5}" height="${s * .5}" rx="2" fill="#ff5f57"/>`
+      : `<path d="M${x + s / 2} ${y}L${x + s} ${y + s / 2}L${x + s / 2} ${y + s}L${x} ${y + s / 2}Z" fill="#222228"/>`;
+
 scenes.diagrams = () => {
-  const cx = 70, cy = 52, cw = 700, ch = 372;
-  const node = (x, y, w, label, { sel = false, root = false, cls = 'surface' } = {}) =>
-    `${box(x, y, w, 32, { r: root ? 16 : 8, cls: root ? 'a' : cls })}
-     ${sel ? `<rect x="${x - 3}" y="${y - 3}" width="${w + 6}" height="38" rx="11" class="as" stroke-width="2"/>` : ''}
-     ${text(x + w / 2, y + 21, label, { size: 13, weight: root ? 650 : 500, cls: root ? 'on-a' : 't', anchor: 'middle' })}`;
-  const link = (x1, y1, x2, y2) => `<path d="M${x1} ${y1} C ${x1 + 40} ${y1}, ${x2 - 40} ${y2}, ${x2} ${y2}" class="line-strong" stroke-width="1.6" fill="none"/>`;
-  const rootX = cx + 36, rootY = cy + 170;
-  const branches = [['Research', cy + 62, ['Interviews', 'Survey']], ['Design', cy + 170, ['Wireframes', 'Brand']], ['Launch', cy + 280, ['Checklist']]];
-  let tree = '';
-  branches.forEach(([name, y, kids]) => {
-    tree += link(rootX + 96, rootY + 16, cx + 200, y + 16) + node(cx + 200, y, 104, name, { sel: name === 'Design' });
-    kids.forEach((k, i) => {
-      const ky = y + 16 + (i - (kids.length - 1) / 2) * 44 - 16;
-      tree += link(cx + 304, y + 16, cx + 400, ky + 16) + node(cx + 400, ky, 112, k);
-    });
-  });
-  const dx = cx + 304, dy = cy + 186;
-  const tb = { x: cx + 160, y: cy + 112, w: 220, h: 38 };
-  return svg('A mindmap diagram on the canvas, with a node picked and its toolbar', `
-    ${box(cx, cy, cw, ch, { r: 12, shadow: true })}
-    ${text(cx + 24, cy + 32, 'Product launch', { size: 15, weight: 700 })}
-    ${pill(cx + cw - 96, cy + 14, 'mermaid', { size: 11 })}
-    ${node(rootX, rootY, 96, 'Launch', { root: true })}
-    ${tree}
-    <circle cx="${dx + 12}" cy="${dy}" r="9" class="a"/>${icon('plus', dx + 5, dy - 7, 14, 'on-a')}
-    ${box(tb.x, tb.y, tb.w, tb.h, { r: 10, shadow: true })}
-    <circle cx="${tb.x + 22}" cy="${tb.y + 19}" r="8" class="a"/>
-    <rect x="${tb.x + 42}" y="${tb.y + 11}" width="18" height="16" rx="5" class="line-strong" fill="none" stroke-width="1.5"/>
-    ${text(tb.x + 78, tb.y + 25, 'B', { size: 14, weight: 800 })}
-    ${text(tb.x + 100, tb.y + 25, 'I', { size: 14, weight: 500 })}
-    ${text(tb.x + 120, tb.y + 25, 'U', { size: 14, weight: 500 })}
-    ${icon('link', tb.x + 146, tb.y + 11, 16, 'cm')}
-    ${icon('globe', tb.x + 172, tb.y + 11, 16, 'cm')}
-    ${icon('note', tb.x + 196 - 4, tb.y + 11, 16, 'cm')}
-    ${cursor(dx + 40, dy + 24)}
+  const cx = 150, cy = 112, cw = 560, ch = 290;
+  const n = (x, y, w, label, { fill = 'surface-alt', h = 26 } = {}) =>
+    `<rect x="${cx + x}" y="${cy + y}" width="${w}" height="${h}" rx="4" class="${fill}"/>${text(cx + x + w / 2, cy + y + h / 2 + 4, label, { size: 11, anchor: 'middle' })}`;
+  const e = (d, dash = false) => `<path d="${d}" class="line-strong" stroke-width="1.2" fill="none"${dash ? ' stroke-dasharray="3 3"' : ''}/>`;
+  const tb = ['trash', 'palette', 'search', 'edit', 'note', 'settings', 'signpost'];
+  const tw = tb.length * 40 + 2 * 40 + 12, tx = cx + cw / 2 - tw / 2, ty = cy - 66;
+  const dx = cx + 170, dy = cy + 150;
+  return app('A flowchart diagram card selected on the canvas, with its toolbar', `
+    ${box(tx, ty, tw, 48, { r: 10, shadow: true })}
+    ${tb.map((id, i) => icon(id, tx + 12 + i * 40 + 8, ty + 14, 20, 'cm')).join('')}
+    ${appLogo(tx + 12 + 7 * 40 + 10, ty + 15, 'linear', 20)}${appLogo(tx + 12 + 8 * 40 + 10, ty + 15, 'taskapp', 20)}
+    ${box(cx, cy, cw, ch, { r: 8 })}
+    <rect x="${cx - 3}" y="${cy - 3}" width="${cw + 6}" height="${ch + 6}" rx="10" class="as" stroke-width="2.5"/>
+    ${e(`M${cx + 78} ${cy + 150} C ${cx + 100} ${cy + 150}, ${cx + 100} ${dy - cy + cy - 16}, ${cx + 118} ${dy - 16}`)}
+    ${e(`M${cx + 78} ${cy + 150} C ${cx + 90} ${cy + 150}, ${cx + 96} ${cy + 100}, ${cx + 112} ${cy + 96}`)}
+    ${e(`M${cx + 236} ${cy + 140} C ${cx + 270} ${cy + 140}, ${cx + 260} ${cy + 60}, ${cx + 316} ${cy + 60}`)}
+    ${e(`M${cx + 236} ${cy + 146} C ${cx + 270} ${cy + 146}, ${cx + 270} ${cy + 126}, ${cx + 316} ${cy + 126}`)}
+    ${e(`M${cx + 236} ${cy + 152} L ${cx + 316} ${cy + 188}`)}
+    ${e(`M${cx + 236} ${cy + 158} C ${cx + 280} ${cy + 170}, ${cx + 290} ${cy + 240}, ${cx + 316} ${cy + 240}`, true)}
+    ${e(`M${cx + 400} ${cy + 66} C ${cx + 440} ${cy + 66}, ${cx + 440} ${cy + 120}, ${cx + 470} ${cy + 120}`)}
+    ${e(`M${cx + 400} ${cy + 132} L ${cx + 470} ${cy + 132}`)}
+    ${n(26, 136, 52, 'Start')}
+    ${n(112, 82, 110, 'New node')}
+    <path d="M${cx + 180} ${cy + 124}L${cx + 236} ${cy + 152}L${cx + 180} ${cy + 180}L${cx + 124} ${cy + 152}Z" class="o-fill"/>${text(cx + 180, cy + 156, 'Decision', { size: 11, cls: 'o-t', anchor: 'middle' })}
+    ${text(cx + 276, cy + 76, 'Yes', { size: 9.5, cls: 'tm' })}${text(cx + 276, cy + 118, 'No', { size: 9.5, cls: 'tm' })}
+    ${n(316, 47, 84, 'Do it')}${n(316, 113, 84, 'Skip it')}${n(316, 175, 84, 'New node')}
+    ${n(316, 227, 84, 'New node', { fill: 'asoft' })}
+    ${n(470, 108, 70, 'Done')}
+    ${n(470, 222, 70, 'New node')}
+    ${cursor(cx + 440, cy + 262)}
   `);
 };
 
 scenes.actions = () => {
-  const bar = toolbar(W / 2, H - 76, TOOLS, 'command');
-  const pw = 480, ph = 330, px = W / 2 - pw / 2, py = 44;
+  const bar = toolbar(W / 2, H - 80, TOOLS, 'command');
+  const pw = 440, ph = 360, px = bar.pos.command - pw + 70, py = H - 80 - ph - 10;
   const entries = [
-    ['Linear', null],
-    ['Add Linear issue…', 'plus', 'I'],
+    ['Linear'],
+    ['Add Linear issue…', 'linear', 'I', true],
     ['Open Linear panel', 'panel'],
-    ['Canvas Plus', null],
-    ['Add diagram…', 'workflow', 'B', true],
+    ['Task App'],
+    ['Add Task App issue…', 'taskapp', 'J'],
+    ['Open Task App panel', 'panel'],
+    ['Discourse Graphs'],
+    ['Create discourse node…', 'dg'],
+    ['Open discourse context panel', 'panel'],
+    ['Canvas Plus'],
+    ['Add diagram…', 'workflow', 'B'],
     ['Add widget…', 'puzzle'],
     ['Add HTML file…', 'filecode'],
-    ['Open Canvas Plus settings', 'settings'],
   ];
-  let y = py + 66, rows = '';
+  let y = py + 58, rows = '';
   entries.forEach(([label, ic, hint, sel]) => {
-    if (!ic) { rows += text(px + 18, y + 14, label.toUpperCase(), { size: 10.5, cls: 'tf', weight: 700 }); y += 26; return; }
-    if (sel) rows += `<rect x="${px + 8}" y="${y - 4}" width="${pw - 16}" height="32" rx="7" class="asoft"/>`;
-    rows += icon(ic, px + 20, y + 3, 18, sel ? 'ca' : 'cm') + text(px + 50, y + 18, label, { size: 13.5, cls: sel ? 'a' : 't', weight: sel ? 600 : 400 });
-    if (hint) rows += `<rect x="${px + pw - 44}" y="${y + 4}" width="26" height="20" rx="5" class="fill-hover"/>${text(px + pw - 31, y + 18, hint, { size: 11.5, cls: 'tm', anchor: 'middle' })}`;
+    if (!ic) { rows += text(px + 18, y + 14, label, { size: 13.5, cls: 'tm', weight: 500 }); y += 26; return; }
+    if (sel) rows += `<rect x="${px + 10}" y="${y - 4}" width="${pw - 20}" height="32" rx="6" class="fill-hover"/>`;
+    rows += (ic === 'linear' || ic === 'taskapp' || ic === 'dg') ? appLogo(px + 22, y + 3, ic, 17) : icon(ic, px + 22, y + 3, 17, 'cm');
+    rows += text(px + 52, y + 18, label, { size: 13.5 });
+    if (hint) rows += `<circle cx="${px + pw - 28}" cy="${y + 13}" r="10" class="fill-hover"/>${text(px + pw - 28, y + 17, hint, { size: 11, cls: 'tm', anchor: 'middle' })}`;
     y += 34;
   });
-  return svg('The actions panel: a searchable list of canvas actions', `
+  return app('The actions panel: a searchable list of canvas actions', `
     ${card(70, 90, 200, 110, 'Brief', [150, 130, 90])}
-    ${card(70, 240, 200, 110, 'Audience', [140, 150, 80])}
-    ${card(700, 110, 200, 110, 'Timeline', [150, 120, 100])}
-    <rect width="${W}" height="${H}" class="bg" opacity=".45"/>
+    ${fileCard(330, 150, 190, 56, 'Obsidian Note Types', { label: 'Obsidian Note Types' })}
+    <clipPath id="ap"><rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="12"/></clipPath>
     ${box(px, py, pw, ph, { r: 12, shadow: true })}
-    ${icon('search', px + 18, py + 19, 18, 'cf')}${text(px + 46, py + 38, 'Search actions', { size: 14.5, cls: 'tf' })}
-    <line x1="${px}" y1="${py + 56}" x2="${px + pw}" y2="${py + 56}" class="line"/>
+    <g clip-path="url(#ap)">
+    ${text(px + 24, py + 36, 'Search actions', { size: 14.5, cls: 'tf' })}
+    <line x1="${px}" y1="${py + 48}" x2="${px + pw}" y2="${py + 48}" class="line"/>
     ${rows}
+    </g>
     ${bar.out}
-    ${tip(bar.pos.command, H - 82, 'Actions', '⌘K')}
-  `);
+  `, { bar: null });
 };
 
 scenes.embeds = () => {
-  const html = { x: 70, y: 76, w: 470, h: 330 };
-  const wd = { x: 590, y: 76, w: 300, h: 330 };
-  const issues = [['ENG-142', 'Sync drops edits on reconnect', 'In progress'], ['ENG-151', 'Add share links to canvases', 'Todo'], ['ENG-158', 'Minimap blank on first open', 'Done']];
-  return svg('An HTML page and a Linear widget running live as nodes on the canvas', `
-    ${text(html.x, html.y - 12, 'dashboard.html', { size: 12.5, cls: 'tf' })}
-    ${box(html.x, html.y, html.w, html.h, { r: 8, shadow: true })}
-    <rect x="${html.x - 3}" y="${html.y - 3}" width="${html.w + 6}" height="${html.h + 6}" rx="10" class="as" stroke-width="2"/>
-    <rect x="${html.x}" y="${html.y}" width="${html.w}" height="52" rx="8" class="a"/>
-    <rect x="${html.x}" y="${html.y + 30}" width="${html.w}" height="22" class="a"/>
-    ${text(html.x + 24, html.y + 33, 'Weekly metrics', { size: 17, weight: 700, cls: 'on-a' })}
-    ${[0, 1, 2].map((i) => `${box(html.x + 24 + i * 144, html.y + 76, 130, 70, { r: 8, cls: 'surface-alt' })}
-      ${text(html.x + 38 + i * 144, html.y + 100, ['Active', 'Signups', 'Churn'][i], { size: 11.5, cls: 'tm' })}
-      ${text(html.x + 38 + i * 144, html.y + 130, ['12.4k', '842', '1.8%'][i], { size: 22, weight: 700 })}`).join('')}
-    ${[40, 70, 52, 96, 80, 118, 100, 136].map((v, i) => `<rect x="${html.x + 32 + i * 52}" y="${html.y + 310 - v}" width="30" height="${v}" rx="4" class="a" opacity="${0.35 + i * 0.08}"/>`).join('')}
-    ${cursor(html.x + 380, html.y + 190)}
-    ${text(wd.x, wd.y - 12, 'Linear', { size: 12.5, cls: 'tf' })}
-    ${box(wd.x, wd.y, wd.w, wd.h, { r: 8, shadow: true })}
-    ${text(wd.x + 18, wd.y + 32, 'On canvas', { size: 14, weight: 700 })}
-    ${box(wd.x + 14, wd.y + 46, wd.w - 28, 30, { r: 8, cls: 'surface-alt' })}${icon('search', wd.x + 24, wd.y + 53, 15, 'cf')}${text(wd.x + 46, wd.y + 66, 'Search issues', { size: 12, cls: 'tf' })}
-    ${issues.map(([id, t, st], i) => {
-      const y = wd.y + 92 + i * 74;
-      return `${box(wd.x + 14, y, wd.w - 28, 64, { r: 8, cls: 'surface-alt' })}
-        ${text(wd.x + 26, y + 22, id, { size: 11, cls: 'tf', weight: 600 })}
-        ${text(wd.x + 26, y + 40, t, { size: 12.5, weight: 500 })}
-        ${pill(wd.x + 26, y + 46, st, { size: 9.5 })}`;
+  const html = { x: 60, y: 60, w: 330, h: 280 };
+  const lp = { x: 450, y: 52, w: 400, h: 350 };
+  const issues = [
+    ['Refactor the import pipeline to use shared types…', 'ENG-2061 · In progress · Ana Ruiz', 'half-y'],
+    ['Use the unified upsert in the sync worker…', 'ENG-1823 · In progress · Ana Ruiz', 'half-y'],
+    ['Create a generic upsert route that accepts…', 'FEE-890 · Discovery · Sam Lee', 'dash'],
+    ['Add a shared format resolver to the editor…', 'ENG-2207 · Ready for review · Ana Ruiz', 'half-g'],
+    ['Publish the node type format as a package…', 'ENG-2208 · Ready for review · Ana Ruiz', 'half-g'],
+  ];
+  const status = (x, y, k) => k === 'dash'
+    ? `<circle cx="${x}" cy="${y}" r="6.5" fill="none" stroke="#c9c9d2" stroke-width="2" stroke-dasharray="2.4 2.4"/>`
+    : `<circle cx="${x}" cy="${y}" r="6.5" fill="none" stroke="${k === 'half-g' ? '#26b46b' : '#f2b01e'}" stroke-width="2"/><path d="M${x} ${y - 3}a3 3 0 0 1 0 6z" fill="${k === 'half-g' ? '#26b46b' : '#f2b01e'}"/>`;
+  return app('An HTML page and the Linear widget running live as nodes on the canvas', `
+    <rect x="${html.x}" y="${html.y}" width="${html.w}" height="${html.h}" rx="8" class="asoft"/>
+    <rect x="${html.x}" y="${html.y}" width="${html.w}" height="${html.h}" rx="8" class="line-strong" stroke-width="1.2" fill="none"/>
+    ${text(html.x + 20, html.y + 42, 'Hello from HTML', { size: 24, weight: 800 })}
+    ${box(html.x + 20, html.y + 64, html.w - 40, 110, { r: 8 })}
+    ${text(html.x + 36, html.y + 94, 'This page is rendered in a sandboxed', { size: 13 })}
+    ${text(html.x + 36, html.y + 114, 'frame. Scripts run, so the counter below', { size: 13 })}
+    ${text(html.x + 36, html.y + 134, 'works.', { size: 13 })}
+    <rect x="${html.x + 36}" y="${html.y + 148}" width="76" height="24" rx="6" class="a"/>${text(html.x + 74, html.y + 164, '3 times', { size: 12, cls: 'on-a', weight: 600, anchor: 'middle' })}
+    ${box(html.x + 20, html.y + 190, html.w - 40, 56, { r: 8 })}
+    ${text(html.x + 36, html.y + 223, 'Time: 10:51:03 AM', { size: 13, weight: 700 })}
+    ${cursor(html.x + 150, html.y + 150)}
+    ${box(lp.x, lp.y, lp.w, lp.h, { r: 12, shadow: true })}
+    ${icon('back', lp.x + 18, lp.y + 17, 16, 'cf')}${icon('fwd', lp.x + 44, lp.y + 17, 16, 'cf')}
+    ${appLogo(lp.x + 76, lp.y + 15, 'linear', 20)}${text(lp.x + 104, lp.y + 31, 'Linear', { size: 14, weight: 500 })}
+    ${icon('more', lp.x + lp.w - 64, lp.y + 17, 17, 'cm')}${icon('x', lp.x + lp.w - 34, lp.y + 17, 17, 'cm')}
+    ${box(lp.x + 14, lp.y + 50, 126, 34, { r: 8, cls: 'surface-alt' })}${text(lp.x + 77, lp.y + 72, 'On canvas (0)', { size: 13, anchor: 'middle' })}
+    <rect x="${lp.x + 148}" y="${lp.y + 50}" width="76" height="34" rx="8" class="a"/>${text(lp.x + 186, lp.y + 72, 'Explore', { size: 13, cls: 'on-a', weight: 600, anchor: 'middle' })}
+    ${box(lp.x + 14, lp.y + 98, lp.w - 28, 34, { r: 17, cls: 'surface' })}${icon('search', lp.x + 28, lp.y + 107, 16, 'cm')}${text(lp.x + 54, lp.y + 120, 'Search Linear, or enter an identifier or URL', { size: 12.5, cls: 'tf' })}
+    ${text(lp.x + 28, lp.y + 160, 'Recently updated', { size: 13, cls: 'tm', weight: 500 })}
+    ${issues.map(([t, m, k], i) => {
+      const y = lp.y + 176 + i * 34;
+      return `${status(lp.x + 34, y + 12, k)}${text(lp.x + 56, y + 10, t, { size: 12.5, weight: 500 })}${text(lp.x + 56, y + 27, m, { size: 11, cls: 'tm' })}${icon('plus', lp.x + lp.w - 38, y + 4, 15, 'cf')}`;
     }).join('')}
   `);
 };

@@ -24,7 +24,7 @@ Open a canvas and Obsidian's bottom menu becomes one bar: Select, then its own d
 
 In a mindmap or flowchart, the node toolbar and right-click menu have **Link to web address…**, which turns the node's text into a link that opens in your browser (`Cmd`/`Ctrl` + click, or click a node that is already picked).
 
-![A mindmap diagram with a node picked and its toolbar](docs/mockups/diagrams.svg)
+![A flowchart diagram card selected on the canvas, with its toolbar](docs/mockups/diagrams.svg)
 
 **Ink**  
 Marker and highlighter strokes, with a pen color row (none plus the six canvas presets). The eraser removes whole strokes.
@@ -65,7 +65,7 @@ Select **Add panel** above the help button in the controls on the right to open 
 
 `.html` and `.htm` files also open in a tab, rendered in a sandboxed frame. Scripts run, but the page can't reach the vault or Obsidian, and it reloads when the file changes.
 
-![An HTML page and a Linear widget running as nodes on the canvas](docs/mockups/embeds.svg)
+![An HTML page and the Linear widget running as nodes on the canvas](docs/mockups/embeds.svg)
 
 **With Note Types**  
 These need the [Note Types](https://github.com/jsmorabito/obsidian-note-types) plugin enabled. Without it, the rest of Canvas Plus works as usual.
