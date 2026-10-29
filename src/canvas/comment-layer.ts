@@ -1,12 +1,11 @@
 import { Menu, setIcon } from 'obsidian';
 import { CanvasLike, CanvasNodeLike, CanvasViewLike, afterCanvasFrame, batch, shieldFromCanvas, toCanvasPoint } from './adapter.ts';
-import { CLICK_SLOP_PX } from './constants.ts';
+import { CLICK_SLOP_PX, TARGET_CLASS } from './constants.ts';
 import { createPinBubble } from './pin-bubble.ts';
 import { trackPointer } from './pointer-session.ts';
 import type { Tray } from './tray.ts';
 import { CanvasComment, CommentMessage, movedTo, newCommentId, nodeUnder, pinPoint, readComments, timeAgo, writeComments } from './comments.ts';
 
-const TARGET_CLASS = 'ffc-comment-target';
 type Placement = Pick<CanvasComment, 'x' | 'y' | 'node' | 'dx' | 'dy'>;
 
 const AUTHOR = 'You';

@@ -3,6 +3,8 @@ import { CanvasLike, CanvasNodeLike, afterCanvasFrame } from './adapter.ts';
 
 /** The custom property, on the canvas, that holds how many canvas units one screen pixel is. */
 const SCALE_VAR = '--ffc-pin-scale';
+/** The custom property, on the canvas, that holds the layer pinned nodes sit on. */
+const LAYER_VAR = '--ffc-pin-z';
 /** Set on core's handles while they are for a pinned node. */
 const HANDLES_CLASS = 'ffc-for-pin';
 
@@ -24,6 +26,7 @@ export function watchPinScale(canvas: CanvasLike): () => void {
   const wrapper = canvas.wrapperEl;
   let width = wrapper.clientWidth;
   let last = '';
+  let lastLayer = '';
   // Reading the width forces a layout, so it's kept until a resize.
   const resizes = new ResizeObserver(() => { width = wrapper.clientWidth; });
   resizes.observe(wrapper);
@@ -43,6 +46,12 @@ export function watchPinScale(canvas: CanvasLike): () => void {
   if (layer && setTarget) layer.setTarget = wrapped;
   const update = (): void => {
     markHandles();
+    // Pinned nodes stay above the rest: core gives a node a layer above all before it each time it is selected, so theirs follows.
+    const layer = String((canvas.zIndexCounter ?? 0) + 1);
+    if (layer !== lastLayer) {
+      lastLayer = layer;
+      wrapper.setCssProps({ [LAYER_VAR]: layer });
+    }
     const bbox = canvas.getViewportBBox?.();
     if (!bbox || width <= 0) return;
     const scale = (bbox.maxX - bbox.minX) / width;
@@ -57,7 +66,7 @@ export function watchPinScale(canvas: CanvasLike): () => void {
   return () => {
     stop();
     resizes.disconnect();
-    wrapper.setCssProps({ [SCALE_VAR]: '' });
+    wrapper.setCssProps({ [SCALE_VAR]: '', [LAYER_VAR]: '' });
     // If something else has wrapped it since, ours stays in the chain but does nothing more than mark the handles.
     if (layer && setTarget && layer.setTarget === wrapped) {
       if (ownSetTarget) layer.setTarget = setTarget;

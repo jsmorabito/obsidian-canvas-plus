@@ -1,13 +1,14 @@
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasNodeLike, batch, getExtra, nodeBox, patchData, pressNode } from './adapter.ts';
 import { isAnchor } from './anchor.ts';
-import { CLICK_SLOP_PX, FIELD_KIND, FIELD_PIN, KIND_TEXT, PRESET_VARS, SIZE_NOTE_CARD, SIZE_PIN } from './constants.ts';
+import { CLICK_SLOP_PX, FIELD_KIND, FIELD_PIN, FIELD_PIN_AT, KIND_TEXT, PRESET_VARS, SIZE_NOTE_CARD, SIZE_PIN } from './constants.ts';
 import { LINEAR_ICON, TASKAPP_ICON } from './icons.ts';
 import { readDiagram } from './diagram-data.ts';
 import { readIssueRef } from './issue-ref.ts';
 import { createPinBubble } from './pin-bubble.ts';
 import { readInk } from './ink-nodes.ts';
 import { pinCard } from './note-card.ts';
+import { Attach, readAttach, setAttachments, trackPinDrop } from './pin-attach.ts';
 import { typeLinkColor } from './note-card-content.ts';
 import { readWidget } from './widget-card.ts';
 import { listWidgets } from './widgets.ts';
@@ -102,7 +103,8 @@ export function pinNode(node: CanvasNodeLike, size: { width: number; height: num
 export function unpinNode(node: CanvasNodeLike): void {
   const size = readSize(node);
   const box = nodeBox(node);
-  patchData(node, { [FIELD_PIN]: undefined });
+  // No longer a pin, so no longer attached to anything.
+  patchData(node, { [FIELD_PIN]: undefined, [FIELD_PIN_AT]: undefined });
   if (box) node.moveAndResize?.({ ...box, ...(size ?? SIZE_NOTE_CARD) });
 }
 
@@ -170,10 +172,11 @@ function iconFor(plugin: CanvasPlusPlugin, node: CanvasNodeLike, data: Record<st
 
 /**
  * Dress pinned nodes: a bubble with their icon, where the node was. The node's own content stays in the node, hidden
- * until the pin is hovered, when it opens beside the pin at the size it had. `open` runs when the pin is clicked. Idempotent, so safe to run on a timer.
+ * until the pin is hovered, when it opens beside the pin at the size it had. `open` runs when the pin is clicked, and `onAttach` after a drag attached it to a node, or let it go. Idempotent, so safe to run on a timer.
  */
-export function decoratePins(plugin: CanvasPlusPlugin, canvas: CanvasLike, open: (node: CanvasNodeLike) => void): void {
+export function decoratePins(plugin: CanvasPlusPlugin, canvas: CanvasLike, open: (node: CanvasNodeLike) => void, onAttach: () => void): void {
   const hidden = new Set<string>();
+  const attached = new Map<string, Attach>();
   for (const node of canvas.nodes?.values() ?? []) {
     const el = node.nodeEl;
     if (!el) continue;
@@ -184,6 +187,8 @@ export function decoratePins(plugin: CanvasPlusPlugin, canvas: CanvasLike, open:
       clearPin(node);
       continue;
     }
+    const attach = readAttach(node, data);
+    if (attach && node.id) attached.set(node.id, attach);
     const members = readMembers(node, data);
     for (const id of members) hidden.add(id);
     if (members.length > 0) syncContents(canvas, node, members);
@@ -197,8 +202,18 @@ export function decoratePins(plugin: CanvasPlusPlugin, canvas: CanvasLike, open:
     const bubble = createPinBubble(el, icon, PIN_CLASS);
     // A pin with a colour is tinted like the card it came from.
     bubble.toggleClass('has-color', !!color);
-    openOnClick(canvas, node, bubble, open);
+    openOnClick(canvas, node, bubble, open, onAttach);
   }
+  // A pin attached to something that is hidden is hidden with it, as are pins attached to those.
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const [id, at] of attached) {
+      if (!hidden.has(at.node) || hidden.has(id)) continue;
+      hidden.add(id);
+      grew = true;
+    }
+  }
+  setAttachments(canvas, attached);
   hideMembers(canvas, hidden);
 }
 
@@ -255,7 +270,7 @@ function hideMembers(canvas: CanvasLike, hidden: Set<string>): void {
  * A click on the pin opens the node; a drag moves it. The bubble keeps its size on screen while the node's box scales with
  * the canvas, so at most zooms it reaches past the box where core looks for presses: the press is handed to core from here.
  */
-function openOnClick(canvas: CanvasLike, node: CanvasNodeLike, bubble: HTMLElement, open: (node: CanvasNodeLike) => void): void {
+function openOnClick(canvas: CanvasLike, node: CanvasNodeLike, bubble: HTMLElement, open: (node: CanvasNodeLike) => void, onAttach: () => void): void {
   let down: { x: number; y: number } | null = null;
   bubble.addEventListener('pointerdown', (e) => {
     down = { x: e.clientX, y: e.clientY };
@@ -268,6 +283,8 @@ function openOnClick(canvas: CanvasLike, node: CanvasNodeLike, bubble: HTMLEleme
     // Not also taken as a press on the canvas behind it (core would pan, or press the node a second time).
     e.stopPropagation();
     pressNode(canvas, node, e);
+    // A drag that ends over a node attaches the pin to it.
+    trackPinDrop(canvas, node, e, bubble.doc, onAttach);
   });
   bubble.addEventListener('click', (e) => {
     const from = down;

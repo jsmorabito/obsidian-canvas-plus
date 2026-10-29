@@ -116,3 +116,12 @@ export const PRESET_VARS: Record<string, string> = {
   '1': 'var(--color-red)', '2': 'var(--color-orange)', '3': 'var(--color-yellow)',
   '4': 'var(--color-green)', '5': 'var(--color-cyan)', '6': 'var(--color-purple)',
 };
+
+/**
+ * Extra field on a pinned node: the node it is attached to and where, `{ node, dx, dy }`, with `dx` and `dy` the pin's
+ * top-left from the node's. It follows the node as that moves. Stored in canvas files, so the name must not change.
+ */
+export const FIELD_PIN_AT = 'ffcPinAt';
+
+/** Put on a node while a pin or comment pin carried over it would attach to it. */
+export const TARGET_CLASS = 'ffc-comment-target';

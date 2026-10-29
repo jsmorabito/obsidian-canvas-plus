@@ -1972,8 +1972,13 @@ body {
   --ffc-pin-extent: calc(var(--ffc-pin-size) * var(--ffc-pin-scale, 1));
 }
 
+/* Above the other nodes, which core raises by giving them inline layers: only !important beats those. */
+.canvas-node[data-ffc-pin] {
+  z-index: var(--ffc-pin-z, 1) !important;
+}
+
 .canvas-node[data-ffc-pin]:hover {
-  z-index: 2;
+  z-index: calc(var(--ffc-pin-z, 1) + 1) !important;
 }
 
 .ffc-node-pin {

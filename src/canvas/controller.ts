@@ -28,6 +28,7 @@ import { injectIssueButtons, moveIssueButtonsLast } from './issue-menu.ts';
 import { injectSignpostButtons } from './signpost.ts';
 import { injectPinButton, injectViewToggleButton } from './view-toggle.ts';
 import { watchPinScale } from './pin-bubble.ts';
+import { watchPinAttach } from './pin-attach.ts';
 import { clearPins, decoratePins } from './pin-node.ts';
 import { PanelDock } from './panel-dock.ts';
 import { PinViewer } from './pin-viewer.ts';
@@ -130,6 +131,7 @@ export class CanvasController {
     this.cleanups.push(attachDiagramMenu(plugin, view, () => this.sweep(), (menu, node) => this.flowcharts.cardMenuItems(menu, node)));
     this.comments = new CommentLayer(view);
     this.cleanups.push(watchPinScale(view.canvas!));
+    this.cleanups.push(watchPinAttach(view.canvas!));
     this.cleanups.push(registerToolShortcuts(plugin.app, view, this));
     this.presenter = new Presenter(plugin, view, () => this.setTool('select'));
     // Added after the present button, so it sits just before it in the header.
@@ -360,7 +362,7 @@ export class CanvasController {
     this.dgContext.sync();
     decorateNoteCards(this.plugin, canvas);
     decorateIssueCards(this.plugin, canvas);
-    decoratePins(this.plugin, canvas, (node) => this.pinViewer.open(node));
+    decoratePins(this.plugin, canvas, (node) => this.pinViewer.open(node), () => this.sweep());
     this.pinViewer.sync();
     decorateDiagrams(this.plugin, canvas, () => this.sweep());
     this.mindmaps.refresh();
