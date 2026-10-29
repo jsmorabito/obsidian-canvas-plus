@@ -11,105 +11,102 @@ Drawing and layout tools for Obsidian's canvas. Paired with the [Note Types](htt
 ## Features
 
 **Tools in one bar**  
-Open a canvas and Obsidian's bottom menu becomes one bar: Select, then its own draggable Card, Note and Media buttons and a draggable **Add note** (`N`) button, then Text (`T`), Group (`G`), Anchor (`A`), Comment (`K`), Marker (`M`), Highlighter (`⇧M`) and Eraser (`E`). `Esc` cancels. Click Text or Group, then click or drag on the canvas to place one. Free text has no card chrome and removes itself if left empty. Click Anchor, then click on the canvas to drop an anchor icon, or drag to draw a frame: the area a presentation shows at that stop. A frame lets clicks through until it is selected, like a core group, but holds nothing. An anchor's name sits above it like a group's label and stays readable at any zoom; drag the name to move it and double-click it to rename it. New anchors are numbered (Anchor 1, Anchor 2…). Click Comment, then click on the canvas to drop a comment pin and type its first message (`Enter` sends). A pin shows as a small bubble; hover it to preview the thread, select it to open the thread to reply to, resolve (resolved pins fade) or delete. Drag a pin to move it: let go over a node and the pin attaches to it (the node is outlined while you carry it) and moves with it; let go on empty canvas and it stays put. A new pin attaches to the node you click on, too. Drag a pin onto the tray to hold it, thread and all, and drag its card back onto the canvas to drop it again. Comments are saved in the canvas file, and undo covers them. The tools also work in a canvas popped out into its own window.
+Obsidian's bottom menu becomes one bar: Select, draggable Card, Note, Media and **Add note** (`N`), then Text (`T`), Group (`G`), Anchor (`A`), Comment (`K`), Marker (`M`), Highlighter (`⇧M`) and Eraser (`E`). `Esc` cancels. Click a tool, then click or drag on the canvas to place one. Works in popped-out windows too.
+
+- **Text** has no card chrome and removes itself if left empty.
+- **Anchors** are icons, or frames if you drag: the area a presentation shows at that stop. Names are numbered, readable at any zoom, and renamed by double-click.
+- **Comments** are pins with threads: reply, resolve, delete. A pin dropped on a node moves with it. Saved in the canvas file; undo covers them.
 
 ![The tool bar placing a group around two cards](docs/mockups/tools.svg)
 
 **Diagrams**  
-**Add diagram…** (`B`, or in the actions panel) puts a [Mermaid](https://mermaid.js.org) diagram on the canvas: mindmap, flowchart, sequence, state, class, entity relationship, Gantt, timeline, kanban, pie, quadrant, XY chart or git graph. [Pele](https://pele.run), a small Mermaid renderer, draws it in your theme's colors. The card saves the Mermaid source, and its text is a `mermaid` code block, so it still draws in a vault without this plugin. Double-click the card's background to edit the source with a live preview. Right-click a card for **Edit source…**, **Copy as Mermaid**, **Copy as SVG** and **Save as SVG**.
+**Add diagram…** (`B`, or in the actions panel) adds a [Mermaid](https://mermaid.js.org) diagram: mindmap, flowchart, sequence, state, class, ER, Gantt, timeline, kanban, pie, quadrant, XY chart or git graph. [Pele](https://pele.run) draws it in your theme's colors. The source is saved as a `mermaid` code block, so it still renders without this plugin. Double-click to edit the source with a live preview; right-click to copy or save as Mermaid or SVG.
 
-*Mindmaps* can be edited on the canvas. Click a node to pick it. Dots round it add a child or a sibling (`Tab` and `Enter` do too), a double-click or `F2` renames it in place, `Delete` removes it, and the arrow keys move between nodes. Drag a node to put it before or after a sibling or inside another node, or use `Alt` + `↑`/`↓` and `Cmd`/`Ctrl` + `]`/`[`. `Cmd`/`Ctrl` + `D` duplicates a node, and copy and paste move an outline as a markdown list. The toolbar over a node sets its color, shape and icon and turns on bold, italic, underline, code or a wikilink; a wikilink opens a note picker that starts from the node's text and creates the note when none has that name. With Note Types, Discourse Graphs, Linear or Task App on, the toolbar can also make a note, discourse node or issue from the node's text and link to it.
-
-*Flowcharts* can be edited on the canvas too. Click a node or an edge to pick it. Dots round a node add a node after it, before it or beside it, and dragging from a dot onto another node joins them. Double-click renames a node or labels an edge. Drag a node onto another to hang it from that node, or onto a side of a sibling to reorder. The toolbar sets a node's color, shape and formatting, and an edge's style. The card's right-click menu sets which way the chart runs. A flowchart that uses syntax the editor can't change safely (several nodes joined with `&`, edge ids, arrows with text in them) names the line and stays editable as source.
-
-In a mindmap or flowchart, the node toolbar and right-click menu have **Link to web address…**, which turns the node's text into a link that opens in your browser (`Cmd`/`Ctrl` + click, or click a node that is already picked).
+*Mindmaps* and *flowcharts* are editable on the canvas: pick a node, use the dots round it (or `Tab`/`Enter`) to add nodes, double-click or `F2` to rename, drag to rearrange, `Delete` to remove. A toolbar sets color, shape, formatting and wikilinks, and **Link to web address…** turns a node into a link. With Note Types, Discourse Graphs, Linear or Task App on, it can make a note, node or issue from a node's text. Flowcharts using syntax the editor can't change safely stay editable as source.
 
 ![A flowchart diagram card selected on the canvas, with its toolbar](docs/mockups/diagrams.svg)
 
 **Ink**  
-Marker and highlighter strokes, with a pen color row (none plus the six canvas presets). The eraser removes whole strokes.
+Marker and highlighter strokes with a pen color row. The eraser removes whole strokes.
 
 ![Marker and highlighter strokes with the pen color row](docs/mockups/ink.svg)
 
 **Layers panel**  
-A panel on the left lists groups, anchors and what they contain; select an anchor to jump to it. Hover a group or web link and select the pencil to rename it; a link's name shows in place of its URL. It has a search box and a filter by kind of layer or note type. Filtered to **Anchors**, it lists them numbered in presentation order instead; drag a row to reorder them (on touch, hold the row first). It has a collapsible **Favorites** section at the top (hover a favorite and select the × to remove it), and it is as wide as Figma's left panel by default; drag its right edge to resize it (double-click the edge to reset). It starts hidden: select the layers button in the top left to show it.
+Lists groups, anchors and what they hold. Search, filter by kind or note type, rename with the pencil, and pin **Favorites** at the top. Filtered to **Anchors**, drag rows to set presentation order. Drag its edge to resize (double-click to reset). Starts hidden: select the layers button top left.
 
-![The layers panel listing groups, anchors and notes](docs/mockups/layers.svg)
+![The layers panel with favorites, groups, anchors and notes](docs/mockups/layers.svg)
 
 **Minimap**  
-An overview of the whole canvas in the lower left, with a box for the part in view. Select or drag on it to move the view. It starts hidden: select the map button in the lower left to show it, and the button in its corner to hide it again.
+An overview of the canvas in the lower left, with a box for the part in view. Select or drag to move the view. Starts hidden: select the map button.
 
 ![The minimap in the lower left with a box for the part in view](docs/mockups/minimap.svg)
 
 **Signposts**  
-Select any object and use the signpost button in its pop-up menu to choose a next and a previous object by clicking them on the canvas. Step-forward and step-back buttons then go there, selecting the object and zooming to it, even on a locked canvas. Mindmap and flowchart nodes have the same buttons in their toolbar and can be targets too.
+Use an object's signpost button to pick a next and previous object on the canvas. Step buttons then jump between them, even on a locked canvas. Mindmap and flowchart nodes work too.
 
 **Presenting**  
-Select the presentation button in the view header, next to core's view buttons, or run **Toggle presentation**, to step through the canvas's anchors like slides, in the order set in the layers panel (or top to bottom, then left to right), starting from the selected anchor or the first. Each stop shows its frame, or else the smallest group around its anchor, or centres an anchor outside any group, and the view eases there as it does for core's zoom to selection (at once if your system asks for reduced motion). Move with the arrow keys, Space and Shift+Space, or Page Up and Page Down, or with the bar at the bottom; select the count, or press `G`, for a menu of every stop. `Esc` or the header button ends it, leaving the view where it is. While presenting, the canvas is read-only (core's lock) and the panels, menus and anchors are hidden. **Next presentation stop** and **Previous presentation stop** are commands too, so they can be given hotkeys, for a presentation clicker.
+Select the presentation button in the view header, or run **Toggle presentation**, to step through anchors like slides, in layers-panel order. The view eases to each stop; the canvas is read-only and panels are hidden. Use arrow keys, Space, Page Up/Down or the bottom bar; `G` lists every stop; `Esc` ends. **Next/Previous presentation stop** are commands, so a clicker can drive them.
 
 ![Presenting a canvas, with the menu of stops open](docs/mockups/present.svg)
 
 **Focusing**  
-Select the focus button in the view header, next to the presentation button, or run **Toggle canvas focus**, to let the canvas fill the window: the ribbons, sidebars, tab bars, status bar and any other tabs are hidden, leaving the canvas and its view header. Select it again, or press `Esc` with nothing selected, to bring them back. A canvas in a sidebar can't be focused; move it into the main area first. The window stays as it is; it isn't full screen. Opening another tab or a sidebar view brings them back too.
+The focus button in the view header (or **Toggle canvas focus**) hides ribbons, sidebars, tabs and the status bar so the canvas fills the window. Select it again or press `Esc` to bring them back. Not available in a sidebar.
 
 **Tray**  
-The tray button sits in the bottom toolbar, after the eraser, and the tray opens just above the toolbar. Drag anything on the canvas and the tray appears as a drop zone (or, while it's open, drop straight onto it): drop it there to hold it for later as a small card, and the tray stays open to show it. A group goes in with everything inside it, and edges between the things held come back with them. A tab panel goes in too when you drag it there by its header, and opens again where you drag its card back out. Drag a card back onto the canvas to put it back where you drop it. Select the tray button to keep the strip open and see what it holds, and again to close it. What the tray holds is saved in the canvas file, and undo puts things back.
+Drag anything toward the tray button after the eraser and drop it in the strip to hold it as a small card: groups with their contents, edges between held things, tab panels, comment pins. Drag a card back to place it. Saved in the canvas file; undo covers it.
 
 **Tab panels**  
-Select **Add panel** above the help button in the controls on the right to open a new tab floating over the canvas. It starts on the new tab screen and works like any tab: create a note, go to a file, follow links, go back and forward. Its new tab screen also has **Open widget**, a searchable list of the views core and community plugins add, such as the outline, graph view or bookmarks, to open in the panel. Drag its header to move it and drag an edge or corner to resize it. Panels float above the canvas, not on it, so the canvas pans and zooms underneath. Each canvas remembers its panels, where they sit and what they show, and brings them back when you open it again. Close one with the × at the right end of its header.
+**Add panel** (right-hand controls) floats a tab over the canvas. It works like any tab, and **Open widget** lists views from core and community plugins (outline, graph, bookmarks…). Drag to move, edges to resize. Each canvas remembers its panels.
 
 ![A tab panel floating over the canvas](docs/mockups/panels.svg)
 
 **Widgets and HTML files**  
-**Add widget…** (in the actions panel) puts any view that doesn't show a file, such as the Linear panel, on the canvas as a node running the live view. **Add HTML file…** searches the vault's HTML files and adds the chosen one the same way, showing the live page in its node (a file already on the canvas is selected instead of added twice). `![[page.html]]` embeds in notes render too. Both take clicks and keys only while their node is selected, so an unselected node can still be dragged, and both are saved with the canvas.
-
-`.html` and `.htm` files also open in a tab, rendered in a sandboxed frame. Scripts run, but the page can't reach the vault or Obsidian, and it reloads when the file changes.
+**Add widget…** puts any non-file view, such as the Linear panel, on the canvas as a live node. **Add HTML file…** does the same for a vault HTML file, and `![[page.html]]` embeds render too. Nodes take clicks only while selected, so they can still be dragged. HTML files also open in tabs, in a sandboxed frame that can't reach the vault or Obsidian.
 
 ![An HTML page and the Linear widget running as nodes on the canvas](docs/mockups/embeds.svg)
 
-**With Note Types**  
-These need the [Note Types](https://github.com/jsmorabito/obsidian-note-types) plugin enabled. Without it, the rest of Canvas Plus works as usual.
-
-- **Note cards.** Typed notes appear as cards showing an optional key image, the title (with the note type's link icon, when the type has **Style note links** and **Show link icon** on) and any properties you list under **Canvas card fields** for that note type (in Note Types' settings). A button in the selection toolbar, or the **Cycle selected canvas note cards between card, embed and styled link** command, switches a card to a full embed or to a styled link, the same pill the editor shows.
-- **Add note (`N`).** Add a typed note to the canvas, or create a new note of a type and its card in one step.
-- **Relations on edges.** Connect two cards to choose a relation, which is written to both notes' frontmatter. Select a card to see its relations in a side panel. When a card has none yet, **Mark as…** in the panel picks a relation and a note, writes the relation to both notes and adds the note's card and a labelled edge, as one undo step.
-- **Key images.** Drop an image on a card to set its key image.
-- **Undo covers the notes too.** Undo and redo cover the note changes that relations and key images make, not only the canvas.
-
-![Typed notes as cards, a relation on the edge between them and the relations panel](docs/mockups/notetypes.svg)
-
 **Actions panel (`⌘K`)**  
-The **Actions** button in the bottom bar (or `Cmd`/`Ctrl` + `K`) opens a searchable list of actions: **Add diagram…**, **Add widget…**, **Add HTML file…**, **Convert to…**, the Linear, Task App and Discourse Graphs ones, and a shortcut to this plugin's settings. The ⌘ button sits beside the tray's button. Arrow keys move, `Enter` runs, `Esc` closes.
+The **Actions** button (or `Cmd`/`Ctrl` + `K`) opens a searchable list: **Add diagram…**, **Add widget…**, **Add HTML file…**, **Convert to…**, the Linear, Task App and Discourse Graphs actions, and plugin settings.
 
 ![The actions panel with Add diagram selected](docs/mockups/actions.svg)
 
-**With Linear**  
-These are in beta and off by default: turn on **Enable Linear integration (beta)** under **Settings → Canvas Plus**, then sign in. Create an OAuth app in Linear (**Settings → API**), give it the callback URL shown there (`obsidian://canvas-plus-linear`), and enter its client ID. Sign-in uses PKCE, so there is no client secret, and the tokens are kept in Obsidian's secret storage. A personal API key works instead.
+**With Note Types**  
+Needs the [Note Types](https://github.com/jsmorabito/obsidian-note-types) plugin. Without it, everything else works as usual.
 
-- **Add Linear issue (`I`).** Search Linear, or enter an identifier like `ENG-123` or an issue's URL, to add the issue to the canvas. Find it in the **Actions** panel too. An issue already on the canvas is selected instead of added twice.
-- **Create issues from cards.** Select one or more cards and choose **Create Linear issue** in the selection toolbar. A card's first line becomes the title and the rest its description; pick the team and the card turns into the issue. Undo puts the card back, but the issue stays in Linear.
-- **Linear widget.** **Open Linear panel** in the actions panel (or **Open widget** in a new tab panel) opens Linear in a tab panel over the canvas. **On canvas** lists the issues already on this canvas (select one to zoom to it), and **Explore** searches Linear or lists recently updated issues, and adds one with a click.
-- **Card, embed or link.** Issues switch between views the same way note cards do (the toolbar button, or the **Cycle selected canvas note cards and issues between card, embed and link** command): a card with the status, assignee and labels, the full issue with its properties and description, or a one-line link. **Open in Linear** is in the toolbar too.
+- **Note cards** show a key image, title (with the type's link icon if enabled) and properties from **Canvas card fields**. Switch to a full embed or styled link from the selection toolbar.
+- **Add note (`N`)** adds a typed note, or creates one and its card.
+- **Relations on edges.** Connect two cards to choose a relation, written to both notes. Select a card for its relations panel; **Mark as…** adds a relation and the note's card in one step.
+- **Key images.** Drop an image on a card.
+- **Undo** covers the note changes too.
+- **Convert to…** turns selected text cards into notes of a type: first line is the title, the rest the description.
+
+![Typed notes as cards, a relation on the edge between them and the relations panel](docs/mockups/notetypes.svg)
+
+**With Linear**  
+Beta, off by default. Turn on **Enable Linear integration (beta)** under **Settings → Canvas Plus** and sign in: create an OAuth app in Linear (**Settings → API**) with callback `obsidian://canvas-plus-linear` and enter its client ID (PKCE, no secret; tokens in Obsidian's secret storage), or use a personal API key.
+
+- **Add Linear issue (`I`)** by search, identifier (`ENG-123`) or URL.
+- **Create issues from cards** in the selection toolbar. Undo restores the card but not the issue.
+- **Linear widget** (**Open Linear panel**): **On canvas** lists this canvas's issues, **Explore** searches or lists recent ones and adds with a click.
+- **Card, embed or link** views, switched like note cards, plus **Open in Linear**.
+
+**With Task App**  
+Beta, off by default. Turn on **Enable Task App integration (beta)**, enter the **Server address** and **API token** (the server's `API_TOKEN`, kept in secret storage; none needed for a local server with sign-in off). Set a **Web app address** if the web app runs elsewhere. Needs a server that accepts its token on `/trpc`.
+
+It works like Linear: **Add Task App issue (`J`)**, create from cards, widget, card/embed/link views. Both can be on at once. Task App cards never show an assignee.
+
+**With Discourse Graphs**  
+Nothing to set up; these appear when the plugin is on.
+
+- **Create discourse node (`D`)** via toolbar, actions or command: title and type, made with that type's folder, name format and template.
+- **Discourse context panel** follows the selected card's node.
+- **Convert to discourse node…** in the selection toolbar and actions.
 
 Canvas files stay standard JSON Canvas, with extra fields kept alongside, so stock Obsidian still opens them.
 
-This relies on Obsidian's undocumented canvas internals, collected in `src/canvas/adapter.ts` (and, for tab panels, workspace internals in `src/canvas/hosted-leaf.ts`), and last checked against Obsidian 1.14.4, and may need a patch after an Obsidian update.
+This relies on Obsidian's undocumented canvas internals, collected in `src/canvas/adapter.ts` (and `src/canvas/hosted-leaf.ts` for tab panels), last checked against Obsidian 1.14.4, and may need a patch after an Obsidian update.
 
 ---
-
-### Convert cards to notes
-
-With Note Types enabled, select text cards and choose **Convert to…** in the selection toolbar (or the Actions panel), then a note type. The first line of each card becomes the note's title and the rest its description; the card is swapped for the note's card, keeping its arrows, and undo reverses it.
-
-### Discourse Graphs
-
-With the Discourse Graphs plugin enabled (and nothing to set up), Canvas Plus adds:
-
-- **Create discourse node** (`D`, the toolbar button, the Actions panel or a command): type a title, pick the node type, and the new node's card lands on the canvas, made with that type's folder, name format and template.
-- **Discourse context panel** (Actions panel or a command): opens Discourse Graphs' panel as a widget and keeps it on the selected card's node.
-- **Convert to discourse node…** in the selection toolbar and the Actions panel, and the node types in the Convert picker.
-
-Nothing is added while Discourse Graphs is off.
 
 ## Installation
 
@@ -117,20 +114,14 @@ Nothing is added while Discourse Graphs is off.
 2. Reload Obsidian.
 3. Enable **Canvas Plus** under **Settings → Community plugins**. Enable [**Note Types**](https://github.com/jsmorabito/obsidian-note-types) too for note cards and relations.
 
----
-
-**With Task App**  
-Task App is the self-hosted task app in `Task-App-1.0`. Its integration is in beta and off by default, and does the same as Linear's: turn on **Enable Task App integration (beta)** under **Settings → Canvas Plus**, enter the **Server address** (such as `https://tasks.example.com`, or `http://localhost:4100`), and set the **API token**, which is the server's `API_TOKEN` and is kept in Obsidian's secret storage. A local server with sign-in off needs no token. If the web app runs somewhere else than the API (`http://localhost:3100` while developing), enter it as the **Web app address** so issue links open there. The server must be a version that accepts its API token on `/trpc`.
-
-- **Add Task App issue (`J`)**, **Create Task App issue** in the selection toolbar, the **Task App widget**, and the card, embed and link views all work as they do for Linear. Both can be on at once, and a canvas can hold issues from each. Task App has a single owner, so its cards never show an assignee.
-
 ## Network use
 
-The plugin has no telemetry and collects no data. It makes no requests unless you sign in to Linear, set a Linear API key, or turn on Task App. With a Linear sign-in or key, it sends requests to Linear (`api.linear.app`) to search issues, load the issues shown on your canvases (their title, status, assignee, labels and description), and create issues from cards. What is sent for a new issue is the title and description you confirm in the dialog. Nothing else from your vault leaves your device. Issue cards load again from Linear a few minutes apart while a canvas is open. With Task App turned on, the same things (searching, loading the issues shown on your canvases, and creating issues from cards) go to the server address you set, with your API token, and nowhere else.
+No telemetry, no data collected. No requests are made unless you sign in to Linear, set a Linear API key, or turn on Task App.
 
-Diagrams make no requests. Copying a diagram or an outline puts text on your clipboard only when you choose a copy command, and pasting an outline reads only the paste you make. A web address or issue link in a diagram opens in your browser only when you click it with `Cmd`/`Ctrl` or select an already picked node a second time. Saving a diagram as SVG writes one file to your vault's attachment folder.
-
-If a note's key image is a web address, Obsidian loads it from that address whenever a note card shows it. That is a request from your device to the image's host, the same as for any image embedded from the web. Dropping an image link onto a note card only writes the link into the note, and downloads nothing. Dropping an image file saves a copy in your vault's attachment folder, as Obsidian does for any attachment.
+- **Linear** (`api.linear.app`): searching issues, loading the issues on your canvases (title, status, assignee, labels, description), and creating issues from the title and description you confirm. Cards refresh every few minutes while a canvas is open.
+- **Task App:** the same, to the server address you set, with your API token.
+- **Diagrams:** no requests. Clipboard and SVG writes happen only when you choose them, and web links open only on `Cmd`/`Ctrl` + click or a second click on a picked node.
+- **Key images:** a web-address image loads from its host whenever a card shows it, as any embedded web image does. Dropping an image link only writes the link; dropping a file saves a copy in your attachment folder.
 
 ---
 
