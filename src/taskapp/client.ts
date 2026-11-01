@@ -1,5 +1,6 @@
 import { requestUrl } from 'obsidian';
-import { IDENTIFIER_RE, Issue, IssueClient, IssueError, IssueInput, IssueTeam, StateType } from '../issues/types.ts';
+import { IDENTIFIER_RE, Issue, IssueClient, IssueError, IssueInput, IssueTeam, Project, ProjectClient, StateType } from '../issues/types.ts';
+import { RawProject, UUID_RE, matchProjects, projectIdOf, toProject } from './projects.ts';
 
 // ─── Task App client ─────────────────────────────────────────────────────────
 //
@@ -24,6 +25,9 @@ const BATCH_SIZE = 20;
 const RECENT_COUNT = 25;
 /** Task App has no "recently updated" list, so look at this many of the newest and sort them. */
 const RECENT_POOL = 100;
+
+/** How long the list of projects is reused, so typing in the picker doesn't ask the server for it again at every pause. */
+const PROJECT_LIST_TTL_MS = 10_000;
 
 const PRIORITY_LABELS = ['No priority', 'Urgent', 'High', 'Medium', 'Low'];
 const STATE_TYPES = new Set<string>(['backlog', 'unstarted', 'started', 'completed', 'canceled']);
@@ -59,7 +63,7 @@ export function cleanUrl(text: string): string {
   return /^https?:\/\/[^/\s]+/i.test(t) ? t : '';
 }
 
-export class TaskAppClient implements IssueClient {
+export class TaskAppClient implements IssueClient, ProjectClient {
   constructor(private readonly config: TaskAppConfig) {}
 
   get configured(): boolean {
@@ -165,22 +169,27 @@ export class TaskAppClient implements IssueClient {
     }
   }
 
-  async byIds(ids: string[]): Promise<Issue[]> {
-    const found: Issue[] = [];
-    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
-      const chunk = ids.slice(i, i + BATCH_SIZE);
+  /** What `procedure` (an `issue.get` or `project.get`) returns for each input, in as few requests as the address length allows. */
+  private async getMany<R extends { deletedAt?: string | null }>(procedure: string, inputs: unknown[]): Promise<R[]> {
+    const found: R[] = [];
+    for (let i = 0; i < inputs.length; i += BATCH_SIZE) {
+      const chunk = inputs.slice(i, i + BATCH_SIZE);
       // One request for the chunk: the procedure path lists a call for each, and the input is keyed by position.
       const input: Record<string, unknown> = {};
-      chunk.forEach((ref, n) => { input[n] = { json: { ref } }; });
-      const path = chunk.map(() => 'issue.get').join(',');
-      const replies = await this.send<RawIssue>(path, `?batch=1&input=${encodeURIComponent(JSON.stringify(input))}`);
-      // An issue that is gone fails on its own; the others still come.
+      chunk.forEach((one, n) => { input[n] = { json: one }; });
+      const path = chunk.map(() => procedure).join(',');
+      const replies = await this.send<R>(path, `?batch=1&input=${encodeURIComponent(JSON.stringify(input))}`);
+      // One that is gone fails on its own; the others still come.
       for (const reply of replies) {
         const raw = reply.result?.data?.json;
-        if (raw && !raw.deletedAt) found.push(this.toIssue(raw));
+        if (raw && !raw.deletedAt) found.push(raw);
       }
     }
     return found;
+  }
+
+  async byIds(ids: string[]): Promise<Issue[]> {
+    return (await this.getMany<RawIssue>('issue.get', ids.map((ref) => ({ ref })))).map((raw) => this.toIssue(raw));
   }
 
   async create(input: IssueInput): Promise<Issue> {
@@ -192,14 +201,62 @@ export class TaskAppClient implements IssueClient {
     return this.toIssue(raw);
   }
 
+  private projects: { at: number; list: Promise<Project[]> } | null = null;
+
+  /** Task App can't search projects, so the (short) list is fetched, kept briefly, and filtered here. */
+  private allProjects(): Promise<Project[]> {
+    if (this.projects && Date.now() - this.projects.at < PROJECT_LIST_TTL_MS) return this.projects.list;
+    const list = this.query<RawProject[]>('project.list').then((rows) => rows.filter((r) => !r.deletedAt).map((r) => toProject(r, this.web())));
+    const entry = { at: Date.now(), list };
+    this.projects = entry;
+    // A failed request isn't kept, so the next ask tries again.
+    list.catch(() => { if (this.projects === entry) this.projects = null; });
+    return list;
+  }
+
+  async recentProjects(): Promise<Project[]> {
+    return [...await this.allProjects()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, RECENT_COUNT);
+  }
+
+  async searchProjects(term: string): Promise<Project[]> {
+    return matchProjects(await this.allProjects(), term).slice(0, RECENT_COUNT);
+  }
+
+  async projectByRef(ref: string): Promise<Project | null> {
+    // Only a UUID can name a project, so anything else is no project, without asking.
+    if (!UUID_RE.test(ref)) return null;
+    try {
+      const raw = await this.query<RawProject>('project.get', { id: ref });
+      return raw && !raw.deletedAt ? toProject(raw, this.web()) : null;
+    } catch (err) {
+      if (err instanceof IssueError && /not found/i.test(err.message)) return null;
+      throw err;
+    }
+  }
+
+  async projectsByIds(ids: string[]): Promise<Project[]> {
+    return (await this.getMany<RawProject>('project.get', ids.map((id) => ({ id })))).map((raw) => toProject(raw, this.web()));
+  }
+
+  /** Whether the address is on this server, or its web app. */
+  private isOurs(url: URL): boolean {
+    return [this.web(), this.base()].filter(Boolean).some((u) => new URL(u).origin === url.origin);
+  }
+
+  /** The project's id in one of this server's project pages: `<web address>/project/<id>`. */
+  parseProjectRef(text: string): string | null {
+    let url: URL;
+    try { url = new URL(text.trim()); } catch { return null; }
+    return this.isOurs(url) ? projectIdOf(url.pathname) : null;
+  }
+
   parseRef(text: string): string | null {
     const t = text.trim();
     if (IDENTIFIER_RE.test(t)) return t.toUpperCase();
     // One of this server's issue pages: `<web address>/issue/TSK-12`.
     let url: URL;
     try { url = new URL(t); } catch { return null; }
-    const ours = [this.web(), this.base()].filter(Boolean).map((u) => new URL(u).origin);
-    if (!ours.includes(url.origin)) return null;
+    if (!this.isOurs(url)) return null;
     const id = /^\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)\/?$/.exec(url.pathname)?.[1];
     return id ? id.toUpperCase() : null;
   }

@@ -86,6 +86,7 @@ Needs the [Note Types](https://github.com/jsmorabito/obsidian-note-types) plugin
 Beta, off by default. Turn on **Enable Linear integration (beta)** under **Settings → Canvas Plus** and sign in: create an OAuth app in Linear (**Settings → API**) with callback `obsidian://canvas-plus-linear` and enter its client ID (PKCE, no secret; tokens in Obsidian's secret storage), or use a personal API key.
 
 - **Add Linear issue (`I`)** by search, identifier (`ENG-123`) or URL.
+- **Add Linear project…** (command or Actions list) by search or URL. A project is a card, embed or link like an issue, with its status, progress, lead and dates.
 - **Create issues from cards** in the selection toolbar. Undo restores the card but not the issue.
 - **Linear widget** (**Open Linear panel**): **On canvas** lists this canvas's issues, **Explore** searches or lists recent ones and adds with a click.
 - **Card, embed or link** views, switched like note cards, plus **Open in Linear**.
@@ -93,7 +94,7 @@ Beta, off by default. Turn on **Enable Linear integration (beta)** under **Setti
 **With Task App**  
 Beta, off by default. Turn on **Enable Task App integration (beta)**, enter the **Server address** and **API token** (the server's `API_TOKEN`, kept in secret storage; none needed for a local server with sign-in off). Set a **Web app address** if the web app runs elsewhere. Needs a server that accepts its token on `/trpc`.
 
-It works like Linear: **Add Task App issue (`J`)**, create from cards, widget, card/embed/link views. Both can be on at once. Task App cards never show an assignee.
+It works like Linear: **Add Task App issue (`J`)**, **Add Task App project…**, create from cards, widget, card/embed/link views. Task App projects show status, goal and dates; there is no progress or lead. Both can be on at once. Task App cards never show an assignee.
 
 **With Discourse Graphs**  
 Nothing to set up; these appear when the plugin is on.
@@ -118,7 +119,7 @@ This relies on Obsidian's undocumented canvas internals, collected in `src/canva
 
 No telemetry, no data collected. No requests are made unless you sign in to Linear, set a Linear API key, or turn on Task App.
 
-- **Linear** (`api.linear.app`): searching issues, loading the issues on your canvases (title, status, assignee, labels, description), and creating issues from the title and description you confirm. Cards refresh every few minutes while a canvas is open.
+- **Linear** (`api.linear.app`): searching issues and projects, loading the issues and projects on your canvases (title, status, assignee, labels, description), and creating issues from the title and description you confirm. Cards refresh every few minutes while a canvas is open.
 - **Task App:** the same, to the server address you set, with your API token.
 - **Diagrams:** no requests. Clipboard and SVG writes happen only when you choose them, and web links open only on `Cmd`/`Ctrl` + click or a second click on a picked node.
 - **Key images:** a web-address image loads from its host whenever a card shows it, as any embedded web image does. Dropping an image link only writes the link; dropping a file saves a copy in your attachment folder.

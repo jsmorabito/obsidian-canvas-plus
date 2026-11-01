@@ -713,6 +713,16 @@ svg.ffc-ink path.ffc-ink-auto {
   color: var(--text-muted);
 }
 
+.ffc-issue-source {
+  display: inline-flex;
+  flex: none;
+}
+
+.ffc-issue-source .svg-icon {
+  width: var(--icon-s);
+  height: var(--icon-s);
+}
+
 .ffc-issue-id {
   font-weight: var(--font-semibold);
   white-space: nowrap;

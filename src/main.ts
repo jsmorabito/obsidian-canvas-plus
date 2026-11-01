@@ -6,7 +6,7 @@ import { HTML_EXTENSIONS, HTML_VIEW, HtmlView } from './html/view.ts';
 import { hiddenWidgets } from './canvas/widgets.ts';
 import { IssueService, PROVIDERS, PROVIDER_IDS } from './issues/providers.ts';
 import { IssueStore } from './issues/store.ts';
-import type { ProviderId } from './issues/types.ts';
+import type { ProjectClient, ProviderId, Project } from './issues/types.ts';
 import { LinearClient } from './linear/api.ts';
 import { LinearAuth, PROTOCOL_ACTION } from './linear/oauth.ts';
 import { TaskAppClient } from './taskapp/client.ts';
@@ -22,6 +22,8 @@ export class CanvasPlusPlugin extends Plugin {
   taskApp!: { client: TaskAppClient };
   /** Each provider's client and the issues it has fetched. */
   issues!: Record<ProviderId, IssueService>;
+  /** Each provider's projects on canvases, fetched the same way. */
+  projects!: Record<ProviderId, IssueStore<Project>>;
   /** Restyle every open canvas now. Set by the canvas tools. */
   sweepCanvases: () => void = () => { /* no canvas tools yet */ };
 
@@ -102,10 +104,16 @@ export class CanvasPlusPlugin extends Plugin {
       linear: { info: PROVIDERS.linear, client: linear, store: new IssueStore(linear) },
       taskapp: { info: PROVIDERS.taskapp, client: taskApp, store: new IssueStore(taskApp) },
     };
+    const projectStore = (client: ProjectClient): IssueStore<Project> => new IssueStore<Project>({
+      get configured() { return client.configured; },
+      byIds: (ids) => client.projectsByIds(ids),
+    });
+    this.projects = { linear: projectStore(linear), taskapp: projectStore(taskApp) };
     this.registerObsidianProtocolHandler(PROTOCOL_ACTION, (data) => { void auth.finish(data); });
     this.registerObsidianProtocolHandler(TASKAPP_PROTOCOL_ACTION, (data) => { handleConnect(this, data); });
     for (const id of PROVIDER_IDS) {
       this.register(() => this.issues[id].store.destroy());
+      this.register(() => this.projects[id].destroy());
       this.registerView(PROVIDERS[id].viewType, (leaf) => new ISSUE_VIEWS[id](leaf, this));
       this.register(() => hiddenWidgets.delete(PROVIDERS[id].viewType));
     }

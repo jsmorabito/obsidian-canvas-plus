@@ -32,6 +32,41 @@ export interface Issue {
   labels: Array<{ name: string; color: string }>;
 }
 
+/** A Linear project, as much of it as a card shows. */
+export interface Project {
+  id: string;
+  name: string;
+  url: string;
+  /** The short summary under the name. */
+  description: string;
+  /** The long description, markdown. */
+  content: string;
+  icon: string | null;
+  color: string | null;
+  /** 0 to 1, or null where the service doesn't track it. */
+  progress: number | null;
+  startDate: string | null;
+  targetDate: string | null;
+  updatedAt: string;
+  status: { name: string; type: ProjectStatusType; color: string } | null;
+  lead: { name: string; avatarUrl: string | null } | null;
+  teams: IssueTeam[];
+}
+
+export type ProjectStatusType = 'backlog' | 'planned' | 'started' | 'paused' | 'completed' | 'canceled';
+
+/** What the canvas asks of a service that has projects. */
+export interface ProjectClient {
+  readonly configured: boolean;
+  recentProjects(): Promise<Project[]>;
+  searchProjects(term: string): Promise<Project[]>;
+  /** One project by its id or the slug in its URL, or null if there is none. */
+  projectByRef(ref: string): Promise<Project | null>;
+  projectsByIds(ids: string[]): Promise<Project[]>;
+  /** The id in one of this service's project URLs; null when the text is not one. */
+  parseProjectRef(text: string): string | null;
+}
+
 export interface IssueInput {
   teamId: string;
   title: string;
@@ -65,6 +100,8 @@ export interface ProviderInfo {
   name: string;
   /** Icon id, registered in icons.ts. */
   icon: string;
+  /** Extra field on a `text` node showing one of its projects. Stored in canvas files, so it must not change. */
+  projectField: string;
   /** Extra field on a `text` node showing one of its issues. Stored in canvas files, so it must not change. */
   field: string;
   /** The widget's view type. */

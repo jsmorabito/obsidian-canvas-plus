@@ -78,6 +78,15 @@ export const FIELD_LINEAR = 'ffcLinear';
  */
 export const FIELD_TASKAPP = 'ffcTaskApp';
 
+/**
+ * Extra field on a `text` node showing a Linear project, the same shape as `ffcLinear` with an empty `identifier`.
+ * Stored in canvas files, so the name must not change.
+ */
+export const FIELD_LINEAR_PROJECT = 'ffcLinearProject';
+
+/** The same for a Task App project. Stored in canvas files, so the name must not change. */
+export const FIELD_TASKAPP_PROJECT = 'ffcTaskAppProject';
+
 /** Linear issue card, the default size of a node showing one. */
 export const SIZE_ISSUE_CARD = { width: 280, height: 110 };
 

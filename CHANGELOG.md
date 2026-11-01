@@ -5,6 +5,27 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0]
+
+### Added
+
+- **Linear and Task App projects on the canvas.** Run **Add Linear project to
+  canvas** or **Add Task App project to canvas** (or use **Add … project…** in
+  the Actions list) to search for a project or paste its link. A project is a
+  card, full view or link like an issue, showing its status and dates (and, for
+  Linear, progress and lead). A project already on the canvas is zoomed to
+  instead of added twice.
+- **Projects in the panels.** The Linear and Task App panels list the projects
+  on the canvas beside the issues, and filter them together.
+- **The service's icon on cards.** Issue and project cards, full views and links
+  start with the Linear or Task App icon, so it is clear where they come from.
+
+### Changed
+
+- Pasted Linear project links with any kind of short id are recognised, and
+  Task App project searches reuse the project list for a few seconds instead of
+  asking the server at every pause.
+
 ## [1.17.1]
 
 ### Fixed

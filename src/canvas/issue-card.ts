@@ -1,10 +1,11 @@
-import { MarkdownRenderer } from 'obsidian';
+import { MarkdownRenderer, setIcon } from 'obsidian';
 import { PROVIDERS } from '../issues/providers.ts';
-import type { Issue } from '../issues/types.ts';
+import type { Issue, Project, ProviderId } from '../issues/types.ts';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasNodeLike } from './adapter.ts';
 import { IssueRef, readIssueRef } from './issue-ref.ts';
 import { cardOwner, fitToPill, viewOf } from './note-card.ts';
+import { renderProjectCard, renderProjectEmbed, renderProjectPill } from './project-card.ts';
 
 const CARD_CLASS  = 'ffc-issue-card';
 const EMBED_CLASS = 'ffc-issue-embed';
@@ -35,13 +36,15 @@ export function decorateIssueCards(plugin: CanvasPlusPlugin, canvas: CanvasLike)
     el.setAttribute('data-ffc-issue', ref.id);
     el.setAttribute('data-ffc-view', mode);
     lockEditing(node);
-    const { store } = plugin.issues[ref.provider];
+    const project = ref.kind === 'project';
+    const store = project ? plugin.projects[ref.provider] : plugin.issues[ref.provider].store;
     store.request(ref.id);
-    const issue = store.get(ref.id);
-    const key = `${mode}|${ref.provider}|${ref.id}|${ref.identifier}|${ref.title}`;
+    const found = store.get(ref.id);
+    const issue = project ? undefined : found as Issue | undefined;
+    const key = `${mode}|${ref.kind}|${ref.provider}|${ref.id}|${ref.identifier}|${ref.title}`;
     // By when it last changed, not by the fetched object: a refetch of an unchanged issue must not rebuild the card,
     // which would send a scrolled embed back to the top.
-    const stamp = issue?.updatedAt ?? '';
+    const stamp = found?.updatedAt ?? '';
     const fresh = drawn.get(node)?.key === key && drawn.get(node)?.stamp === stamp;
     drawn.set(node, { key, stamp });
 
@@ -54,13 +57,22 @@ export function decorateIssueCards(plugin: CanvasPlusPlugin, canvas: CanvasLike)
 
     if (mode === 'card') {
       const target = card ?? container.createDiv({ cls: CARD_CLASS });
-      if (!fresh || target.childElementCount === 0) renderCard(target, ref, issue);
+      if (!fresh || target.childElementCount === 0) {
+        if (project) renderProjectCard(target, ref, found as Project | undefined);
+        else renderCard(target, ref, issue);
+      }
     } else if (mode === 'embed') {
       const target = embed ?? container.createDiv({ cls: EMBED_CLASS });
-      if (!fresh || target.childElementCount === 0) renderEmbed(plugin, canvas, target, ref, issue);
+      if (!fresh || target.childElementCount === 0) {
+        if (project) renderProjectEmbed(plugin, canvas, target, ref, found as Project | undefined);
+        else renderEmbed(plugin, canvas, target, ref, issue);
+      }
     } else {
       const target = pill ?? container.createDiv({ cls: `${PILL_CLASS} ffc-issue-pill` });
-      if (!fresh || target.childElementCount === 0) renderPill(target, ref, issue);
+      if (!fresh || target.childElementCount === 0) {
+        if (project) renderProjectPill(target, ref, found as Project | undefined);
+        else renderPill(target, ref, issue);
+      }
       fitToPill(canvas, node, target, container);
     }
   }
@@ -88,6 +100,11 @@ export function clearIssueCards(canvas: CanvasLike): void {
   for (const node of canvas.nodes?.values() ?? []) clearIssue(node);
 }
 
+/** The service's own icon, first in a card's head, so it is clear where the issue or project lives. */
+export function sourceIcon(parent: HTMLElement, provider: ProviderId): void {
+  setIcon(parent.createSpan({ cls: 'ffc-issue-source', attr: { 'aria-label': PROVIDERS[provider].name } }), PROVIDERS[provider].icon);
+}
+
 /** The status marker: a ring for not started, half full for started, full for done, in the status's own colour. */
 export function stateDot(parent: HTMLElement, state: Issue['state']): void {
   const dot = parent.createSpan({ cls: 'ffc-issue-state', attr: { 'data-state-type': state?.type ?? 'backlog' } });
@@ -103,6 +120,7 @@ function labelChip(parent: HTMLElement, label: { name: string; color: string }):
 function renderCard(card: HTMLElement, ref: IssueRef, issue: Issue | undefined): void {
   card.empty();
   const head = card.createDiv({ cls: 'ffc-issue-head' });
+  sourceIcon(head, ref.provider);
   stateDot(head, issue?.state ?? null);
   head.createSpan({ cls: 'ffc-issue-id', text: ref.identifier });
   if (issue && issue.priority > 0) head.createSpan({ cls: 'ffc-issue-priority', text: issue.priorityLabel });
@@ -117,6 +135,7 @@ function renderCard(card: HTMLElement, ref: IssueRef, issue: Issue | undefined):
 function renderPill(pill: HTMLElement, ref: IssueRef, issue: Issue | undefined): void {
   pill.empty();
   const chip = pill.createDiv({ cls: 'ffc-issue-pill-body' });
+  sourceIcon(chip, ref.provider);
   stateDot(chip, issue?.state ?? null);
   chip.createSpan({ cls: 'ffc-issue-id', text: ref.identifier });
   chip.createSpan({ cls: 'ffc-issue-pill-title', text: issue?.title ?? ref.title });
@@ -126,6 +145,7 @@ function renderEmbed(plugin: CanvasPlusPlugin, canvas: CanvasLike, embed: HTMLEl
   embed.empty();
   const name = PROVIDERS[ref.provider].name;
   const head = embed.createDiv({ cls: 'ffc-issue-head' });
+  sourceIcon(head, ref.provider);
   stateDot(head, issue?.state ?? null);
   head.createEl('a', { cls: 'ffc-issue-id external-link', text: ref.identifier, href: ref.url });
   embed.createDiv({ cls: 'ffc-issue-title', text: issue?.title ?? ref.title });

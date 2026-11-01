@@ -1,5 +1,5 @@
 import { requestUrl } from 'obsidian';
-import { IDENTIFIER_RE, Issue, IssueClient, IssueError, IssueInput, IssueTeam } from '../issues/types.ts';
+import { IDENTIFIER_RE, Issue, IssueClient, IssueError, IssueInput, IssueTeam, Project, ProjectClient } from '../issues/types.ts';
 import type { LinearAuth } from './oauth.ts';
 
 // ─── Linear GraphQL client ───────────────────────────────────────────────────
@@ -25,6 +25,24 @@ const ISSUE_FIELDS = `fragment IssueFields on Issue { ${FIELD_LIST} }`;
 // searchIssues returns IssueSearchResult, which an Issue fragment can't be spread on.
 const SEARCH_FIELDS = `fragment SearchFields on IssueSearchResult { ${FIELD_LIST} }`;
 
+interface RawProject extends Omit<Project, 'description' | 'content' | 'teams' | 'progress'> {
+  description: string | null;
+  content: string | null;
+  progress: number | null;
+  teams?: { nodes: IssueTeam[] };
+}
+
+const PROJECT_FIELD_LIST = `id name url description content icon color progress startDate targetDate updatedAt
+  status { name type color }
+  lead { name avatarUrl }
+  teams { nodes { id key name } }`;
+const PROJECT_FIELDS = `fragment ProjectFields on Project { ${PROJECT_FIELD_LIST} }`;
+const PROJECT_SEARCH_FIELDS = `fragment ProjectSearchFields on ProjectSearchResult { ${PROJECT_FIELD_LIST} }`;
+
+function toProject(raw: RawProject): Project {
+  return { ...raw, description: raw.description ?? '', content: raw.content ?? '', progress: raw.progress ?? 0, teams: raw.teams?.nodes ?? [] };
+}
+
 function toIssue(raw: RawIssue): Issue {
   return { ...raw, description: raw.description ?? '', labels: raw.labels?.nodes ?? [] };
 }
@@ -38,7 +56,7 @@ function parseBody<T>(res: { json: unknown }): Body<T> | null {
   try { return res.json as Body<T>; } catch { return null; }
 }
 
-export class LinearClient implements IssueClient {
+export class LinearClient implements IssueClient, ProjectClient {
   constructor(private readonly auth: LinearAuth) {}
 
   get configured(): boolean {
@@ -117,6 +135,50 @@ export class LinearClient implements IssueClient {
     return toIssue(data.issueCreate.issue);
   }
 
+  async recentProjects(): Promise<Project[]> {
+    const data = await this.request<{ projects: { nodes: RawProject[] } }>(
+      `query { projects(first: 25, orderBy: updatedAt) { nodes { ...ProjectFields } } } ${PROJECT_FIELDS}`,
+    );
+    return data.projects.nodes.map(toProject);
+  }
+
+  async searchProjects(term: string): Promise<Project[]> {
+    const data = await this.request<{ searchProjects: { nodes: RawProject[] } }>(
+      `query($term: String!) { searchProjects(term: $term, first: 25) { nodes { ...ProjectSearchFields } } } ${PROJECT_SEARCH_FIELDS}`,
+      { term },
+    );
+    return data.searchProjects.nodes.map(toProject);
+  }
+
+  async projectByRef(ref: string): Promise<Project | null> {
+    try {
+      const data = await this.request<{ project: RawProject | null }>(
+        `query($id: String!) { project(id: $id) { ...ProjectFields } } ${PROJECT_FIELDS}`,
+        { id: ref },
+      );
+      return data.project ? toProject(data.project) : null;
+    } catch (err) {
+      if (err instanceof IssueError && /not found/i.test(err.message)) return null;
+      throw err;
+    }
+  }
+
+  async projectsByIds(ids: string[]): Promise<Project[]> {
+    if (ids.length === 0) return [];
+    const data = await this.request<{ projects: { nodes: RawProject[] } }>(
+      `query($ids: [ID!]) { projects(first: ${ids.length}, filter: { id: { in: $ids } }) { nodes { ...ProjectFields } } } ${PROJECT_FIELDS}`,
+      { ids },
+    );
+    return data.projects.nodes.map(toProject);
+  }
+
+  parseProjectRef(text: string): string | null {
+    const slug = PROJECT_URL_RE.exec(text.trim())?.[1];
+    if (!slug) return null;
+    // A project's URL ends in its short id, after the last hyphen, which is what Linear looks it up by.
+    return slug.slice(slug.lastIndexOf('-') + 1);
+  }
+
   parseRef(text: string): string | null {
     const t = text.trim();
     const id = IDENTIFIER_RE.test(t) ? t : ISSUE_URL_RE.exec(t)?.[1];
@@ -125,3 +187,4 @@ export class LinearClient implements IssueClient {
 }
 
 const ISSUE_URL_RE = /^https:\/\/linear\.app\/[^/]+\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)(?:[/?#]|$)/;
+const PROJECT_URL_RE = /^https:\/\/linear\.app\/[^/]+\/project\/([^/?#]+)/;

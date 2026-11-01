@@ -1,4 +1,12 @@
-import type { Issue, IssueClient } from './types.ts';
+import type { Issue } from './types.ts';
+
+/** What a store needs of a service: whether it can be asked, and a way to fetch items by id. */
+export interface StoreSource<T> {
+  readonly configured: boolean;
+  byIds(ids: string[]): Promise<T[]>;
+}
+
+interface Stored { id: string }
 
 /** How long a fetched issue is shown before it is fetched again. */
 const TTL_MS = 5 * 60_000;
@@ -13,22 +21,22 @@ const BATCH_SIZE = 50;
  * Issues on canvases, kept in memory. A node saves only the issue's identity; what its card shows (status,
  * assignee, description…) is fetched, and fetched again once it is older than a few minutes.
  */
-export class IssueStore {
-  private cache = new Map<string, { issue: Issue; at: number }>();
+export class IssueStore<T extends Stored = Issue> {
+  private cache = new Map<string, { issue: T; at: number }>();
   private queued = new Set<string>();
   private inflight = new Set<string>();
   private retryAt = new Map<string, number>();
   private listeners = new Set<() => void>();
   private timer: number | null = null;
 
-  constructor(private client: IssueClient) {}
+  constructor(private client: StoreSource<T>) {}
 
-  get(id: string): Issue | undefined {
+  get(id: string): T | undefined {
     return this.cache.get(id)?.issue;
   }
 
   /** Remember an issue just fetched or created. */
-  put(issue: Issue): void {
+  put(issue: T): void {
     this.cache.set(issue.id, { issue, at: Date.now() });
     this.retryAt.delete(issue.id);
     this.notify();

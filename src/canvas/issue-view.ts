@@ -7,9 +7,9 @@ import { CanvasLike, CanvasViewLike, asCanvasView, focusNode } from './adapter.t
 import { eachFrameUntil } from '../utils/helpers.ts';
 import { openPluginSettings } from './actions-entries.ts';
 import { hostLeaves } from './hosted-leaf.ts';
-import { stateDot } from './issue-card.ts';
 import { IssueRef, readIssueRef } from './issue-ref.ts';
 import { addIssueNode, findIssueNode } from './issue-picker.ts';
+import { issueParts, placedParts, treeRow } from './panel-rows.ts';
 import type { CanvasNodeLike } from './adapter.ts';
 
 /** How long typing pauses before the service is searched. */
@@ -69,7 +69,7 @@ export abstract class IssueView extends ItemView {
     this.tabsEl = root.createDiv({ cls: 'nav-header ffc-linear-tabs' });
     const searchEl = root.createDiv({ cls: 'nav-header ffc-linear-search' });
     this.search = new SearchComponent(searchEl)
-      .setPlaceholder('Filter issues on this canvas')
+      .setPlaceholder(this.filterPlaceholder())
       .onChange((value) => {
         this.query = value.trim();
         if (this.tab === 'explore') this.searchSoon();
@@ -80,6 +80,8 @@ export abstract class IssueView extends ItemView {
     // The canvas changes under it, and issues arrive a moment after they are asked for.
     this.registerInterval(window.setInterval(() => this.update(), 1000));
     this.register(this.service.store.onUpdate(() => this.update()));
+    // Projects sit on the canvas beside the issues.
+    this.register(this.plugin.projects[this.provider].onUpdate(() => this.update()));
     this.update();
     // The header may be built a frame after the view opens.
     eachFrameUntil(() => this.showHeaderIcon(), 10);
@@ -116,7 +118,7 @@ export abstract class IssueView extends ItemView {
     const placed = canvas ? this.placed(canvas) : [];
     const signature = JSON.stringify([
       this.plugin.hasIssues(this.provider), !!canvas, this.tab, this.query, this.loading, this.error,
-      placed.map((p) => [p.ref.id, p.ref.title, store.get(p.ref.id)?.updatedAt]),
+      placed.map((p) => [p.ref.id, p.ref.title, (p.ref.kind === 'project' ? this.plugin.projects[this.provider] : store).get(p.ref.id)?.updatedAt]),
       this.results?.map((r) => [r.id, r.updatedAt]),
       // Explore marks what is on the canvas already.
       this.tab === 'explore' ? placed.map((p) => p.ref.id) : null,
@@ -126,7 +128,7 @@ export abstract class IssueView extends ItemView {
     this.draw(canvas, placed);
   }
 
-  /** The issues on the canvas, top to bottom and then left to right. */
+  /** The issues (and for Linear, projects) on the canvas, top to bottom and then left to right. */
   private placed(canvas: CanvasLike): Placed[] {
     const out: Placed[] = [];
     for (const node of canvas.nodes?.values() ?? []) {
@@ -136,12 +138,16 @@ export abstract class IssueView extends ItemView {
     return out.sort((a, b) => (a.node.y ?? 0) - (b.node.y ?? 0) || (a.node.x ?? 0) - (b.node.x ?? 0));
   }
 
+  private filterPlaceholder(): string {
+    return 'Filter issues and projects on this canvas';
+  }
+
   private setTab(tab: Tab): void {
     if (tab === this.tab) return;
     this.tab = tab;
     this.query = '';
     this.search.setValue('');
-    this.search.setPlaceholder(tab === 'canvas' ? 'Filter issues on this canvas' : `Search ${PROVIDERS[this.provider].name}, or enter an identifier or URL`);
+    this.search.setPlaceholder(tab === 'canvas' ? this.filterPlaceholder() : `Search ${PROVIDERS[this.provider].name}, or enter an identifier or URL`);
     if (tab === 'explore' && this.results === null) this.searchSoon();
     this.update();
   }
@@ -207,21 +213,23 @@ export abstract class IssueView extends ItemView {
   private drawPlaced(canvas: CanvasLike, placed: Placed[]): void {
     const words = this.query.toLowerCase().split(/\s+/).filter(Boolean);
     const store = this.service.store;
-    const rows = placed.filter(({ ref }) => {
-      const text = `${ref.identifier} ${store.get(ref.id)?.title ?? ref.title}`.toLowerCase();
-      return words.every((w) => text.includes(w));
-    });
+    const projects = this.plugin.projects[this.provider];
+    const rows = placed
+      .map(({ ref, node }) => ({ ref, node, parts: placedParts(ref, (ref.kind === 'project' ? projects : store).get(ref.id)) }))
+      .filter(({ parts }) => {
+        const text = `${parts.identifier} ${parts.title}`.toLowerCase();
+        return words.every((w) => text.includes(w));
+      });
     if (rows.length === 0) {
       const empty = this.bodyEl.createDiv({ cls: 'pane-empty' });
-      empty.createDiv({ text: placed.length === 0 ? 'No issues on this canvas yet.' : 'No issues match.' });
+      empty.createDiv({ text: placed.length === 0 ? 'No issues or projects on this canvas yet.' : 'No matches.' });
       if (placed.length === 0) {
         empty.createEl('button', { cls: 'mod-cta', text: 'Explore issues' }).addEventListener('click', () => this.setTab('explore'));
       }
       return;
     }
-    for (const { ref, node } of rows) {
-      const issue = store.get(ref.id);
-      const row = this.row(ref.identifier, issue?.title ?? ref.title, issue?.state ?? null, issue?.assignee?.name);
+    for (const { ref, node, parts } of rows) {
+      const row = treeRow(this.bodyEl, parts);
       row.self.addEventListener('click', () => focusNode(canvas, node));
       const open = row.flair.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': `Open in ${PROVIDERS[this.provider].name}` } });
       setIcon(open, 'external-link');
@@ -245,24 +253,12 @@ export abstract class IssueView extends ItemView {
     if (!this.query) this.bodyEl.createDiv({ cls: 'tree-item-self ffc-linear-section' }).createDiv({ cls: 'tree-item-inner u-muted', text: 'Recently updated' });
     for (const issue of this.results) {
       const there = onCanvas.has(issue.id);
-      const row = this.row(issue.identifier, issue.title, issue.state, issue.assignee?.name);
+      const row = treeRow(this.bodyEl, issueParts(issue));
       row.item.addClass(there ? 'is-placed' : 'is-addable');
       row.flair.setAttribute('aria-label', there ? 'On the canvas' : 'Add to the canvas');
       setIcon(row.flair, there ? 'check' : 'plus');
       row.self.addEventListener('click', () => this.addOrFocus(canvas, issue));
     }
-  }
-
-  /** One issue in core's tree row markup: its status, title and a line under it, with room at the right for an action. */
-  private row(identifier: string, title: string, state: Issue['state'], assignee?: string): { item: HTMLElement; self: HTMLElement; flair: HTMLElement } {
-    const item = this.bodyEl.createDiv({ cls: 'tree-item ffc-linear-row' });
-    const self = item.createDiv({ cls: 'tree-item-self is-clickable' });
-    stateDot(self, state);
-    const inner = self.createDiv({ cls: 'tree-item-inner' });
-    inner.createDiv({ cls: 'ffc-linear-row-title', text: title });
-    inner.createDiv({ cls: 'ffc-linear-row-meta u-muted', text: [identifier, state?.name, assignee].filter(Boolean).join(' · ') });
-    const flair = self.createDiv({ cls: 'tree-item-flair-outer' }).createSpan({ cls: 'tree-item-flair' });
-    return { item, self, flair };
   }
 
   /** Add the issue without moving the view, so several can be added in a row; one already there is zoomed to. */

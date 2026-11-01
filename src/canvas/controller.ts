@@ -23,6 +23,7 @@ import { MindmapEditor } from './mindmap-editor.ts';
 import { FlowchartEditor } from './flowchart-editor.ts';
 import { attachDiagramMenu } from './diagram-export.ts';
 import { IssuePicker } from './issue-picker.ts';
+import { ProjectPicker } from './project-picker.ts';
 import { injectConvertButton } from './convert-card.ts';
 import { injectIssueButtons, moveIssueButtonsLast } from './issue-menu.ts';
 import { injectSignpostButtons } from './signpost.ts';
@@ -200,6 +201,7 @@ export class CanvasController {
     this.actions = menuEl && actionsButton
       ? new ActionsPanel(menuEl, view.contentEl, actionsButton, () => actionEntries(plugin, view.canvas!, {
         openIssuePicker: (provider) => { this.openIssuePicker(provider); },
+        openProjectPicker: (provider) => { this.openProjectPicker(provider); },
         openIssuePanel: (provider) => { this.tabPanels.openView(PROVIDERS[provider].viewType); },
         addDiagram: () => { this.addDiagram(); },
         addWidget: () => { this.addWidget(); },
@@ -259,6 +261,22 @@ export class CanvasController {
       return false;
     }
     new IssuePicker(this.plugin, provider, canvas, at ?? null, () => {
+      this.sweep();
+      window.requestAnimationFrame(() => this.sweep());
+    }).open();
+    return true;
+  }
+
+  /** The project picker lists projects from the service, so it needs to be set up. */
+  openProjectPicker(provider: ProviderId, at?: { x: number; y: number }): boolean {
+    const canvas = this.view.canvas;
+    if (!canvas) return false;
+    if (!this.plugin.hasIssues(provider)) {
+      const name = PROVIDERS[provider].name;
+      new Notice(`Set up ${name} in the Canvas Plus settings to add ${name} projects.`);
+      return false;
+    }
+    new ProjectPicker(this.plugin, provider, canvas, at ?? null, () => {
       this.sweep();
       window.requestAnimationFrame(() => this.sweep());
     }).open();

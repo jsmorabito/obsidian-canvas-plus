@@ -103,7 +103,7 @@ export class PinViewer {
 
   private titleOf(node: CanvasNodeLike): string {
     const ref = readIssueRef(node);
-    if (ref) return ref.title ? `${ref.identifier} ${ref.title}` : ref.identifier;
+    if (ref) return `${ref.identifier} ${ref.title}`.trim();
     if (node.file) return node.file.basename;
     // A group has a label of its own.
     const label = node.getData?.().label;

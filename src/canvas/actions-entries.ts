@@ -18,6 +18,7 @@ export function openPluginSettings(plugin: CanvasPlusPlugin): void {
 /** What the actions panel lists now: the issue actions that apply, and the way to the settings. */
 export interface ActionHooks {
   openIssuePicker: (provider: ProviderId) => void;
+  openProjectPicker: (provider: ProviderId) => void;
   openIssuePanel: (provider: ProviderId) => void;
   addDiagram: () => void;
   addWidget: () => void;
@@ -31,7 +32,7 @@ export interface ActionHooks {
 const PICKER_HINTS: Record<ProviderId, string> = { linear: 'I', taskapp: 'J' };
 
 export function actionEntries(plugin: CanvasPlusPlugin, canvas: CanvasLike, hooks: ActionHooks): ActionEntry[] {
-  const { openIssuePicker, openIssuePanel, addDiagram, addWidget, addCodeFile, createDiscourseNode, openDiscoursePanel, onChanged } = hooks;
+  const { openIssuePicker, openProjectPicker, openIssuePanel, addDiagram, addWidget, addCodeFile, createDiscourseNode, openDiscoursePanel, onChanged } = hooks;
   const entries: ActionEntry[] = [];
   const settings = (): void => openPluginSettings(plugin);
 
@@ -40,6 +41,7 @@ export function actionEntries(plugin: CanvasPlusPlugin, canvas: CanvasLike, hook
     const enabled = id === 'linear' ? plugin.config.linearEnabled : plugin.config.taskAppEnabled;
     if (plugin.hasIssues(id)) {
       entries.push({ section: name, label: `Add ${name} issue…`, icon, hint: PICKER_HINTS[id], keywords: 'issue ticket task', run: () => openIssuePicker(id) });
+      entries.push({ section: name, label: `Add ${name} project…`, icon, keywords: 'project initiative roadmap', run: () => openProjectPicker(id) });
       entries.push({
         section: name,
         label: `Open ${name} panel`,

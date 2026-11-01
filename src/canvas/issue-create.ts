@@ -7,7 +7,7 @@ import { FIELD_KIND, KIND_TEXT } from './constants.ts';
 import { readInk } from './ink-nodes.ts';
 import { isAnchor } from './anchor.ts';
 import { firstLine } from './layers-tree.ts';
-import { issueNodeText, readIssueRef } from './issue-ref.ts';
+import { issueNodeText, readIssueRef, storedRef } from './issue-ref.ts';
 import { issueRef } from './issue-picker.ts';
 
 /** Linear's limit on an issue's title, kept for Task App's too. */
@@ -162,7 +162,7 @@ class CreateIssuesModal extends Modal {
         batch(this.canvas, () => {
           for (const { draft, issue } of live) {
             const ref = issueRef(this.provider, issue);
-            patchData(draft.node, { text: issueNodeText(ref), [PROVIDERS[this.provider].field]: ref });
+            patchData(draft.node, { text: issueNodeText(ref), [PROVIDERS[this.provider].field]: storedRef(ref) });
           }
         });
       }

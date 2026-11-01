@@ -67,6 +67,18 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
       },
     });
   }
+  for (const [id, commandId] of [['linear', 'add-linear-project-to-canvas'], ['taskapp', 'add-task-app-project-to-canvas']] as const) {
+    plugin.addCommand({
+      id: commandId,
+      name: `Add ${PROVIDERS[id].name} project to canvas`,
+      checkCallback: (checking) => {
+        const controller = activeController();
+        if (!controller || !plugin.hasIssues(id)) return false;
+        if (!checking) controller.openProjectPicker(id);
+        return true;
+      },
+    });
+  }
   plugin.addCommand({
     id: 'create-discourse-node-on-canvas',
     name: 'Create discourse node on canvas',
@@ -145,7 +157,10 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
     }
   }, 1000));
   // Issues arrive from their service a moment after their cards are drawn.
-  for (const id of PROVIDER_IDS) plugin.register(plugin.issues[id].store.onUpdate(sweepVisible));
+  for (const id of PROVIDER_IDS) {
+    plugin.register(plugin.issues[id].store.onUpdate(sweepVisible));
+    plugin.register(plugin.projects[id].onUpdate(sweepVisible));
+  }
 
   plugin.register(() => {
     for (const controller of controllers.values()) controller.destroy();
