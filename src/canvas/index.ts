@@ -2,6 +2,7 @@ import { PROVIDERS, PROVIDER_IDS } from '../issues/providers.ts';
 import { ItemView, WorkspaceLeaf, debounce } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { asCanvasView } from './adapter.ts';
+import { registerOpenCanvas } from './canvas-file-picker.ts';
 import { CanvasController } from './controller.ts';
 import { registerIcons } from './icons.ts';
 import { PanelStore } from './panel-store.ts';
@@ -11,6 +12,7 @@ import { PanelStore } from './panel-store.ts';
  * view, and tears them down on unload.
  */
 export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
+  registerOpenCanvas(plugin);
   plugin.register(registerIcons());
   // The tray's open state used to be saved across canvases; it no longer is.
   plugin.app.saveLocalStorage('ffc-canvas-tray-open', null);
