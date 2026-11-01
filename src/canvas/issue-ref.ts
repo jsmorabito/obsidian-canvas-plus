@@ -5,8 +5,8 @@ import { CanvasNodeLike } from './adapter.ts';
 /** What a node saves of the issue it shows. The rest comes from the issue's service. */
 export interface IssueRef {
   provider: ProviderId;
-  /** A project is saved the same way as an issue, with no identifier. */
-  kind: 'issue' | 'project';
+  /** A project or initiative is saved the same way as an issue, with no identifier. */
+  kind: 'issue' | 'project' | 'initiative';
   id: string;
   identifier: string;
   title: string;
@@ -16,7 +16,7 @@ export interface IssueRef {
 /** A canvas file can come from anyone, so only a web address is ever opened or linked to. */
 const WEB_URL_RE = /^https?:\/\//;
 
-/** Linear's issues and projects all live at one address; a Task App server's is wherever its owner put it. */
+/** Linear's issues, projects and initiatives all live at one address; a Task App server's is wherever its owner put it. */
 function isOurs(provider: ProviderId, url: string): boolean {
   return WEB_URL_RE.test(url) && (provider !== 'linear' || url.startsWith('https://linear.app/'));
 }
@@ -30,16 +30,23 @@ export function readIssueRef(node: CanvasNodeLike, data?: Record<string, unknown
   const bag = data ?? node.unknownData ?? node.getData?.();
   if (!bag) return null;
   for (const provider of PROVIDER_IDS) {
-    const project = bag[PROVIDERS[provider].projectField] as Partial<IssueRef> | undefined;
-    if (project && typeof project.id === 'string' && typeof project.url === 'string' && isOurs(provider, project.url)) {
-      return { provider, kind: 'project', id: project.id, identifier: '', url: project.url, title: typeof project.title === 'string' ? project.title : '' };
-    }
-    const v = bag[PROVIDERS[provider].field] as Partial<IssueRef> | undefined;
+    const { projectField, initiativeField, field } = PROVIDERS[provider];
+    const found = otherRef(provider, 'project', bag[projectField])
+      ?? (initiativeField ? otherRef(provider, 'initiative', bag[initiativeField]) : null);
+    if (found) return found;
+    const v = bag[field] as Partial<IssueRef> | undefined;
     if (v && typeof v.id === 'string' && typeof v.identifier === 'string' && typeof v.url === 'string' && isOurs(provider, v.url)) {
       return { provider, kind: 'issue', id: v.id, identifier: v.identifier, url: v.url, title: typeof v.title === 'string' ? v.title : '' };
     }
   }
   return null;
+}
+
+/** A project or an initiative as a node saved it, which has no identifier. */
+function otherRef(provider: ProviderId, kind: 'project' | 'initiative', value: unknown): IssueRef | null {
+  const v = value as Partial<IssueRef> | undefined;
+  if (!v || typeof v.id !== 'string' || typeof v.url !== 'string' || !isOurs(provider, v.url)) return null;
+  return { provider, kind, id: v.id, identifier: '', url: v.url, title: typeof v.title === 'string' ? v.title : '' };
 }
 
 /** A ref as it is saved in a canvas file: the field it is saved under says what kind it is. */

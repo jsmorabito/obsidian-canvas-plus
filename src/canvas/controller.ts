@@ -23,7 +23,8 @@ import { MindmapEditor } from './mindmap-editor.ts';
 import { FlowchartEditor } from './flowchart-editor.ts';
 import { attachDiagramMenu } from './diagram-export.ts';
 import { IssuePicker } from './issue-picker.ts';
-import { ProjectPicker } from './project-picker.ts';
+import { initiativePicker } from './initiative-picker.ts';
+import { projectPicker } from './project-picker.ts';
 import { injectConvertButton } from './convert-card.ts';
 import { injectIssueButtons, moveIssueButtonsLast } from './issue-menu.ts';
 import { injectSignpostButtons } from './signpost.ts';
@@ -202,6 +203,7 @@ export class CanvasController {
       ? new ActionsPanel(menuEl, view.contentEl, actionsButton, () => actionEntries(plugin, view.canvas!, {
         openIssuePicker: (provider) => { this.openIssuePicker(provider); },
         openProjectPicker: (provider) => { this.openProjectPicker(provider); },
+        openInitiativePicker: () => { this.openInitiativePicker(); },
         openIssuePanel: (provider) => { this.tabPanels.openView(PROVIDERS[provider].viewType); },
         addDiagram: () => { this.addDiagram(); },
         addWidget: () => { this.addWidget(); },
@@ -276,7 +278,22 @@ export class CanvasController {
       new Notice(`Set up ${name} in the Canvas Plus settings to add ${name} projects.`);
       return false;
     }
-    new ProjectPicker(this.plugin, provider, canvas, at ?? null, () => {
+    projectPicker(this.plugin, provider, canvas, at ?? null, () => {
+      this.sweep();
+      window.requestAnimationFrame(() => this.sweep());
+    }).open();
+    return true;
+  }
+
+  /** The initiative picker lists Linear's initiatives, so Linear needs to be set up. */
+  openInitiativePicker(at?: { x: number; y: number }): boolean {
+    const canvas = this.view.canvas;
+    if (!canvas) return false;
+    if (!this.plugin.hasLinear) {
+      new Notice('Set up Linear in the Canvas Plus settings to add Linear initiatives.');
+      return false;
+    }
+    initiativePicker(this.plugin, canvas, at ?? null, () => {
       this.sweep();
       window.requestAnimationFrame(() => this.sweep());
     }).open();

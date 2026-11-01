@@ -53,6 +53,44 @@ export interface Project {
   teams: IssueTeam[];
 }
 
+/** A Linear initiative: a goal that groups projects. */
+export interface Initiative {
+  id: string;
+  name: string;
+  url: string;
+  /** The short summary under the name. */
+  description: string;
+  /** The long description, markdown. */
+  content: string;
+  icon: string | null;
+  color: string | null;
+  /** Linear's own word for it: Planned, Active, Completed… */
+  status: string;
+  targetDate: string | null;
+  updatedAt: string;
+  owner: { name: string; avatarUrl: string | null } | null;
+  /** The names of the projects in it. */
+  projects: string[];
+}
+
+/** What the canvas asks of a service that has initiatives. */
+export interface InitiativeClient {
+  readonly configured: boolean;
+  recentInitiatives(): Promise<Initiative[]>;
+  searchInitiatives(term: string): Promise<Initiative[]>;
+  /** One initiative by its id or the short id ending its URL, or null if there is none. */
+  initiativeByRef(ref: string): Promise<Initiative | null>;
+  initiativesByIds(ids: string[]): Promise<Initiative[]>;
+  /** The short id in one of this service's initiative URLs; null when the text is not one. */
+  parseInitiativeRef(text: string): string | null;
+}
+
+/** What a node's card shows, as the service returned it, tagged by what it is. */
+export type RefItem =
+  | { kind: 'issue'; item: Issue }
+  | { kind: 'project'; item: Project }
+  | { kind: 'initiative'; item: Initiative };
+
 export type ProjectStatusType = 'backlog' | 'planned' | 'started' | 'paused' | 'completed' | 'canceled';
 
 /** What the canvas asks of a service that has projects. */
@@ -102,6 +140,8 @@ export interface ProviderInfo {
   icon: string;
   /** Extra field on a `text` node showing one of its projects. Stored in canvas files, so it must not change. */
   projectField: string;
+  /** Extra field on a `text` node showing one of its initiatives, for a service that has them. Stored in canvas files, so it must not change. */
+  initiativeField?: string;
   /** Extra field on a `text` node showing one of its issues. Stored in canvas files, so it must not change. */
   field: string;
   /** The widget's view type. */

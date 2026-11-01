@@ -80,8 +80,9 @@ export abstract class IssueView extends ItemView {
     // The canvas changes under it, and issues arrive a moment after they are asked for.
     this.registerInterval(window.setInterval(() => this.update(), 1000));
     this.register(this.service.store.onUpdate(() => this.update()));
-    // Projects sit on the canvas beside the issues.
+    // Projects and initiatives sit on the canvas beside the issues.
     this.register(this.plugin.projects[this.provider].onUpdate(() => this.update()));
+    if (this.provider === 'linear') this.register(this.plugin.initiatives.onUpdate(() => this.update()));
     this.update();
     // The header may be built a frame after the view opens.
     eachFrameUntil(() => this.showHeaderIcon(), 10);
@@ -114,11 +115,10 @@ export abstract class IssueView extends ItemView {
   private update(): void {
     if (!this.bodyEl?.isConnected) return;
     const canvas = this.canvasView()?.canvas;
-    const store = this.service.store;
     const placed = canvas ? this.placed(canvas) : [];
     const signature = JSON.stringify([
       this.plugin.hasIssues(this.provider), !!canvas, this.tab, this.query, this.loading, this.error,
-      placed.map((p) => [p.ref.id, p.ref.title, (p.ref.kind === 'project' ? this.plugin.projects[this.provider] : store).get(p.ref.id)?.updatedAt]),
+      placed.map((p) => [p.ref.id, p.ref.title, this.plugin.storeFor(p.ref).get(p.ref.id)?.updatedAt]),
       this.results?.map((r) => [r.id, r.updatedAt]),
       // Explore marks what is on the canvas already.
       this.tab === 'explore' ? placed.map((p) => p.ref.id) : null,
@@ -128,7 +128,7 @@ export abstract class IssueView extends ItemView {
     this.draw(canvas, placed);
   }
 
-  /** The issues (and for Linear, projects) on the canvas, top to bottom and then left to right. */
+  /** The issues, projects and initiatives on the canvas, top to bottom and then left to right. */
   private placed(canvas: CanvasLike): Placed[] {
     const out: Placed[] = [];
     for (const node of canvas.nodes?.values() ?? []) {
@@ -139,7 +139,7 @@ export abstract class IssueView extends ItemView {
   }
 
   private filterPlaceholder(): string {
-    return 'Filter issues and projects on this canvas';
+    return this.provider === 'linear' ? 'Filter issues, projects and initiatives on this canvas' : 'Filter issues and projects on this canvas';
   }
 
   private setTab(tab: Tab): void {
@@ -212,17 +212,15 @@ export abstract class IssueView extends ItemView {
 
   private drawPlaced(canvas: CanvasLike, placed: Placed[]): void {
     const words = this.query.toLowerCase().split(/\s+/).filter(Boolean);
-    const store = this.service.store;
-    const projects = this.plugin.projects[this.provider];
     const rows = placed
-      .map(({ ref, node }) => ({ ref, node, parts: placedParts(ref, (ref.kind === 'project' ? projects : store).get(ref.id)) }))
+      .map(({ ref, node }) => ({ ref, node, parts: placedParts(ref, this.plugin.itemOf(ref)) }))
       .filter(({ parts }) => {
         const text = `${parts.identifier} ${parts.title}`.toLowerCase();
         return words.every((w) => text.includes(w));
       });
     if (rows.length === 0) {
       const empty = this.bodyEl.createDiv({ cls: 'pane-empty' });
-      empty.createDiv({ text: placed.length === 0 ? 'No issues or projects on this canvas yet.' : 'No matches.' });
+      empty.createDiv({ text: placed.length === 0 ? `No ${this.provider === 'linear' ? 'issues, projects or initiatives' : 'issues or projects'} on this canvas yet.` : 'No matches.' });
       if (placed.length === 0) {
         empty.createEl('button', { cls: 'mod-cta', text: 'Explore issues' }).addEventListener('click', () => this.setTab('explore'));
       }

@@ -1,5 +1,6 @@
 import { requestUrl } from 'obsidian';
-import { IDENTIFIER_RE, Issue, IssueClient, IssueError, IssueInput, IssueTeam, Project, ProjectClient } from '../issues/types.ts';
+import { IDENTIFIER_RE, Issue, IssueClient, IssueError, IssueInput, IssueTeam, Initiative, InitiativeClient, Project, ProjectClient } from '../issues/types.ts';
+import { INITIATIVE_FIELDS, INITIATIVE_URL_RE, RawInitiative, toInitiative } from './initiatives.ts';
 import type { LinearAuth } from './oauth.ts';
 
 // ─── Linear GraphQL client ───────────────────────────────────────────────────
@@ -56,7 +57,22 @@ function parseBody<T>(res: { json: unknown }): Body<T> | null {
   try { return res.json as Body<T>; } catch { return null; }
 }
 
-export class LinearClient implements IssueClient, ProjectClient {
+/** A lookup that finds nothing comes back from Linear as a 'not found' error; that is a null here, and any other error stays one. */
+async function orNull<T>(lookup: Promise<T | null>): Promise<T | null> {
+  try {
+    return await lookup;
+  } catch (err) {
+    if (err instanceof IssueError && /not found/i.test(err.message)) return null;
+    throw err;
+  }
+}
+
+/** A URL's last part ends in the short id, after the last hyphen, which is what Linear looks a project or initiative up by. */
+function shortId(slug: string): string {
+  return slug.slice(slug.lastIndexOf('-') + 1);
+}
+
+export class LinearClient implements IssueClient, ProjectClient, InitiativeClient {
   constructor(private readonly auth: LinearAuth) {}
 
   get configured(): boolean {
@@ -105,16 +121,11 @@ export class LinearClient implements IssueClient, ProjectClient {
 
   /** One issue by its identifier (`ENG-123`), or null if there is none. */
   async byIdentifier(identifier: string): Promise<Issue | null> {
-    try {
-      const data = await this.request<{ issue: RawIssue | null }>(
-        `query($id: String!) { issue(id: $id) { ...IssueFields } } ${ISSUE_FIELDS}`,
-        { id: identifier },
-      );
-      return data.issue ? toIssue(data.issue) : null;
-    } catch (err) {
-      if (err instanceof IssueError && /not found/i.test(err.message)) return null;
-      throw err;
-    }
+    const data = await orNull(this.request<{ issue: RawIssue | null }>(
+      `query($id: String!) { issue(id: $id) { ...IssueFields } } ${ISSUE_FIELDS}`,
+      { id: identifier },
+    ));
+    return data?.issue ? toIssue(data.issue) : null;
   }
 
   async byIds(ids: string[]): Promise<Issue[]> {
@@ -151,16 +162,11 @@ export class LinearClient implements IssueClient, ProjectClient {
   }
 
   async projectByRef(ref: string): Promise<Project | null> {
-    try {
-      const data = await this.request<{ project: RawProject | null }>(
-        `query($id: String!) { project(id: $id) { ...ProjectFields } } ${PROJECT_FIELDS}`,
-        { id: ref },
-      );
-      return data.project ? toProject(data.project) : null;
-    } catch (err) {
-      if (err instanceof IssueError && /not found/i.test(err.message)) return null;
-      throw err;
-    }
+    const data = await orNull(this.request<{ project: RawProject | null }>(
+      `query($id: String!) { project(id: $id) { ...ProjectFields } } ${PROJECT_FIELDS}`,
+      { id: ref },
+    ));
+    return data?.project ? toProject(data.project) : null;
   }
 
   async projectsByIds(ids: string[]): Promise<Project[]> {
@@ -172,11 +178,57 @@ export class LinearClient implements IssueClient, ProjectClient {
     return data.projects.nodes.map(toProject);
   }
 
+  async recentInitiatives(): Promise<Initiative[]> {
+    const data = await this.request<{ initiatives: { nodes: RawInitiative[] } }>(
+      `query { initiatives(first: 25, orderBy: updatedAt) { nodes { ...InitiativeFields } } } ${INITIATIVE_FIELDS}`,
+    );
+    return data.initiatives.nodes.map(toInitiative);
+  }
+
+  /** Linear has no search for initiatives, so this matches their names. */
+  async searchInitiatives(term: string): Promise<Initiative[]> {
+    const data = await this.request<{ initiatives: { nodes: RawInitiative[] } }>(
+      `query($term: String!) { initiatives(first: 25, orderBy: updatedAt, filter: { name: { containsIgnoreCase: $term } }) { nodes { ...InitiativeFields } } } ${INITIATIVE_FIELDS}`,
+      { term },
+    );
+    return data.initiatives.nodes.map(toInitiative);
+  }
+
+  async initiativeByRef(ref: string): Promise<Initiative | null> {
+    const data = await orNull(this.request<{ initiative: RawInitiative | null }>(
+      `query($id: String!) { initiative(id: $id) { ...InitiativeFields } } ${INITIATIVE_FIELDS}`,
+      { id: ref },
+    ));
+    if (data?.initiative) return toInitiative(data.initiative);
+    // The short id from a URL may not be one that lookup takes, so ask for it as the initiative's slug too.
+    try {
+      const found = await this.request<{ initiatives: { nodes: RawInitiative[] } }>(
+        `query($ref: String!) { initiatives(first: 1, filter: { slugId: { eq: $ref } }) { nodes { ...InitiativeFields } } } ${INITIATIVE_FIELDS}`,
+        { ref },
+      );
+      return found.initiatives.nodes[0] ? toInitiative(found.initiatives.nodes[0]) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async initiativesByIds(ids: string[]): Promise<Initiative[]> {
+    if (ids.length === 0) return [];
+    const data = await this.request<{ initiatives: { nodes: RawInitiative[] } }>(
+      `query($ids: [ID!]) { initiatives(first: ${ids.length}, filter: { id: { in: $ids } }) { nodes { ...InitiativeFields } } } ${INITIATIVE_FIELDS}`,
+      { ids },
+    );
+    return data.initiatives.nodes.map(toInitiative);
+  }
+
+  parseInitiativeRef(text: string): string | null {
+    const slug = INITIATIVE_URL_RE.exec(text.trim())?.[1];
+    return slug ? shortId(slug) : null;
+  }
+
   parseProjectRef(text: string): string | null {
     const slug = PROJECT_URL_RE.exec(text.trim())?.[1];
-    if (!slug) return null;
-    // A project's URL ends in its short id, after the last hyphen, which is what Linear looks it up by.
-    return slug.slice(slug.lastIndexOf('-') + 1);
+    return slug ? shortId(slug) : null;
   }
 
   parseRef(text: string): string | null {

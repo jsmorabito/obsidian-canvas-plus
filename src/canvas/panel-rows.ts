@@ -1,4 +1,5 @@
-import type { Issue, Project } from '../issues/types.ts';
+import type { Issue, RefItem } from '../issues/types.ts';
+import { initiativeMarker } from './initiative-card.ts';
 import { stateDot } from './issue-card.ts';
 import type { IssueRef } from './issue-ref.ts';
 import { projectMarker } from './project-card.ts';
@@ -18,13 +19,15 @@ export function issueParts(issue: Issue): RowParts {
 }
 
 /** An item on the canvas as a row: the service's version of it if that has loaded, else what the node saved. */
-export function placedParts(ref: IssueRef, found: Issue | Project | undefined): RowParts {
+export function placedParts(ref: IssueRef, found: RefItem | undefined): RowParts {
+  if (found?.kind === 'issue') return issueParts(found.item);
+  if (ref.kind === 'issue') return { identifier: ref.identifier, title: ref.title, mark: (el) => stateDot(el, null) };
   if (ref.kind === 'project') {
-    const project = found as Project | undefined;
+    const project = found?.kind === 'project' ? found.item : undefined;
     return { identifier: 'Project', title: project?.name ?? ref.title, status: project?.status?.name, assignee: project?.lead?.name, mark: (el) => projectMarker(el, project) };
   }
-  const issue = found as Issue | undefined;
-  return issue ? issueParts(issue) : { identifier: ref.identifier, title: ref.title, mark: (el) => stateDot(el, null) };
+  const initiative = found?.kind === 'initiative' ? found.item : undefined;
+  return { identifier: 'Initiative', title: initiative?.name ?? ref.title, status: initiative?.status, assignee: initiative?.owner?.name, mark: (el) => initiativeMarker(el, initiative) };
 }
 
 /** One item in core's tree row markup: its status, title and a line under it, with room at the right for an action. */

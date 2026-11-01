@@ -6,7 +6,8 @@ import { HTML_EXTENSIONS, HTML_VIEW, HtmlView } from './html/view.ts';
 import { hiddenWidgets } from './canvas/widgets.ts';
 import { IssueService, PROVIDERS, PROVIDER_IDS } from './issues/providers.ts';
 import { IssueStore } from './issues/store.ts';
-import type { ProjectClient, ProviderId, Project } from './issues/types.ts';
+import type { Initiative, Issue, ProjectClient, RefItem, ProviderId, Project } from './issues/types.ts';
+import type { IssueRef } from './canvas/issue-ref.ts';
 import { LinearClient } from './linear/api.ts';
 import { LinearAuth, PROTOCOL_ACTION } from './linear/oauth.ts';
 import { TaskAppClient } from './taskapp/client.ts';
@@ -24,6 +25,8 @@ export class CanvasPlusPlugin extends Plugin {
   issues!: Record<ProviderId, IssueService>;
   /** Each provider's projects on canvases, fetched the same way. */
   projects!: Record<ProviderId, IssueStore<Project>>;
+  /** Linear's initiatives on canvases, fetched the same way. */
+  initiatives!: IssueStore<Initiative>;
   /** Restyle every open canvas now. Set by the canvas tools. */
   sweepCanvases: () => void = () => { /* no canvas tools yet */ };
 
@@ -59,6 +62,26 @@ export class CanvasPlusPlugin extends Plugin {
       if (on[id]) hiddenWidgets.delete(PROVIDERS[id].viewType);
       else hiddenWidgets.add(PROVIDERS[id].viewType);
     }
+  }
+
+  /** Where what a node shows is kept, by the kind of thing it is. */
+  storeFor(ref: IssueRef): IssueStore<Issue | Project | Initiative> {
+    if (ref.kind === 'initiative') return this.initiatives;
+    return ref.kind === 'project' ? this.projects[ref.provider] : this.issues[ref.provider].store;
+  }
+
+  /** What the service returned for what a node shows, or undefined until it has loaded. */
+  itemOf(ref: IssueRef): RefItem | undefined {
+    if (ref.kind === 'initiative') {
+      const item = this.initiatives.get(ref.id);
+      return item && { kind: 'initiative', item };
+    }
+    if (ref.kind === 'project') {
+      const item = this.projects[ref.provider].get(ref.id);
+      return item && { kind: 'project', item };
+    }
+    const item = this.issues[ref.provider].store.get(ref.id);
+    return item && { kind: 'issue', item };
   }
 
   /** Whether a provider is turned on and signed in (or keyed), so its issues are available. */
@@ -109,6 +132,11 @@ export class CanvasPlusPlugin extends Plugin {
       byIds: (ids) => client.projectsByIds(ids),
     });
     this.projects = { linear: projectStore(linear), taskapp: projectStore(taskApp) };
+    this.initiatives = new IssueStore<Initiative>({
+      get configured() { return linear.configured; },
+      byIds: (ids) => linear.initiativesByIds(ids),
+    });
+    this.register(() => this.initiatives.destroy());
     this.registerObsidianProtocolHandler(PROTOCOL_ACTION, (data) => { void auth.finish(data); });
     this.registerObsidianProtocolHandler(TASKAPP_PROTOCOL_ACTION, (data) => { handleConnect(this, data); });
     for (const id of PROVIDER_IDS) {

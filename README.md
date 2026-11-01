@@ -87,6 +87,7 @@ Beta, off by default. Turn on **Enable Linear integration (beta)** under **Setti
 
 - **Add Linear issue (`I`)** by search, identifier (`ENG-123`) or URL.
 - **Add Linear project…** (command or Actions list) by search or URL. A project is a card, embed or link like an issue, with its status, progress, lead and dates.
+- **Add Linear initiative…** (command or Actions list) by name search or URL. An initiative is a card, embed or link like a project, with its status, owner, target date and the projects in it. Linear only offers initiatives on some plans.
 - **Create issues from cards** in the selection toolbar. Undo restores the card but not the issue.
 - **Linear widget** (**Open Linear panel**): **On canvas** lists this canvas's issues, **Explore** searches or lists recent ones and adds with a click.
 - **Card, embed or link** views, switched like note cards, plus **Open in Linear**.
@@ -119,7 +120,7 @@ This relies on Obsidian's undocumented canvas internals, collected in `src/canva
 
 No telemetry, no data collected. No requests are made unless you sign in to Linear, set a Linear API key, or turn on Task App.
 
-- **Linear** (`api.linear.app`): searching issues and projects, loading the issues and projects on your canvases (title, status, assignee, labels, description), and creating issues from the title and description you confirm. Cards refresh every few minutes while a canvas is open.
+- **Linear** (`api.linear.app`): searching issues, projects and initiatives, loading the issues, projects and initiatives on your canvases (title, status, assignee, labels, description), and creating issues from the title and description you confirm. Cards refresh every few minutes while a canvas is open.
 - **Task App:** the same, to the server address you set, with your API token.
 - **Diagrams:** no requests. Clipboard and SVG writes happen only when you choose them, and web links open only on `Cmd`/`Ctrl` + click or a second click on a picked node.
 - **Key images:** a web-address image loads from its host whenever a card shows it, as any embedded web image does. Dropping an image link only writes the link; dropping a file saves a copy in your attachment folder.

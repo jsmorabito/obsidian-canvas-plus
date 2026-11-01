@@ -1,11 +1,11 @@
 import { MarkdownRenderer, setIcon } from 'obsidian';
 import { PROVIDERS } from '../issues/providers.ts';
-import type { Issue, Project, ProviderId } from '../issues/types.ts';
+import type { Issue, ProviderId } from '../issues/types.ts';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasNodeLike } from './adapter.ts';
 import { IssueRef, readIssueRef } from './issue-ref.ts';
 import { cardOwner, fitToPill, viewOf } from './note-card.ts';
-import { renderProjectCard, renderProjectEmbed, renderProjectPill } from './project-card.ts';
+import { refFacts, renderRefCard, renderRefEmbed, renderRefPill } from './ref-card.ts';
 
 const CARD_CLASS  = 'ffc-issue-card';
 const EMBED_CLASS = 'ffc-issue-embed';
@@ -18,7 +18,7 @@ const drawn = new WeakMap<CanvasNodeLike, { key: string; stamp: string }>();
 const locked = new WeakSet<CanvasNodeLike>();
 
 /**
- * Dress text nodes that show an issue (Linear's or Task App's): a card, the full issue or a link, in place of the node's own text
+ * Dress text nodes that show an issue, project or initiative (Linear's or Task App's): a card, the full issue or a link, in place of the node's own text
  * (changed from the selection toolbar, like a note card). Idempotent, so safe to run on a timer.
  */
 export function decorateIssueCards(plugin: CanvasPlusPlugin, canvas: CanvasLike): void {
@@ -36,15 +36,15 @@ export function decorateIssueCards(plugin: CanvasPlusPlugin, canvas: CanvasLike)
     el.setAttribute('data-ffc-issue', ref.id);
     el.setAttribute('data-ffc-view', mode);
     lockEditing(node);
-    const project = ref.kind === 'project';
-    const store = project ? plugin.projects[ref.provider] : plugin.issues[ref.provider].store;
-    store.request(ref.id);
-    const found = store.get(ref.id);
-    const issue = project ? undefined : found as Issue | undefined;
+    const other = ref.kind !== 'issue';
+    plugin.storeFor(ref).request(ref.id);
+    const found = plugin.itemOf(ref);
+    const issue = found?.kind === 'issue' ? found.item : undefined;
+    const facts = refFacts(found);
     const key = `${mode}|${ref.kind}|${ref.provider}|${ref.id}|${ref.identifier}|${ref.title}`;
     // By when it last changed, not by the fetched object: a refetch of an unchanged issue must not rebuild the card,
     // which would send a scrolled embed back to the top.
-    const stamp = found?.updatedAt ?? '';
+    const stamp = found?.item.updatedAt ?? '';
     const fresh = drawn.get(node)?.key === key && drawn.get(node)?.stamp === stamp;
     drawn.set(node, { key, stamp });
 
@@ -58,19 +58,19 @@ export function decorateIssueCards(plugin: CanvasPlusPlugin, canvas: CanvasLike)
     if (mode === 'card') {
       const target = card ?? container.createDiv({ cls: CARD_CLASS });
       if (!fresh || target.childElementCount === 0) {
-        if (project) renderProjectCard(target, ref, found as Project | undefined);
+        if (other) renderRefCard(target, ref, facts);
         else renderCard(target, ref, issue);
       }
     } else if (mode === 'embed') {
       const target = embed ?? container.createDiv({ cls: EMBED_CLASS });
       if (!fresh || target.childElementCount === 0) {
-        if (project) renderProjectEmbed(plugin, canvas, target, ref, found as Project | undefined);
+        if (other) renderRefEmbed(plugin, canvas, target, ref, facts);
         else renderEmbed(plugin, canvas, target, ref, issue);
       }
     } else {
       const target = pill ?? container.createDiv({ cls: `${PILL_CLASS} ffc-issue-pill` });
       if (!fresh || target.childElementCount === 0) {
-        if (project) renderProjectPill(target, ref, found as Project | undefined);
+        if (other) renderRefPill(target, ref, facts);
         else renderPill(target, ref, issue);
       }
       fitToPill(canvas, node, target, container);

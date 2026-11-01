@@ -80,6 +80,16 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
     });
   }
   plugin.addCommand({
+    id: 'add-linear-initiative-to-canvas',
+    name: 'Add Linear initiative to canvas',
+    checkCallback: (checking) => {
+      const controller = activeController();
+      if (!controller || !plugin.hasLinear) return false;
+      if (!checking) controller.openInitiativePicker();
+      return true;
+    },
+  });
+  plugin.addCommand({
     id: 'create-discourse-node-on-canvas',
     name: 'Create discourse node on canvas',
     checkCallback: (checking) => {
@@ -161,6 +171,7 @@ export function registerCanvasTools(plugin: CanvasPlusPlugin): void {
     plugin.register(plugin.issues[id].store.onUpdate(sweepVisible));
     plugin.register(plugin.projects[id].onUpdate(sweepVisible));
   }
+  plugin.register(plugin.initiatives.onUpdate(sweepVisible));
 
   plugin.register(() => {
     for (const controller of controllers.values()) controller.destroy();

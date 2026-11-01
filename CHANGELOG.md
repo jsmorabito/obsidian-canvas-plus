@@ -5,6 +5,16 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0]
+
+### Added
+
+- **Linear initiatives on the canvas.** Run **Add Linear initiative to canvas**
+  (or **Add Linear initiative…** in the Actions list) to search initiatives by
+  name or paste a link. An initiative is a card, full view or link like a
+  project, showing its status, owner, target date and projects. The Linear panel
+  lists initiatives on the canvas beside issues and projects.
+
 ## [1.18.0]
 
 ### Added
