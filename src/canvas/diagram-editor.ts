@@ -3,7 +3,8 @@ import type { Mounted } from 'pele';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasNodeLike, batch, patchData } from './adapter.ts';
 import { mountDiagram } from './diagram-card.ts';
-import { diagramFields, keepHeld, readDiagram } from './diagram-data.ts';
+import { diagramFields, keepHeld, lostHeld, readDiagram } from './diagram-data.ts';
+import { restoreBeside } from './held-restore.ts';
 
 /** Edit a diagram's Mermaid source, with Pele's drawing of it beside the text. Saving is one undo step. */
 export class DiagramEditor extends Modal {
@@ -52,7 +53,12 @@ export class DiagramEditor extends Modal {
     const text = source.trim();
     if (text && text !== readDiagram(this.node)?.source) {
       const diagram = readDiagram(this.node);
-      batch(this.canvas, () => patchData(this.node, diagramFields(text, diagram?.links, keepHeld(text, diagram?.held))));
+      const held = keepHeld(text, diagram?.held);
+      // A card whose node the new source has dropped goes back on the canvas.
+      batch(this.canvas, () => {
+        restoreBeside(this.canvas, this.node, lostHeld(diagram?.held, held));
+        patchData(this.node, diagramFields(text, diagram?.links, held));
+      });
       this.onSaved();
     }
     this.close();

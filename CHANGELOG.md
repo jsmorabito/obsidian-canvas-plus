@@ -5,6 +5,22 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.1]
+
+### Fixed
+
+- **Deleting a kanban card or column no longer destroys the canvas cards it
+  holds.** A card you had dragged into a board (a Linear issue, a note…) is put
+  back on the canvas, beside the board, when you delete its card or column, or
+  when editing the source takes its node out. It is one undo step with the
+  delete.
+
+### Changed
+
+- **Kanban boards draw faster.** A board's source is read once rather than on
+  every pointer move and update, and a held card's details are painted only when
+  they change.
+
 ## [1.20.0]
 
 ### Added

@@ -26,6 +26,13 @@ const PICKED_CLASS = 'ffc-kb-picked';
 const ARROWS: Record<string, Direction> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
 type Action = 'add' | 'above' | 'column' | 'rename' | 'remove';
 
+/** The moves offered for a column or a card, as a direction, its title and its icon. `vertical` adds up and down, which a card has in its column. */
+function moveChoices(kind: Pick['kind'], vertical: boolean): Array<[Direction, string, string]> {
+  if (kind === 'column') return [['left', 'Move left', 'arrow-left'], ['right', 'Move right', 'arrow-right']];
+  const sideways: Array<[Direction, string, string]> = [['left', 'Move to previous column', 'arrow-left'], ['right', 'Move to next column', 'arrow-right']];
+  return vertical ? [['up', 'Move up', 'arrow-up'], ['down', 'Move down', 'arrow-down'], ...sideways] : sideways;
+}
+
 /** Something dropped on a board from the canvas, to be a card in it. */
 export interface Dropped {
   /** What the card says. */
@@ -307,6 +314,7 @@ export class KanbanEditor extends DiagramEditorBase {
     let restored: CanvasNodeLike[] = [];
     // The card leaves the source, which is what lets the board let go of what it held.
     this.write(node, removed.source, {
+      restore: false,
       alongside: () => { restored = restoreItem(this.canvas, item, { x: at.x - box.width / 2, y: at.y - box.height / 2 }); },
     }, () => { this.active = null; });
     const top = restored.find((n) => n.id === item.id) ?? restored[0];
@@ -343,10 +351,7 @@ export class KanbanEditor extends DiagramEditorBase {
       menu.addItem((item) => item.setSection('add').setTitle('Add card').setIcon('plus').onClick(() => this.act('add')));
     }
     menu.addItem((item) => item.setSection('add').setTitle('Add column').setIcon('columns-3').onClick(() => this.act('column')));
-    const moves: Array<[Direction, string, string]> = card
-      ? [['up', 'Move up', 'arrow-up'], ['down', 'Move down', 'arrow-down'], ['left', 'Move to previous column', 'arrow-left'], ['right', 'Move to next column', 'arrow-right']]
-      : [['left', 'Move left', 'arrow-left'], ['right', 'Move right', 'arrow-right']];
-    for (const [dir, title, icon] of moves) {
+    for (const [dir, title, icon] of moveChoices(pick.kind, true)) {
       if (shift(kanban, pick, dir)) menu.addItem((item) => item.setSection('move').setTitle(title).setIcon(icon).onClick(() => this.move(dir)));
     }
     menu.addItem((item) => item.setSection('edit').setTitle('Rename').setIcon('pencil').onClick(() => this.act('rename')));
@@ -497,10 +502,7 @@ export class KanbanEditor extends DiagramEditorBase {
     button('Rename', 'pencil', () => this.act('rename'));
     if (pick.kind === 'column') button('Add card', 'plus', () => this.act('add'));
     button('Add column', 'columns-3', () => this.act('column'));
-    const moves: Array<[Direction, string, string]> = pick.kind === 'card'
-      ? [['left', 'Move to previous column', 'arrow-left'], ['right', 'Move to next column', 'arrow-right']]
-      : [['left', 'Move left', 'arrow-left'], ['right', 'Move right', 'arrow-right']];
-    for (const [dir, label, icon] of moves) if (shift(kanban, pick, dir)) button(label, icon, () => this.move(dir));
+    for (const [dir, label, icon] of moveChoices(pick.kind, false)) if (shift(kanban, pick, dir)) button(label, icon, () => this.move(dir));
     if (pick.kind === 'card' || kanban.columns.length > 1) button('Delete', 'trash-2', () => this.act('remove'));
   }
 

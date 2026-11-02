@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { CanvasNodeLike } from '../src/canvas/adapter.ts';
-import { DiagramHeld, diagramFields, keepHeld, readDiagram } from '../src/canvas/diagram-data.ts';
+import { DiagramHeld, diagramFields, keepHeld, lostHeld, readDiagram } from '../src/canvas/diagram-data.ts';
 import type { TrayItem } from '../src/canvas/tray-items.ts';
 
 const item = (id: string): TrayItem => ({ id, nodes: [{ id, type: 'text', x: 0, y: 0, width: 10, height: 10 }], edges: [] }) as unknown as TrayItem;
@@ -37,4 +37,12 @@ test('a held card that a canvas file has malformed is left out', () => {
   const bad = { source: 'kanban\n  t[T]', held: { a: { id: 'x', nodes: [null], edges: [] }, b: { id: 'y', nodes: [{}], edges: [3] }, c: item('ok') } };
   const node = {} as CanvasNodeLike;
   assert.deepEqual(Object.keys(readDiagram(node, { ffcDiagram: bad } as never)?.held ?? {}), ['c']);
+});
+
+test('the cards a diagram no longer holds are the ones to put back', () => {
+  const left = keepHeld('kanban\n  t[T]\n    c2["two"]', held);
+  assert.deepEqual(lostHeld(held, left).map((i) => i.id), ['a']);
+  assert.deepEqual(lostHeld(held, undefined).map((i) => i.id), ['a', 'b']);
+  assert.deepEqual(lostHeld(held, held), []);
+  assert.deepEqual(lostHeld(undefined, held), []);
 });

@@ -56,6 +56,11 @@ export function keepHeld(source: string, held: DiagramHeld | undefined): Diagram
   return Object.keys(kept).length > 0 ? kept : undefined;
 }
 
+/** The cards a diagram held before and no longer holds, which its node no longer stands for. */
+export function lostHeld(before: DiagramHeld | undefined, after: DiagramHeld | undefined): TrayItem[] {
+  return Object.entries(before ?? {}).filter(([id]) => !after || !(id in after)).map(([, item]) => item);
+}
+
 /** The fields a diagram node is saved with: its data, and the markdown that stock Obsidian draws it from. */
 export function diagramFields(source: string, links?: DiagramLinks, held?: DiagramHeld): Record<string, unknown> {
   const data: DiagramData = {

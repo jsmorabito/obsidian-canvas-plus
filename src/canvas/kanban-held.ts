@@ -28,6 +28,8 @@ const MARKER_GAP = 6;
 const NAME_GAP = 8;
 const PROGRESS_HEIGHT = 3;
 const PROGRESS_FROM_BOTTOM = 8;
+/** Set on a drawn card to what it was last painted from. Pele draws a fresh card when it redraws, which has none. */
+const PAINTED_ATTR = 'data-ffc-painted';
 
 /**
  * Fill in what the cards of a drawn board say about what they hold, from what the services have returned: the status
@@ -50,6 +52,10 @@ function paintCard(card: SVGGElement, facts: CardFacts): void {
   const rect = card.querySelector('rect');
   const width = Number(rect?.getAttribute('width'));
   const height = Number(rect?.getAttribute('height'));
+  // Drawn again only when what it says or its size has changed: every sweep comes here, and measuring forces a layout.
+  const key = JSON.stringify([facts, width, height]);
+  if (card.getAttribute(PAINTED_ATTR) === key) return;
+  card.setAttribute(PAINTED_ATTR, key);
   const ticket = card.querySelector('.pele-ticket');
   if (ticket && facts.ticket && ticket.textContent !== facts.ticket) ticket.textContent = facts.ticket;
   const line = Number(ticket?.getAttribute('y'));
