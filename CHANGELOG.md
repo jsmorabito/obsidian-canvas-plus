@@ -5,6 +5,21 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.0]
+
+### Added
+
+- **Swap handles for a multiple selection.** With two or more objects selected,
+  a dot in your accent colour appears on each. Drag one onto another selected
+  object and the two trade places, centre to centre, with a shadow of the
+  carried object following the pointer. A group takes the objects inside it
+  along. It is one undo step, and it works by touch.
+
+### Changed
+
+- Comment pins and the new handles share one way of placing themselves over
+  the canvas.
+
 ## [1.20.2]
 
 ### Fixed

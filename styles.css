@@ -2945,3 +2945,61 @@ body {
 .canvas-node.is-focused .ffc-html-frame {
   pointer-events: auto;
 }
+
+/* Handles for a multiple selection: a dot on each selected node, carried onto another to swap their places. */
+.ffc-handles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: calc(var(--layer-cover) - 1);
+}
+
+.ffc-presenting .ffc-handles {
+  display: none;
+}
+
+.ffc-handle {
+  position: absolute;
+  left: var(--ffc-x, 0);
+  top: var(--ffc-y, 0);
+  width: var(--size-4-3);
+  height: var(--size-4-3);
+  transform: translate(-50%, -50%);
+  border: var(--border-width) solid var(--background-primary);
+  border-radius: 50%;
+  background-color: var(--interactive-accent);
+  box-shadow: var(--shadow-s);
+  cursor: grab;
+  pointer-events: auto;
+  /* Without it a touch drag pans the page and the drag is cancelled. */
+  touch-action: none;
+}
+
+.ffc-handle:hover,
+.ffc-handle.is-dragging {
+  transform: translate(-50%, -50%) scale(1.25);
+}
+
+.ffc-handle.is-dragging {
+  cursor: grabbing;
+}
+
+/* The shadow of the node being carried, centred on the pointer. */
+.ffc-handle-ghost {
+  position: absolute;
+  left: var(--ffc-x, 0);
+  top: var(--ffc-y, 0);
+  width: var(--ffc-w);
+  height: var(--ffc-h);
+  transform: translate(-50%, -50%);
+  border: var(--border-width) solid var(--interactive-accent);
+  border-radius: var(--radius-m);
+  background-color: var(--interactive-accent);
+  opacity: 0.3;
+  display: none;
+}
+
+.ffc-handle-ghost.is-shown {
+  display: block;
+}

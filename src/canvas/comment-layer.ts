@@ -1,6 +1,7 @@
 import { Menu, setIcon } from 'obsidian';
 import { CanvasLike, CanvasNodeLike, CanvasViewLike, afterCanvasFrame, batch, shieldFromCanvas, toCanvasPoint } from './adapter.ts';
 import { CLICK_SLOP_PX, TARGET_CLASS } from './constants.ts';
+import { OverlayFrame } from './overlay-frame.ts';
 import { createPinBubble } from './pin-bubble.ts';
 import { trackPointer } from './pointer-session.ts';
 import type { Tray } from './tray.ts';
@@ -28,8 +29,7 @@ export class CommentLayer {
   private cleanups: Array<() => void> = [];
   private endDrag: (() => void) | null = null;
   private tray: Tray | null = null;
-  /** Where the canvas sits in this layer, and how wide it is. Reading it forces a layout, so it's kept until a resize. */
-  private frame: { left: number; top: number; width: number } | null = null;
+  private frame: OverlayFrame;
   /** What each pin was last given, so a frame that didn't move it writes nothing. */
   private lastPlace = new WeakMap<HTMLElement, string>();
 
@@ -43,10 +43,8 @@ export class CommentLayer {
     };
     canvas.wrapperEl.addEventListener('pointerdown', away, true);
     this.cleanups.push(() => canvas.wrapperEl.removeEventListener('pointerdown', away, true));
-    const resizes = new ResizeObserver(() => { this.frame = null; });
-    resizes.observe(canvas.wrapperEl);
-    resizes.observe(this.el);
-    this.cleanups.push(() => resizes.disconnect());
+    this.frame = new OverlayFrame(canvas, this.el);
+    this.cleanups.push(() => this.frame.destroy());
     this.cleanups.push(afterCanvasFrame(canvas, () => this.sync()));
     this.sync();
   }
@@ -107,20 +105,13 @@ export class CommentLayer {
   /** Place each pin on screen: its canvas point mapped through the view, with the pin's tail on the point. */
   private layout(): void {
     if (this.placed.size === 0) return;
-    const bbox = this.canvas.getViewportBBox?.();
-    if (!bbox) return;
-    if (!this.frame) {
-      const wrap = this.canvas.wrapperEl.getBoundingClientRect();
-      const host = this.el.getBoundingClientRect();
-      this.frame = { left: wrap.left - host.left, top: wrap.top - host.top, width: wrap.width };
-    }
-    const { left, top, width } = this.frame;
-    const zoom = width / (bbox.maxX - bbox.minX);
-    if (!Number.isFinite(zoom) || zoom <= 0) return;
+    const view = this.frame.project();
+    if (!view) return;
+    const { left, top, minX, minY, zoom } = view;
     for (const [pin, placement] of this.placed) {
       const at = pinPoint(this.canvas, placement);
-      const x = `${(at.x - bbox.minX) * zoom + left}px`;
-      const y = `${(at.y - bbox.minY) * zoom + top}px`;
+      const x = `${(at.x - minX) * zoom + left}px`;
+      const y = `${(at.y - minY) * zoom + top}px`;
       if (this.lastPlace.get(pin) === `${x} ${y}`) continue;
       this.lastPlace.set(pin, `${x} ${y}`);
       pin.setCssProps({ '--ffc-x': x, '--ffc-y': y });

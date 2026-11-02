@@ -52,6 +52,7 @@ import { Presenter } from './presentation.ts';
 import { Focuser } from './focus.ts';
 import { Tray } from './tray.ts';
 import { CommentLayer } from './comment-layer.ts';
+import { SelectionHandles } from './selection-handles.ts';
 import { registerToolShortcuts } from './shortcuts.ts';
 import { trackPointer } from './pointer-session.ts';
 import { eachFrameUntil } from '../utils/helpers.ts';
@@ -102,6 +103,7 @@ export class CanvasController {
   readonly focuser: Focuser;
   private tray: Tray;
   private comments: CommentLayer;
+  private handles: SelectionHandles;
   private actions: ActionsPanel | null = null;
   /** Owns the markdown renderers behind styled link nodes. */
   private component = new Component();
@@ -138,6 +140,7 @@ export class CanvasController {
     // After the editors' own menus, which take a right-click on a node first.
     this.cleanups.push(attachDiagramMenu(plugin, view, () => this.sweep(), (menu, node) => this.flowcharts.cardMenuItems(menu, node)));
     this.comments = new CommentLayer(view);
+    this.handles = new SelectionHandles(view);
     this.cleanups.push(watchPinScale(view.canvas!));
     this.cleanups.push(watchPinAttach(view.canvas!));
     this.cleanups.push(registerToolShortcuts(plugin.app, view, this));
@@ -442,6 +445,7 @@ export class CanvasController {
     this.panelDock.destroy();
     this.actions?.destroy();
     this.comments.destroy();
+    this.handles.destroy();
     this.cancelDraw?.();
     this.relations.destroy();
     this.panel.destroy();
