@@ -5,6 +5,21 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.2]
+
+### Fixed
+
+- **Deleting a kanban card no longer deletes the whole board.** A card's
+  assignee or lead and an issue's priority bar failed to draw, and the error
+  made the canvas delete the selected board on the Delete key. They draw now,
+  a failure while filling in a card can no longer break the board's redraw, and
+  a failure in a board key shows a notice instead.
+
+### Removed
+
+- **The progress bar on a project's kanban card.** The kind, status marker and
+  status already say where a project is.
+
 ## [1.20.1]
 
 ### Fixed

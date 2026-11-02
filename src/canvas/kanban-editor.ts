@@ -1,4 +1,4 @@
-import { Menu, TFile, setIcon } from 'obsidian';
+import { Menu, Notice, TFile, setIcon } from 'obsidian';
 import { CanvasNodeLike, isElement, toCanvasPoint } from './adapter.ts';
 import { CLICK_SLOP_PX } from './constants.ts';
 import { diagramHost } from './diagram-card.ts';
@@ -73,12 +73,15 @@ export class KanbanEditor extends DiagramEditorBase {
     const link = (e: Event): void => this.onLinkClick(e as MouseEvent);
     const menu = (e: Event): void => this.onContextMenu(e as MouseEvent);
     const hover = (e: Event): void => this.onHover(e as MouseEvent);
+    const key = (e: Event): void => this.onKeyDown(e as KeyboardEvent);
     wrapper.addEventListener('pointerdown', down, true);
     wrapper.addEventListener('dblclick', dbl, true);
     wrapper.addEventListener('click', link, true);
     wrapper.addEventListener('contextmenu', menu, true);
     wrapper.addEventListener('mouseover', hover, true);
+    wrapper.addEventListener('keydown', key, true);
     return () => {
+      wrapper.removeEventListener('keydown', key, true);
       wrapper.removeEventListener('pointerdown', down, true);
       wrapper.removeEventListener('dblclick', dbl, true);
       wrapper.removeEventListener('click', link, true);
@@ -89,6 +92,19 @@ export class KanbanEditor extends DiagramEditorBase {
       this.active = null;
       this.paint();
     };
+  }
+
+  /**
+   * A key that reached the canvas without the key scope taking it: the board takes it if it is for the picked column
+   * or card, so the canvas doesn't delete the card it is in. Keys typed into a field are left alone.
+   */
+  private onKeyDown(e: KeyboardEvent): void {
+    if (e.defaultPrevented || e.isComposing || !this.active) return;
+    if (isElement(e.target) && e.target.closest('input, textarea, select, [contenteditable="true"], .cm-editor, .ffc-mm-input')) return;
+    if (this.handleKey(e)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   }
 
   /** The drawing's columns and cards, in the order the source has them. Null while the drawing is not the source's yet. */
@@ -376,8 +392,22 @@ export class KanbanEditor extends DiagramEditorBase {
     this.rename();
   }
 
-  /** Handle a key for the selected column or card. Returns whether it was used. */
+  /**
+   * Handle a key for the selected column or card. Returns whether it was used. A key the board takes must never fall
+   * through to the canvas, which would delete the whole card, so a failure is shown and the key counts as used.
+   */
   handleKey(e: KeyboardEvent): boolean {
+    try {
+      return this.takeKey(e);
+    } catch (error) {
+      console.error('Canvas Plus: a kanban key failed', error);
+      new Notice(`Couldn’t change the board: ${error instanceof Error ? error.message : 'something went wrong'}`);
+      this.paint();
+      return true;
+    }
+  }
+
+  private takeKey(e: KeyboardEvent): boolean {
     const current = this.current();
     if (!current || this.canvas.readonly) return false;
     const { node, kanban, pick } = current;

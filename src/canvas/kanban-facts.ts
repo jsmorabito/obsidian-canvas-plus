@@ -8,8 +8,6 @@ export interface CardFacts {
   ticket?: string;
   /** The status marker before that line. */
   marker?: Marker;
-  /** How far a project is, from 0 to 1, where the service tracks it. */
-  progress?: number;
   /** The line at the bottom right: who it is assigned to or led by. */
   assigned?: string;
   /** An issue's priority: 0 for none, then 1 urgent to 4 low. */
@@ -24,8 +22,8 @@ export function factsOf(found: RefItem | undefined): CardFacts {
     return { ticket: identifier, assigned: assignee?.name, priority, marker: issueMarker(state) ?? undefined };
   }
   if (found.kind === 'project') {
-    const { status, lead, progress } = found.item;
-    return { ticket: kindAndStatus('project', status?.name), assigned: lead?.name, marker: projectStatusMarker(status) ?? undefined, progress: progress ?? undefined };
+    const { status, lead } = found.item;
+    return { ticket: kindAndStatus('project', status?.name), assigned: lead?.name, marker: projectStatusMarker(status) ?? undefined };
   }
   const { status, owner } = found.item;
   return { ticket: kindAndStatus('initiative', status), assigned: owner?.name, marker: initiativeStatusMarker(status) };

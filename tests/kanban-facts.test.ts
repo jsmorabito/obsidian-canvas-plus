@@ -7,7 +7,7 @@ const issue = {
   identifier: 'ENG-12', priority: 2, assignee: { name: 'Trang Doan', avatarUrl: null }, state: { name: 'Todo', type: 'unstarted', color: '#aaa' },
 } as Issue;
 const project = {
-  status: { name: 'In Progress', type: 'started', color: '#f2c94c' }, lead: { name: 'Trang Doan', avatarUrl: null }, progress: 0.95,
+  status: { name: 'In Progress', type: 'started', color: '#f2c94c' }, lead: { name: 'Trang Doan', avatarUrl: null }
 } as unknown as Project;
 const initiative = { status: 'Active', owner: null } as Initiative;
 
@@ -20,14 +20,13 @@ test('an issue says its id, assignee, priority and state marker', () => {
   assert.equal(unassigned.marker, undefined);
 });
 
-test('a project says what it is, its status, lead, progress and marker', () => {
+test('a project says what it is, its status, lead and marker', () => {
   assert.deepEqual(factsOf({ kind: 'project', item: project }), {
-    ticket: 'Project · In Progress', assigned: 'Trang Doan', marker: { type: 'started', color: '#f2c94c' }, progress: 0.95,
+    ticket: 'Project · In Progress', assigned: 'Trang Doan', marker: { type: 'started', color: '#f2c94c' },
   });
-  const untracked = factsOf({ kind: 'project', item: { ...project, progress: null, status: null } });
-  assert.equal(untracked.ticket, 'Project');
-  assert.equal(untracked.progress, undefined);
-  assert.equal(untracked.marker, undefined);
+  const bare = factsOf({ kind: 'project', item: { ...project, status: null } });
+  assert.equal(bare.ticket, 'Project');
+  assert.equal(bare.marker, undefined);
 });
 
 test('an initiative says what it is and its status, with the default colour', () => {

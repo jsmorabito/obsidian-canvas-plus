@@ -2578,8 +2578,8 @@ body {
   position: relative;
 }
 
-/* The outline is the node's own shape: not the icon, status marker, progress or priority bar drawn inside a kanban card. */
-.ffc-diagram .pele-node.ffc-mm-active :is(rect, circle, ellipse, path, polygon):not(.pele-icon *, .ffc-kb-state *, .ffc-kb-progress *, .pele-priority) {
+/* The outline is the node's own shape: not the icon, status marker or priority bar drawn inside a kanban card. */
+.ffc-diagram .pele-node.ffc-mm-active :is(rect, circle, ellipse, path, polygon):not(.pele-icon *, .ffc-kb-state *, .pele-priority) {
   stroke: var(--interactive-accent);
   /* Drawn in the diagram's own units, which no CSS variable measures. */
   stroke-width: 2.5;
@@ -2594,7 +2594,7 @@ body {
   cursor: pointer;
 }
 
-.canvas-node.is-selected .ffc-diagram .pele-node:hover :is(rect, circle, ellipse, path, polygon):not(.pele-icon *, .ffc-kb-state *, .ffc-kb-progress *, .pele-priority) {
+.canvas-node.is-selected .ffc-diagram .pele-node:hover :is(rect, circle, ellipse, path, polygon):not(.pele-icon *, .ffc-kb-state *, .pele-priority) {
   stroke: var(--interactive-accent);
   stroke-width: 2;
 }
@@ -2736,7 +2736,7 @@ body {
   display: none;
 }
 
-.ffc-diagram .pele-node.ffc-mm-drop-target :is(rect, circle, ellipse, path, polygon):not(.pele-icon *, .ffc-kb-state *, .ffc-kb-progress *, .pele-priority) {
+.ffc-diagram .pele-node.ffc-mm-drop-target :is(rect, circle, ellipse, path, polygon):not(.pele-icon *, .ffc-kb-state *, .pele-priority) {
   stroke: var(--interactive-accent);
   /* Drawn in the diagram's own units, which no CSS variable measures. */
   stroke-width: 3;

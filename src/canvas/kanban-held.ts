@@ -26,8 +26,6 @@ const MARKER_RADIUS = 6;
 const MARKER_GAP = 6;
 /** Space that keeps the assignee off the text beside it. */
 const NAME_GAP = 8;
-const PROGRESS_HEIGHT = 3;
-const PROGRESS_FROM_BOTTOM = 8;
 /** Set on a drawn card to what it was last painted from. Pele draws a fresh card when it redraws, which has none. */
 const PAINTED_ATTR = 'data-ffc-painted';
 
@@ -55,7 +53,6 @@ function paintCard(card: SVGGElement, facts: CardFacts): void {
   // Drawn again only when what it says or its size has changed: every sweep comes here, and measuring forces a layout.
   const key = JSON.stringify([facts, width, height]);
   if (card.getAttribute(PAINTED_ATTR) === key) return;
-  card.setAttribute(PAINTED_ATTR, key);
   const ticket = card.querySelector('.pele-ticket');
   if (ticket && facts.ticket && ticket.textContent !== facts.ticket) ticket.textContent = facts.ticket;
   const line = Number(ticket?.getAttribute('y'));
@@ -69,7 +66,7 @@ function paintCard(card: SVGGElement, facts: CardFacts): void {
   let who = card.querySelector('.ffc-kb-assigned');
   const name = facts.assigned ? shortName(facts.assigned) : '';
   if (ticket && name && width > 0) {
-    who ??= card.createSvg('text', { cls: 'pele-assigned ffc-kb-assigned', attr: { fill: 'var(--_m)', 'text-anchor': 'end' } });
+    who ??= card.createSvg('text', { cls: ['pele-assigned', 'ffc-kb-assigned'], attr: { fill: 'var(--_m)', 'text-anchor': 'end' } });
     who.setAttribute('x', String(width - PAD));
     who.setAttribute('y', ticket.getAttribute('y') ?? '0');
     if (who.textContent !== name) who.textContent = name;
@@ -83,7 +80,7 @@ function paintCard(card: SVGGElement, facts: CardFacts): void {
   const look = priorityBar(facts.priority);
   if (rect && look && height > 0) {
     if (!bar) {
-      bar = card.createSvg('path', { cls: 'pele-priority ffc-kb-priority', attr: { fill: 'none', 'stroke-width': '3', 'stroke-linecap': 'round' } });
+      bar = card.createSvg('path', { cls: ['pele-priority', 'ffc-kb-priority'], attr: { fill: 'none', 'stroke-width': '3', 'stroke-linecap': 'round' } });
       rect.after(bar);
     }
     bar.setAttribute('d', `M2.5,5V${height - 5}`);
@@ -91,7 +88,8 @@ function paintCard(card: SVGGElement, facts: CardFacts): void {
     bar.setAttribute('opacity', look.opacity);
   } else bar?.remove();
 
-  paintProgress(card, facts.progress, marker, width, height);
+  // Only once it is all drawn, so a card that failed part-way is drawn again.
+  card.setAttribute(PAINTED_ATTR, key);
 }
 
 /** A colour the service gave, or the faint text colour where it gave none or one that isn't a hex colour. */
@@ -124,30 +122,4 @@ function paintMarker(card: SVGGElement, marker: Marker | null, line: number): vo
   const ring = mark.createSvg('circle', { attr: { r: r - 1, fill: 'none', stroke: colour, 'stroke-width': 2 } });
   if (marker.type === 'backlog' || marker.type === 'triage') ring.setAttribute('stroke-dasharray', '2 2');
   if (marker.type === 'started') mark.createSvg('path', { attr: { d: `M0,${-r}A${r},${r} 0 0 1 0,${r}Z`, fill: colour } });
-}
-
-/** A project's progress as a thin bar along the bottom of its card, filled as far as it has got, in the status's colour. */
-function paintProgress(card: SVGGElement, progress: number | undefined, marker: Marker | null, width: number, height: number): void {
-  let bar = card.querySelector('.ffc-kb-progress');
-  if (progress === undefined || !(width > 0) || !(height > 0)) {
-    bar?.remove();
-    return;
-  }
-  const full = width - 2 * PAD;
-  const y = height - PROGRESS_FROM_BOTTOM;
-  const colour = colourOf(marker?.color);
-  if (!bar) {
-    bar = card.createSvg('g', { cls: 'ffc-kb-progress' });
-    bar.createSvg('rect', { cls: 'ffc-kb-progress-track', attr: { rx: PROGRESS_HEIGHT / 2, height: PROGRESS_HEIGHT, fill: colour, opacity: 0.2 } });
-    bar.createSvg('rect', { cls: 'ffc-kb-progress-fill', attr: { rx: PROGRESS_HEIGHT / 2, height: PROGRESS_HEIGHT, fill: colour } });
-  }
-  const [track, fill] = Array.from(bar.children);
-  track.setAttribute('x', String(PAD));
-  track.setAttribute('y', String(y));
-  track.setAttribute('width', String(full));
-  track.setAttribute('fill', colour);
-  fill.setAttribute('x', String(PAD));
-  fill.setAttribute('y', String(y));
-  fill.setAttribute('width', String(Math.max(0, Math.min(1, progress)) * full));
-  fill.setAttribute('fill', colour);
 }

@@ -198,7 +198,12 @@ function paintBoard(plugin: CanvasPlusPlugin, entry: Drawn): void {
     entry.ids = readKanban(entry.source)?.cards.map((c) => c.id) ?? [];
     entry.idsFor = entry.source;
   }
-  paintHeld(plugin, entry.host, entry.ids, entry.held);
+  // What a card says is a nicety: a failure here must not take the drawing, or the update it is part of, down with it.
+  try {
+    paintHeld(plugin, entry.host, entry.ids, entry.held);
+  } catch (error) {
+    console.error('Canvas Plus: couldn’t fill in a kanban card', error);
+  }
 }
 
 function clearDiagram(node: CanvasNodeLike): void {
