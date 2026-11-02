@@ -2,7 +2,7 @@ import type { TFile } from 'obsidian';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasNodeLike, CanvasViewLike, patchData } from './adapter.ts';
 import { CLICK_SLOP_PX } from './constants.ts';
-import { DiagramLinks, diagramFields, readDiagram } from './diagram-data.ts';
+import { DiagramHeld, DiagramLinks, diagramFields, keepHeld, readDiagram } from './diagram-data.ts';
 import { hoverLink, keepLinks, linkUnder, openLink } from './diagram-links.ts';
 import { FloatingTools } from './floating-tools.ts';
 import { InPlaceField } from './in-place-field.ts';
@@ -43,13 +43,19 @@ export abstract class DiagramEditorBase {
   /**
    * Save new source for a card as one undo step, with the effect (a note made along with it) that undo takes back.
    * `beforeNotify` runs once it is saved and before the canvas is told, to say what is picked in the new source.
+   * `alongside` is another change to the canvas that is part of the same undo step.
    */
   protected write(
-    node: CanvasNodeLike, source: string, extra: { links?: DiagramLinks; effect?: SideEffect | null } = {}, beforeNotify?: () => void,
+    node: CanvasNodeLike, source: string,
+    extra: { links?: DiagramLinks; held?: DiagramHeld; effect?: SideEffect | null; alongside?: () => void } = {}, beforeNotify?: () => void,
   ): void {
-    // A link's address stays only while a link of that text is still in the diagram.
+    // A link's address stays only while a link of that text is still in the diagram, and a held card while its node is.
     const links = keepLinks(source, extra.links ?? readDiagram(node)?.links ?? {});
-    batchWithEffect(this.canvas, extra.effect ?? null, () => patchData(node, diagramFields(source, links)));
+    const held = keepHeld(source, extra.held ?? readDiagram(node)?.held);
+    batchWithEffect(this.canvas, extra.effect ?? null, () => {
+      extra.alongside?.();
+      patchData(node, diagramFields(source, links, held));
+    });
     beforeNotify?.();
     this.closeField();
     this.onChanged();

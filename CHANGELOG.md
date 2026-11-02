@@ -5,6 +5,51 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.0]
+
+### Added
+
+- **Kanban boards are editable on the canvas.** Select a kanban diagram, then
+  pick a column or a card. `Enter` or `Tab` adds a card (the dots round it do
+  too), double-click or `F2` renames, `Delete` removes, and the arrow keys move
+  between columns and cards. Drag a card to another column or place, or use
+  `Alt` and an arrow to move a card or column. `Cmd`/`Ctrl`+`Enter` adds a
+  column. Every change is saved into the Mermaid source as one undo step, and a
+  kanban using syntax the editor can't change safely stays editable as source.
+- **Drag cards from the canvas into a kanban, and back out.** Drag a note, file,
+  web link, Linear or Task App issue, project or initiative, or a text card over
+  a board: the column under it lights up and a line shows where it will land.
+  Dropped, it moves into the board as a card that links to it (a note opens in
+  Obsidian, an issue in the browser). The board holds the canvas card itself:
+  drag the card out of the board, or choose **Put back on canvas**, and the
+  original comes back, selected, as it was. Deleting a card or column forgets
+  what it held (undo brings it back).
+- **Linear and Task App cards on a kanban show their details.** A board card
+  that holds an issue, project or initiative carries its service's icon and a
+  second line: the issue's id and assignee, or the status and lead of a project
+  or initiative. Urgent and high issues get a red bar, low ones a faint one. The
+  details are read from the service each time the board is drawn, so they stay
+  current. Cards dropped before this version have no second line or icon:
+  drop them again.
+- **Kanban cards say what they hold, with the status marker and progress.** The
+  second line of a project or initiative card starts with its kind, such as
+  `Project · In Progress` or `Initiative · Active`, after the same status marker
+  the canvas card has (a ring, half full or full, in the status's colour). An
+  issue shows its state marker before its id. A project whose service tracks
+  progress draws it as a thin bar along the bottom of the card. On a narrow
+  column the lead's or assignee's name is left out when it would run into the
+  text.
+
+### Fixed
+
+- **Picking a node outlines only the node.** Picking or hovering a card in a
+  kanban, flowchart or mindmap drew the outline round the icon and the status
+  marker inside it too. Only the node's own shape is outlined now.
+- **A link that wraps onto a second line is drawn as a link.** In a kanban card,
+  flowchart or mindmap, a `[[link]]` too long for one line showed its brackets
+  and wasn't clickable. It now shows the link's name (or alias) across both
+  lines, styled as a link, and opens on a click like any other.
+
 ## [1.19.0]
 
 ### Added

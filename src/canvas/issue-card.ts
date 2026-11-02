@@ -5,6 +5,7 @@ import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasNodeLike } from './adapter.ts';
 import { IssueRef, readIssueRef } from './issue-ref.ts';
 import { cardOwner, fitToPill, viewOf } from './note-card.ts';
+import type { Marker } from './status-marker.ts';
 import { refFacts, renderRefCard, renderRefEmbed, renderRefPill } from './ref-card.ts';
 
 const CARD_CLASS  = 'ffc-issue-card';
@@ -106,7 +107,7 @@ export function sourceIcon(parent: HTMLElement, provider: ProviderId): void {
 }
 
 /** The status marker: a ring for not started, half full for started, full for done, in the status's own colour. */
-export function stateDot(parent: HTMLElement, state: Issue['state']): void {
+export function stateDot(parent: HTMLElement, state: Marker | null): void {
   const dot = parent.createSpan({ cls: 'ffc-issue-state', attr: { 'data-state-type': state?.type ?? 'backlog' } });
   if (state?.color) dot.setCssProps({ '--ffc-issue-color': state.color });
 }

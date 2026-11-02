@@ -21,6 +21,8 @@ import { WidgetPicker } from './widgets.ts';
 import { DiagramPicker } from './diagram-create.ts';
 import { MindmapEditor } from './mindmap-editor.ts';
 import { FlowchartEditor } from './flowchart-editor.ts';
+import { KanbanDrop } from './kanban-drop.ts';
+import { KanbanEditor } from './kanban-editor.ts';
 import { attachDiagramMenu } from './diagram-export.ts';
 import { IssuePicker } from './issue-picker.ts';
 import { initiativePicker } from './initiative-picker.ts';
@@ -95,6 +97,7 @@ export class CanvasController {
   private ink: InkTools;
   private mindmaps: MindmapEditor;
   private flowcharts: FlowchartEditor;
+  private kanbans: KanbanEditor;
   readonly presenter: Presenter;
   readonly focuser: Focuser;
   private tray: Tray;
@@ -129,6 +132,9 @@ export class CanvasController {
     this.cleanups.push(this.mindmaps.attach());
     this.flowcharts = new FlowchartEditor(plugin, view, () => this.sweep());
     this.cleanups.push(this.flowcharts.attach());
+    this.kanbans = new KanbanEditor(plugin, view, () => this.sweep());
+    this.cleanups.push(this.kanbans.attach());
+    this.cleanups.push(new KanbanDrop(plugin, view, this.kanbans).attach());
     // After the editors' own menus, which take a right-click on a node first.
     this.cleanups.push(attachDiagramMenu(plugin, view, () => this.sweep(), (menu, node) => this.flowcharts.cardMenuItems(menu, node)));
     this.comments = new CommentLayer(view);
@@ -216,7 +222,7 @@ export class CanvasController {
   }
 
   mindmapKey(e: KeyboardEvent): boolean {
-    return this.mindmaps.handleKey(e) || this.flowcharts.handleKey(e);
+    return this.mindmaps.handleKey(e) || this.flowcharts.handleKey(e) || this.kanbans.handleKey(e);
   }
 
   setTool(tool: ToolId): void {
@@ -402,6 +408,7 @@ export class CanvasController {
     decorateDiagrams(this.plugin, canvas, () => this.sweep());
     this.mindmaps.refresh();
     this.flowcharts.refresh();
+    this.kanbans.refresh();
     this.relations.sweep();
     this.panel.update();
     this.layers.update();

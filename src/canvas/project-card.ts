@@ -1,22 +1,17 @@
-import type { Issue, Project, ProjectStatusType, StateType } from '../issues/types.ts';
+import type { Project } from '../issues/types.ts';
 import { stateDot } from './issue-card.ts';
 import type { RefFacts } from './ref-card.ts';
+import { Marker, projectStatusMarker } from './status-marker.ts';
 
 // A Linear project drawn the way an issue is: the same card, full view and link, with the project's own facts.
 
-/** The marker for a project's status, using the issue markers: a ring, half full or full. */
-const MARKER: Record<ProjectStatusType, StateType> = {
-  backlog: 'backlog', planned: 'unstarted', started: 'started', paused: 'started', completed: 'completed', canceled: 'canceled',
-};
-
 /** The marker for a status of a project or an initiative. */
-export function statusMarker(parent: HTMLElement, status: Project['status']): void {
-  const state: Issue['state'] = status ? { name: status.name, type: MARKER[status.type] ?? 'backlog', color: status.color } : null;
-  stateDot(parent, state);
+export function statusMarker(parent: HTMLElement, marker: Marker | null): void {
+  stateDot(parent, marker);
 }
 
 export function projectMarker(parent: HTMLElement, project: Project | undefined): void {
-  statusMarker(parent, project?.status ?? null);
+  statusMarker(parent, projectStatusMarker(project?.status ?? null));
 }
 
 function percent(project: Project): string | null {

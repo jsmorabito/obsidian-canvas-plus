@@ -3,7 +3,7 @@ import type { Mounted } from 'pele';
 import type { CanvasPlusPlugin } from '../main.ts';
 import { CanvasLike, CanvasNodeLike, batch, patchData } from './adapter.ts';
 import { mountDiagram } from './diagram-card.ts';
-import { diagramFields, readDiagram } from './diagram-data.ts';
+import { diagramFields, keepHeld, readDiagram } from './diagram-data.ts';
 
 /** Edit a diagram's Mermaid source, with Pele's drawing of it beside the text. Saving is one undo step. */
 export class DiagramEditor extends Modal {
@@ -51,7 +51,8 @@ export class DiagramEditor extends Modal {
   private save(source: string): void {
     const text = source.trim();
     if (text && text !== readDiagram(this.node)?.source) {
-      batch(this.canvas, () => patchData(this.node, diagramFields(text, readDiagram(this.node)?.links)));
+      const diagram = readDiagram(this.node);
+      batch(this.canvas, () => patchData(this.node, diagramFields(text, diagram?.links, keepHeld(text, diagram?.held))));
       this.onSaved();
     }
     this.close();

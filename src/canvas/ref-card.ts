@@ -8,6 +8,7 @@ import { sourceIcon, stateDot } from './issue-card.ts';
 import type { IssueRef } from './issue-ref.ts';
 import { cardOwner } from './note-card.ts';
 import { projectFacts } from './project-card.ts';
+import { refLabel } from './ref-label.ts';
 
 // A project or an initiative drawn the way an issue is: the same card, full view and link, with its own facts.
 
@@ -20,12 +21,6 @@ export interface RefFacts {
   props: Array<[label: string, value: string]>;
   /** Markdown shown under the properties in the full view. */
   body: string;
-}
-
-const LABEL = { project: 'Project', initiative: 'Initiative', issue: 'Issue' } as const;
-
-export function refLabel(kind: IssueRef['kind']): string {
-  return LABEL[kind];
 }
 
 /** The facts to draw for what the service returned, or undefined while it has not loaded. */

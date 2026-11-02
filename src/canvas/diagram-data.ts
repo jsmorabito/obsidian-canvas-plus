@@ -1,13 +1,18 @@
 import { CanvasNodeLike, getExtra } from './adapter.ts';
 import { FIELD_DIAGRAM } from './constants.ts';
+import type { TrayItem } from './tray-items.ts';
 
 /** Where a link in a node's text goes when it isn't a note: the text of the link, by its web address. */
 export type DiagramLinks = Record<string, string>;
 
-/** What a diagram card saves: the Mermaid source, which Pele draws each time, and the web addresses its links go to. */
+/** Canvas cards a diagram holds, by the id of the node in its source that stands for each. They come back out as they were. */
+export type DiagramHeld = Record<string, TrayItem>;
+
+/** What a diagram card saves: the Mermaid source, which Pele draws each time, the web addresses its links go to, and the cards it holds. */
 export interface DiagramData {
   source: string;
   links?: DiagramLinks;
+  held?: DiagramHeld;
 }
 
 /** A canvas file can come from anyone, so only a web address is ever opened. */
@@ -21,12 +26,43 @@ export function readDiagram(node: CanvasNodeLike, data?: Record<string, unknown>
   if (v.links && typeof v.links === 'object') {
     for (const [text, url] of Object.entries(v.links)) if (typeof url === 'string' && WEB_URL_RE.test(url)) links[text] = url;
   }
-  return Object.keys(links).length > 0 ? { source: v.source, links } : { source: v.source };
+  const held: DiagramHeld = {};
+  if (v.held && typeof v.held === 'object') {
+    for (const [id, item] of Object.entries(v.held)) if (isHeldItem(item)) held[id] = item;
+  }
+  return {
+    source: v.source,
+    ...(Object.keys(links).length > 0 ? { links } : {}),
+    ...(Object.keys(held).length > 0 ? { held } : {}),
+  };
+}
+
+/** A held card as the canvas file has it: a node (with what it holds) and the edges that touched them. */
+function isHeldItem(o: unknown): o is TrayItem {
+  const item = o as TrayItem | null;
+  if (typeof item !== 'object' || item === null || typeof item.id !== 'string' || !Array.isArray(item.nodes) || !Array.isArray(item.edges)) return false;
+  // What a canvas file holds can be anything: every node and edge must be an object for the card to be put back.
+  const isObject = (v: unknown): boolean => typeof v === 'object' && v !== null;
+  return item.nodes.length > 0 && item.nodes.every(isObject) && item.edges.every(isObject);
+}
+
+/** The cards a diagram keeps once its source has changed: a card is held only while the source still has the node that stands for it, written `id[`. */
+export function keepHeld(source: string, held: DiagramHeld | undefined): DiagramHeld | undefined {
+  if (!held) return undefined;
+  const kept: DiagramHeld = {};
+  for (const [id, item] of Object.entries(held)) {
+    if (new RegExp(`(?:^|\\s)${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\[`, 'm').test(source)) kept[id] = item;
+  }
+  return Object.keys(kept).length > 0 ? kept : undefined;
 }
 
 /** The fields a diagram node is saved with: its data, and the markdown that stock Obsidian draws it from. */
-export function diagramFields(source: string, links?: DiagramLinks): Record<string, unknown> {
-  const data: DiagramData = links && Object.keys(links).length > 0 ? { source, links } : { source };
+export function diagramFields(source: string, links?: DiagramLinks, held?: DiagramHeld): Record<string, unknown> {
+  const data: DiagramData = {
+    source,
+    ...(links && Object.keys(links).length > 0 ? { links } : {}),
+    ...(held && Object.keys(held).length > 0 ? { held } : {}),
+  };
   return { [FIELD_DIAGRAM]: data, text: diagramText(source) };
 }
 

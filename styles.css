@@ -2578,7 +2578,8 @@ body {
   position: relative;
 }
 
-.ffc-diagram .pele-node.ffc-mm-active :is(rect, circle, ellipse, path, polygon) {
+/* The outline is the node's own shape: not the icon, status marker, progress or priority bar drawn inside a kanban card. */
+.ffc-diagram .pele-node.ffc-mm-active :is(rect, circle, ellipse, path, polygon):not(.pele-icon *, .ffc-kb-state *, .ffc-kb-progress *, .pele-priority) {
   stroke: var(--interactive-accent);
   /* Drawn in the diagram's own units, which no CSS variable measures. */
   stroke-width: 2.5;
@@ -2593,7 +2594,7 @@ body {
   cursor: pointer;
 }
 
-.canvas-node.is-selected .ffc-diagram .pele-node:hover :is(rect, circle, ellipse, path, polygon) {
+.canvas-node.is-selected .ffc-diagram .pele-node:hover :is(rect, circle, ellipse, path, polygon):not(.pele-icon *, .ffc-kb-state *, .ffc-kb-progress *, .pele-priority) {
   stroke: var(--interactive-accent);
   stroke-width: 2;
 }
@@ -2608,13 +2609,14 @@ body {
 
 /* With a node picked, its toolbar replaces the card's. */
 .ffc-mm-node-picked .canvas-menu-container,
-.ffc-fc-node-picked .canvas-menu-container {
+.ffc-fc-node-picked .canvas-menu-container,
+.ffc-kb-picked .canvas-menu-container {
   display: none;
 }
 
-/* Mindmaps and flowcharts have no card outline of their own: it shows only while the card itself is selected, by its empty space. */
-.canvas-node:is([data-ffc-mindmap], [data-ffc-flowchart]):not(.is-selected):not(.is-focused) .canvas-node-container,
-.canvas-node:is([data-ffc-mindmap], [data-ffc-flowchart])[data-ffc-picked] .canvas-node-container {
+/* Mindmaps, flowcharts and kanbans have no card outline of their own: it shows only while the card itself is selected, by its empty space. */
+.canvas-node:is([data-ffc-mindmap], [data-ffc-flowchart], [data-ffc-kanban]):not(.is-selected):not(.is-focused) .canvas-node-container,
+.canvas-node:is([data-ffc-mindmap], [data-ffc-flowchart], [data-ffc-kanban])[data-ffc-picked] .canvas-node-container {
   border-color: transparent;
   box-shadow: none;
   background: transparent;
@@ -2734,7 +2736,7 @@ body {
   display: none;
 }
 
-.ffc-diagram .pele-node.ffc-mm-drop-target :is(rect, circle, ellipse, path, polygon) {
+.ffc-diagram .pele-node.ffc-mm-drop-target :is(rect, circle, ellipse, path, polygon):not(.pele-icon *, .ffc-kb-state *, .ffc-kb-progress *, .pele-priority) {
   stroke: var(--interactive-accent);
   /* Drawn in the diagram's own units, which no CSS variable measures. */
   stroke-width: 3;
@@ -2742,6 +2744,58 @@ body {
 
 .ffc-diagram .pele-node.ffc-mm-drop-target .pele-label {
   fill: var(--interactive-accent);
+}
+
+
+/* Kanban editing in a diagram card: a column is picked, renamed and dropped on like a card is. */
+.canvas-node.is-selected .ffc-diagram .pele-column {
+  cursor: pointer;
+}
+
+.canvas-node.is-selected .ffc-diagram .pele-column:hover:not(:has(.pele-card:hover)) > rect {
+  stroke: var(--interactive-accent);
+  stroke-width: 2;
+}
+
+.ffc-diagram .pele-column.ffc-mm-active > rect {
+  stroke: var(--interactive-accent);
+  /* Drawn in the diagram's own units, which no CSS variable measures. */
+  stroke-width: 2.5;
+}
+
+.ffc-diagram .pele-column.ffc-mm-active > .pele-cluster-label {
+  fill: var(--interactive-accent);
+}
+
+.ffc-diagram .pele-column.ffc-mm-editing > .pele-cluster-label {
+  visibility: hidden;
+}
+
+.ffc-diagram .pele-column.ffc-kb-drop-column > rect {
+  stroke: var(--interactive-accent);
+  stroke-width: 2;
+}
+
+
+/* The stand-in for a canvas card that is dragged out of a kanban: it follows the pointer over the canvas. */
+.ffc-kb-ghost {
+  position: absolute;
+  left: var(--ffc-kb-left);
+  top: var(--ffc-kb-top);
+  z-index: var(--layer-popover);
+  max-width: 20em;
+  padding: var(--size-4-1) var(--size-4-3);
+  overflow: hidden;
+  border: var(--border-width) solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
 
