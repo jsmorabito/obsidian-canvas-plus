@@ -27,6 +27,7 @@ import { attachDiagramMenu } from './diagram-export.ts';
 import { IssuePicker } from './issue-picker.ts';
 import { initiativePicker } from './initiative-picker.ts';
 import { projectPicker } from './project-picker.ts';
+import { decorateBorder, injectBorderButton } from './card-border.ts';
 import { injectConvertButton } from './convert-card.ts';
 import { injectIssueButtons, moveIssueButtonsLast } from './issue-menu.ts';
 import { injectSignpostButtons } from './signpost.ts';
@@ -431,6 +432,7 @@ export class CanvasController {
       const kind = ink ? 'ink' : getExtra(node, FIELD_KIND, data);
       if (typeof kind === 'string') el.setAttribute('data-ffc-kind', kind);
       else el.removeAttribute('data-ffc-kind');
+      decorateBorder(node, data);
       if (ink) this.syncInk(node, ink);
       if (isAnchor(node, data)) syncAnchor(canvas, node, data);
       else clearAnchor(node);
@@ -499,6 +501,7 @@ export class CanvasController {
     injectViewToggleButton(canvas, selected, () => this.sweep());
     injectPinButton(canvas, selected, () => this.sweep());
     injectKeyImageButton(this.plugin, canvas, selected);
+    injectBorderButton(canvas, selected, () => this.sweep());
     injectConvertButton(this.plugin, canvas, selected, () => this.sweep());
     injectSignpostButtons(this.plugin, canvas, selected);
     injectIssueButtons(this.plugin, canvas, selected, () => this.sweep());

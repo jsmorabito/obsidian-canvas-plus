@@ -14,6 +14,7 @@ Drawing and layout tools for Obsidian's canvas. Paired with the [Note Types](htt
 Obsidian's bottom menu becomes one bar: Select, draggable Card, Note, Media and **Add note** (`N`), then Text (`T`), Group (`G`), Anchor (`A`), Comment (`K`), Marker (`M`), Highlighter (`⇧M`) and Eraser (`E`). `Esc` cancels. Click a tool, then click or drag on the canvas to place one. Works in popped-out windows too.
 
 - **Text** has no card chrome and removes itself if left empty.
+- **Card border.** Select one or more plain cards and use **Border** in the selection toolbar to choose solid, dashed or none. A card with no border still shows one while hovered or selected.
 - **Anchors** are icons, or frames if you drag: the area a presentation shows at that stop. Names are numbered, readable at any zoom, and renamed by double-click.
 - **Comments** are pins with threads: reply, resolve, delete. A pin dropped on a node moves with it. Saved in the canvas file; undo covers them.
 

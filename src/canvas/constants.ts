@@ -140,3 +140,9 @@ export const FIELD_PIN_AT = 'ffcPinAt';
 
 /** Put on a node while a pin or comment pin carried over it would attach to it. */
 export const TARGET_CLASS = 'ffc-comment-target';
+
+/**
+ * Extra field on a card: its border, `"dashed"` or `"none"`. Absent means solid, the canvas's own. Stored in canvas
+ * files, so the name must not change.
+ */
+export const FIELD_BORDER = 'ffcBorder';

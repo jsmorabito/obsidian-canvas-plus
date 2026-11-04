@@ -5,6 +5,17 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.0]
+
+### Added
+
+- **Card borders.** Select one or more plain cards and choose **Border** in the
+  selection toolbar: solid (the canvas's own), dashed or none. Dashed draws
+  evenly spaced dashes with a dash on each corner, as Figma does, in the card's
+  colour (accent while selected). None hides the border but still shows it on
+  hover and while selected. The choice is saved on the card and undone with the
+  canvas.
+
 ## [1.21.0]
 
 ### Added

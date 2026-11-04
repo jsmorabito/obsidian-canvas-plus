@@ -3003,3 +3003,73 @@ body {
 .ffc-handle-ghost.is-shown {
   display: block;
 }
+
+/* ── Card border: solid is the canvas's own; dashed and none are chosen from the selection menu ── */
+
+/*
+ * Dashed is drawn by a mask over the card's edge rather than `border-style: dashed`, whose dashes and gaps are fixed by
+ * the border's width (about 3px each at 1px) and can't be spaced out. The line takes the colour core gives the border.
+ */
+.canvas-node[data-ffc-border="dashed"] .canvas-node-container,
+.canvas-node[data-ffc-border="none"] .canvas-node-container {
+  border-color: transparent;
+}
+
+.canvas-node[data-ffc-border="dashed"] .canvas-node-container {
+  /* Core's soft shadow draws a faint solid line round the dashes, and no variable has a shadow that falls below only (the negative spread). */
+  box-shadow: 0 1px 1px -0.5px var(--background-modifier-box-shadow);
+  /* The dashes are drawn on the card's edge, where core's 1px border is, so the line is as thick as a solid one. */
+  border-width: 0;
+}
+
+.canvas-node[data-ffc-border="dashed"] .canvas-node-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  /* Core's plain grey border is too light to read as dashes, so uncoloured cards use a stronger one. */
+  background-color: var(--text-faint);
+  /* A 1px line (2px centred on the box's edge, half of it outside), the dashes fitted by card-border.ts. */
+  /* Without the mask (it is set from code) nothing is drawn, rather than a solid fill over the card. */
+  mask: var(--ffc-dash-mask, linear-gradient(transparent, transparent)) 0 0 / 100% 100% no-repeat;
+}
+
+.canvas-node[data-ffc-border="dashed"].is-selected .canvas-node-container,
+.canvas-node[data-ffc-border="dashed"].is-focused .canvas-node-container {
+  /* Core's ring round a picked card, outside the dashes, so the selection reads as it does on any card. */
+  box-shadow: var(--shadow-border-accent);
+}
+
+.canvas-node[data-ffc-border="dashed"].is-selected.is-themed .canvas-node-container,
+.canvas-node[data-ffc-border="dashed"].is-focused.is-themed .canvas-node-container {
+  box-shadow: var(--shadow-border-themed);
+}
+
+.canvas-node[data-ffc-border="dashed"].is-themed .canvas-node-container::after {
+  background-color: rgb(var(--canvas-color));
+}
+
+.canvas-node[data-ffc-border="dashed"].is-selected .canvas-node-container::after,
+.canvas-node[data-ffc-border="dashed"].is-focused .canvas-node-container::after {
+  background-color: var(--color-accent);
+}
+
+.canvas-node[data-ffc-border="dashed"].is-selected.is-themed .canvas-node-container::after,
+.canvas-node[data-ffc-border="dashed"].is-focused.is-themed .canvas-node-container::after {
+  background-color: rgb(var(--canvas-color));
+}
+
+/* None keeps the border's space, so the text doesn't move, and only draws it where it shows the card is picked or hovered. */
+.canvas-node[data-ffc-border="none"]:not(.is-selected):not(.is-focused) .canvas-node-container {
+  box-shadow: var(--shadow-stationary);
+}
+
+.canvas-node[data-ffc-border="none"]:hover .canvas-node-container {
+  border-color: var(--background-modifier-border);
+}
+
+.canvas-node[data-ffc-border="none"].is-selected .canvas-node-container,
+.canvas-node[data-ffc-border="none"].is-focused .canvas-node-container {
+  border-color: var(--interactive-accent);
+}
