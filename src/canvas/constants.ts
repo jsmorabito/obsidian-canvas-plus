@@ -146,3 +146,9 @@ export const TARGET_CLASS = 'ffc-comment-target';
  * files, so the name must not change.
  */
 export const FIELD_BORDER = 'ffcBorder';
+
+/**
+ * Extra field on an edge: its line, `"dashed"`. Absent means solid, the canvas's own. Stored in canvas files, so the
+ * name must not change.
+ */
+export const FIELD_EDGE_LINE = 'ffcEdgeLine';

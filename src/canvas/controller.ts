@@ -42,6 +42,7 @@ import { DgNodePicker } from './dg-create.ts';
 import { DgContext } from './dg-context.ts';
 import { NotePicker } from './note-picker.ts';
 import { RelationFlow } from './relation-flow.ts';
+import { decorateEdgeLines, injectEdgeLineButton } from './edge-line.ts';
 import { imageFromDrop, injectKeyImageButton, setKeyImage } from './key-image.ts';
 import { InkTools } from './ink-tools.ts';
 import { inkSvg, colorToHex } from './ink-render.ts';
@@ -420,6 +421,7 @@ export class CanvasController {
     this.flowcharts.refresh();
     this.kanbans.refresh();
     this.relations.sweep();
+    decorateEdgeLines(canvas);
     this.panel.update();
     this.layers.update();
     this.presenter.refresh();
@@ -504,6 +506,7 @@ export class CanvasController {
     const canvas = this.view.canvas;
     if (!canvas) return;
     const selected = selectedNodes(canvas);
+    injectEdgeLineButton(canvas, () => this.sweep());
     injectViewToggleButton(canvas, selected, () => this.sweep());
     injectPinButton(canvas, selected, () => this.sweep());
     injectKeyImageButton(this.plugin, canvas, selected);

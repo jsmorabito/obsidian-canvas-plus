@@ -5,6 +5,15 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.0]
+
+### Added
+
+- **Dashed edges.** Select one or more edges and use **Line** in the toolbar to
+  make them solid or dashed. The dashes match the dashed card border, keep
+  their look at any zoom, and the choice is saved in the canvas file and
+  covered by undo.
+
 ## [1.23.0]
 
 ### Added

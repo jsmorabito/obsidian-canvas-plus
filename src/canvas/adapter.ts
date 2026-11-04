@@ -49,6 +49,9 @@ export interface CanvasEdgeLike {
   labelElement?: { wrapperEl?: HTMLElement; focus?: (...args: unknown[]) => void };
   editLabel?: () => void;
   getData: () => Record<string, unknown>;
+  setData?: (data: Record<string, unknown>) => void;
+  /** Obsidian round-trips unrecognised edge fields through this bag, as it does for nodes. */
+  unknownData?: Record<string, unknown>;
 }
 
 export interface CanvasLike {
@@ -328,6 +331,10 @@ export function viewportCenter(canvas: CanvasLike): { x: number; y: number } {
 
 export function isEdge(o: object): o is CanvasEdgeLike {
   return 'from' in o && 'to' in o && 'getData' in o;
+}
+
+export function selectedEdges(canvas: CanvasLike): CanvasEdgeLike[] {
+  return [...(canvas.selection ?? [])].filter((o): o is CanvasEdgeLike => isEdge(o));
 }
 
 export function selectedNodes(canvas: CanvasLike): CanvasNodeLike[] {

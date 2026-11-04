@@ -3073,3 +3073,13 @@ body {
 .canvas-node[data-ffc-border="none"].is-focused .canvas-node-container {
   border-color: var(--interactive-accent);
 }
+
+/* ── Edge line ───────────────────────────────────────────────────────────── */
+
+/*
+ * Dashed edges. Core draws the line with `path.canvas-display-path` and scales its width with the zoom, so the dashes
+ * scale the same way and keep their look at any zoom. 8px on, 6px off matches the dashed card border.
+ */
+.canvas-edges g[data-ffc-line="dashed"] path.canvas-display-path {
+  stroke-dasharray: calc(8px * var(--zoom-multiplier)) calc(6px * var(--zoom-multiplier));
+}
