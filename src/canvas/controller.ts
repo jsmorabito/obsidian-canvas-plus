@@ -31,6 +31,7 @@ import { decorateBorder, injectBorderButton } from './card-border.ts';
 import { injectConvertButton } from './convert-card.ts';
 import { injectIssueButtons, moveIssueButtonsLast } from './issue-menu.ts';
 import { injectSignpostButtons } from './signpost.ts';
+import { syncLinkButton } from './link-button.ts';
 import { injectPinButton, injectViewToggleButton } from './view-toggle.ts';
 import { watchPinScale } from './pin-bubble.ts';
 import { watchPinAttach } from './pin-attach.ts';
@@ -151,6 +152,11 @@ export class CanvasController {
     this.cleanups.push(afterCanvasFrame(view.canvas!, () => { this.lastFrame = performance.now(); }));
     this.cleanups.push(attachUndoJournal(view.canvas!, plugin.app));
     this.cleanups.push(keepMenuClearOfLabels(view.canvas!));
+    // Selecting text in a card being edited does not rebuild the pop-up menu, so watch for it.
+    const textDoc = view.containerEl.doc;
+    const onTextSelect = (): void => { if (view.canvas) syncLinkButton(view.canvas); };
+    textDoc.addEventListener('selectionchange', onTextSelect);
+    this.cleanups.push(() => textDoc.removeEventListener('selectionchange', onTextSelect));
     this.cleanups.push(watchSelection(view.canvas!, () => {
       this.panel.update();
       this.layers.update();
@@ -505,6 +511,7 @@ export class CanvasController {
     injectConvertButton(this.plugin, canvas, selected, () => this.sweep());
     injectSignpostButtons(this.plugin, canvas, selected);
     injectIssueButtons(this.plugin, canvas, selected, () => this.sweep());
+    syncLinkButton(canvas);
     moveIssueButtonsLast(canvas);
   }
 

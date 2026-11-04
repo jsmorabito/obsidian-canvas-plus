@@ -5,6 +5,15 @@ All notable changes to this plugin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.0]
+
+### Added
+
+- **Link selected text.** While text is selected in a card you are editing, a
+  **Link selection** button appears in the selection toolbar. It turns the
+  selection into `[text]()` and leaves the caret between the parentheses, ready
+  to paste a link.
+
 ## [1.22.0]
 
 ### Added
